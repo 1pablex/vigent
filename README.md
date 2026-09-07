@@ -10,7 +10,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: atribuição de
 
 Este repositório está em desenvolvimento. A entrega deste marco cobre a primeira regra de negócio completa:
 
-**RN-27 — Bloqueio por senha provisória**
+**RN-27 Bloqueio por senha provisória**
 - Banco de dados: campo `senha_provisoria` no model `Usuario`
 - Back-end: `SenhaProvisoriaMiddleware` intercepta toda requisição enquanto a senha não for trocada; a view `definir_senha` processa a troca
 - Front-end: tela de login e tela de definição de senha
