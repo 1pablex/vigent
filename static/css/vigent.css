@@ -1,0 +1,124 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f1f3f7;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.card {
+  width: 400px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+  padding: 48px 40px 56px;
+}
+
+.logo {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #14213d;
+  margin-bottom: 32px;
+}
+
+.logo .dot {
+  color: #e9a23b;
+}
+
+h1 {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #14213d;
+  margin: 0 0 6px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: #8a94a6;
+  margin: 0 0 32px;
+}
+
+.erro {
+  text-align: center;
+  font-size: 13px;
+  color: #c1432e;
+  background: #fbe9e5;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 0 0 20px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.field {
+  margin-bottom: 20px;
+}
+
+input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid #d7dbe3;
+  outline: none;
+  color: #374151;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input::placeholder {
+  color: #9aa3b2;
+}
+
+input:focus {
+  border-color: #14213d;
+  box-shadow: 0 0 0 3px rgba(20, 33, 61, 0.08);
+}
+
+button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  background-color: #14213d;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+button:hover {
+  background-color: #1c2b52;
+}
+
+.link-out {
+  display: block;
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: #6b7280;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-out:hover {
+  color: #14213d;
+}

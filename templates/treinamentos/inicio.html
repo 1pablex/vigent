@@ -1,0 +1,97 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigent - Área do colaborador</title>
+<link rel="stylesheet" href="{% static 'css/inicio.css' %}">
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">VIGENT<span class="dot">.</span></div>
+      <div class="badge-area mono">ÁREA DO COLABORADOR</div>
+    </div>
+    <div class="header-right">
+      <div class="user-info">
+        <div class="name">{{ request.user.nome }}</div>
+        <div class="role">{{ request.user.cargo }} · {{ request.user.departamento }}</div>
+      </div>
+      <a href="{% url 'contas:logout' %}" class="btn-logout">Sair</a>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active">Meus treinamentos</button>
+    <button class="tab" disabled title="Ainda não implementado">Certificados</button>
+  </div>
+
+  <div class="section-header">
+    <div>
+      <h2>Meus treinamentos</h2>
+      <p>Treinamentos obrigatórios atribuídos ao seu departamento e perfil.</p>
+    </div>
+    <div class="count-label mono">{{ itens|length }} atribuído{{ itens|length|pluralize }}</div>
+  </div>
+
+  <div class="training-list">
+    {% for item in itens %}
+    <div class="training-card">
+      <div class="training-left">
+        {% if item.situacao == "VENCIDO" %}
+          <div class="icon red">✕</div>
+        {% elif item.situacao == "VENCENDO" %}
+          <div class="icon orange">!</div>
+        {% elif item.em_andamento %}
+          <div class="icon orange">▶</div>
+        {% elif item.situacao == "EM DIA" %}
+          <div class="icon navy">✓</div>
+        {% else %}
+          <div class="icon gray">—</div>
+        {% endif %}
+        <div>
+          <p class="training-title">{{ item.curso.nome }}</p>
+          <p class="training-sub">
+            {% if item.situacao == "VENCIDO" %}
+              Vencido em {{ item.certificado.data_validade|date:"d/m/Y" }}
+            {% elif item.situacao == "VENCENDO" %}
+              Vence em {{ item.certificado.dias_para_vencer }} dias — notificação enviada por e-mail
+            {% elif item.situacao == "EM DIA" %}
+              Certificado válido até {{ item.certificado.data_validade|date:"d/m/Y" }}
+            {% else %}
+              {{ item.curso.categoria }} · {{ item.curso.carga_horaria }} · validade de {{ item.curso.validade_meses }} meses
+            {% endif %}
+          </p>
+        </div>
+      </div>
+      <div class="training-right">
+        {% if item.situacao == "VENCIDO" %}
+          <span class="status vencido mono">VENCIDO</span>
+          <a href="{% url 'treinamentos:abrir' item.curso.id %}" class="btn-action dark">Refazer treinamento</a>
+        {% elif item.situacao == "VENCENDO" %}
+          <span class="status vencendo mono">VENCENDO</span>
+          <a href="{% url 'treinamentos:abrir' item.curso.id %}" class="btn-action dark">Renovar agora</a>
+        {% elif item.em_andamento %}
+          <span class="status vencendo mono">EM ANDAMENTO</span>
+          <a href="{% url 'treinamentos:abrir' item.curso.id %}" class="btn-action dark">Continuar</a>
+        {% elif item.situacao == "EM DIA" %}
+          <span class="status em-dia mono">EM DIA</span>
+          <button class="btn-action light" disabled title="Tela de certificado ainda não implementada">Ver certificado</button>
+        {% else %}
+          <span class="status nao-iniciado mono">NÃO INICIADO</span>
+          <a href="{% url 'treinamentos:abrir' item.curso.id %}" class="btn-action light">Iniciar</a>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+      <p>Nenhum treinamento atribuído ao seu perfil no momento.</p>
+    {% endfor %}
+  </div>
+
+</div>
+
+</body>
+</html>

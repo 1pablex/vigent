@@ -1,0 +1,41 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigent - Defina sua senha</title>
+<link rel="stylesheet" href="{% static 'css/vigent.css' %}">
+</head>
+<body>
+
+  <div class="logo">VIGENT<span class="dot">.</span></div>
+
+  <div class="card">
+    <h1>Defina sua senha</h1>
+    <p class="subtitle">Primeiro acesso de {{ request.user.get_short_name }}. A senha provisória enviada por e-mail precisa ser substituída.</p>
+
+    {% if erro %}
+      <div class="erro">{{ erro }}</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="field">
+        <label for="new-password">Nova senha</label>
+        <input type="password" id="new-password" name="nova1" placeholder="mínimo de 6 caracteres" required minlength="6">
+      </div>
+
+      <div class="field">
+        <label for="confirm-password">Repita a nova senha</label>
+        <input type="password" id="confirm-password" name="nova2" required minlength="6">
+      </div>
+
+      <button type="submit">Salvar e entrar</button>
+    </form>
+
+    <a class="link-out" href="{% url 'contas:logout' %}">Sair</a>
+  </div>
+
+</body>
+</html>
