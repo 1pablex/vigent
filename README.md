@@ -6,7 +6,7 @@ Plataforma de gestão de treinamentos corporativos. Projeto Final de Curso (PFC)
 
 O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: atribuição de curso, percurso de conteúdo, avaliação de reação, prova de conhecimento e emissão de certificado, com trilha de auditoria.
 
-## Status atual (para a entrega do dia 14/09/2026)
+## Status atual ( em desenvolvimento para a entrega do dia 14/09/2026)
 
 Este repositório está em desenvolvimento. A entrega deste marco cobre a primeira regra de negócio completa:
 
