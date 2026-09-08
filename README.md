@@ -15,7 +15,7 @@ Este repositório está em desenvolvimento. A entrega deste marco cobre a primei
 - Back-end: `SenhaProvisoriaMiddleware` intercepta toda requisição enquanto a senha não for trocada; a view `definir_senha` processa a troca
 - Front-end: tela de login e tela de definição de senha
 
-O restante do fluxo (conteúdo do curso, avaliação de reação, prova, certificado) já tem a lógica de back-end escrita — falta conectar os templates, em andamento.
+O restante do fluxo (conteúdo do curso, avaliação de reação, prova, certificado) já tem a lógica de back-end escrita, falta conectar os templates, em andamento.
 
 ## Stack
 
