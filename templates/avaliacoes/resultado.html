@@ -1,0 +1,65 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigent - Resultado da prova</title>
+<link rel="stylesheet" href="{% static 'css/prova.css' %}">
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">VIGENT<span class="dot">.</span></div>
+      <div class="course-badge mono">{{ curso.nome }}</div>
+    </div>
+    <a href="{% url 'treinamentos:inicio' %}" class="btn-close">Voltar</a>
+  </div>
+
+  <div class="stepper">
+    <div class="step done"><div class="step-circle">✓</div>Conteúdo</div>
+    <span class="step-arrow">→</span>
+    <div class="step done"><div class="step-circle">✓</div>Avaliação de reação</div>
+    <span class="step-arrow">→</span>
+    <div class="step done"><div class="step-circle">✓</div>Prova</div>
+  </div>
+
+  <div class="result-card">
+    {% if aprovado %}
+      <div class="result-icon sucesso">✓</div>
+      <h1>Aprovado</h1>
+      <p>Você atingiu a nota mínima exigida para este treinamento.</p>
+      <div class="result-score mono">{{ nota }}</div>
+      {% if certificado %}
+        <p>Certificado emitido, válido até {{ certificado.data_validade|date:"d/m/Y" }}.</p>
+      {% endif %}
+      <div class="result-actions">
+        <a href="{% url 'treinamentos:inicio' %}" class="btn-dark">Voltar para meus treinamentos</a>
+      </div>
+
+    {% elif reciclou %}
+      <div class="result-icon reciclagem">↻</div>
+      <h1>Tentativas esgotadas</h1>
+      <p>Você não atingiu a nota mínima nas {{ curso.max_tentativas }} tentativas disponíveis. O treinamento foi reiniciado — será necessário percorrer o conteúdo novamente antes de uma nova tentativa.</p>
+      <div class="result-score mono">{{ nota }}</div>
+      <div class="result-actions">
+        <a href="{% url 'treinamentos:inicio' %}" class="btn-dark">Voltar para meus treinamentos</a>
+      </div>
+
+    {% else %}
+      <div class="result-icon falha">✕</div>
+      <h1>Não foi dessa vez</h1>
+      <p>Sua nota ficou abaixo da mínima exigida. Você ainda tem {{ restantes }} tentativa{{ restantes|pluralize }} disponível{{ restantes|pluralize }}.</p>
+      <div class="result-score mono">{{ nota }}</div>
+      <div class="result-actions">
+        <a href="{% url 'avaliacoes:prova' curso.id %}" class="btn-dark">Tentar novamente</a>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,77 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigent - Prova de conhecimento</title>
+<link rel="stylesheet" href="{% static 'css/prova.css' %}">
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">VIGENT<span class="dot">.</span></div>
+      <div class="course-badge mono">{{ curso.nome }}</div>
+    </div>
+    <a href="{% url 'treinamentos:inicio' %}" class="btn-close">Voltar</a>
+  </div>
+
+  <div class="stepper">
+    <div class="step done">
+      <div class="step-circle">✓</div>
+      Conteúdo
+    </div>
+    <span class="step-arrow">→</span>
+    <div class="step done">
+      <div class="step-circle">✓</div>
+      Avaliação de reação
+    </div>
+    <span class="step-arrow">→</span>
+    <div class="step active">
+      <div class="step-circle">3</div>
+      Prova
+    </div>
+  </div>
+
+  <div class="page-header">
+    <div>
+      <h1>Prova de conhecimento</h1>
+      <p>Tentativa {{ tentativa }} de {{ curso.max_tentativas }} — esgotadas as tentativas, o curso entra em reciclagem.</p>
+    </div>
+    <div class="min-score-badge mono">NOTA MÍNIMA {{ curso.nota_minima }}</div>
+  </div>
+
+  {% if erro %}
+    <div class="erro">{{ erro }}</div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    {% for questao in questoes %}
+    <div class="question-card">
+      <p class="question-eyebrow mono">QUESTÃO {{ forloop.counter|stringformat:"02d" }} DE {{ questoes|length|stringformat:"02d" }}</p>
+      <p class="question-text">{{ questao.enunciado }}</p>
+      <div class="options">
+        {% for alt in questao.alternativas.all %}
+          <input type="radio" name="q{{ questao.id }}" value="{{ alt.id }}"
+                 id="alt-{{ alt.id }}" class="alt-radio" required>
+          <label for="alt-{{ alt.id }}" class="option">
+            <span class="option-letter">{{ alt.letra }}</span>{{ alt.texto }}
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="footer-actions">
+      <button type="submit" class="btn-dark">Finalizar prova</button>
+    </div>
+  </form>
+
+</div>
+
+</body>
+</html>

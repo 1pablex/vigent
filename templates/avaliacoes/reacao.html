@@ -1,0 +1,79 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigent - Avaliação de reação</title>
+<link rel="stylesheet" href="{% static 'css/reacao.css' %}">
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">VIGENT<span class="dot">.</span></div>
+      <div class="course-badge mono">{{ curso.nome }}</div>
+    </div>
+    <a href="{% url 'treinamentos:inicio' %}" class="btn-close">Voltar</a>
+  </div>
+
+  <div class="stepper">
+    <div class="step done">
+      <div class="step-circle">✓</div>
+      Conteúdo
+    </div>
+    <span class="step-arrow">→</span>
+    <div class="step active">
+      <div class="step-circle">2</div>
+      Avaliação de reação
+    </div>
+    <span class="step-arrow">→</span>
+    <div class="step pending">
+      <div class="step-circle">3</div>
+      Prova
+    </div>
+  </div>
+
+  <div class="page-header">
+    <h1>Avaliação de reação</h1>
+    <p>Liberada após a conclusão de todas as aulas. Obrigatória para acessar a prova.</p>
+  </div>
+
+  {% if erro %}
+    <div class="erro">{{ erro }}</div>
+  {% endif %}
+
+  <form method="post" class="card">
+    {% csrf_token %}
+
+    <p class="card-note">Suas respostas são registradas para que o RH avalie a qualidade do treinamento. Não influenciam a nota da prova.</p>
+
+    <p class="question-label">Como você avalia a didática do conteúdo?</p>
+    <div class="scale-row">
+      {% for n in escala %}
+        <input type="radio" name="didatica" value="{{ n }}" id="didatica-{{ n }}" class="scale-radio" required>
+        <label for="didatica-{{ n }}" class="scale-option">{{ n }}</label>
+      {% endfor %}
+    </div>
+
+    <p class="question-label">Você sente que entendeu o conteúdo apresentado?</p>
+    <div class="scale-row">
+      {% for n in escala %}
+        <input type="radio" name="entendimento" value="{{ n }}" id="entendimento-{{ n }}" class="scale-radio" required>
+        <label for="entendimento-{{ n }}" class="scale-option">{{ n }}</label>
+      {% endfor %}
+    </div>
+
+    <p class="question-label">Comentário (opcional)</p>
+    <textarea name="comentario" placeholder="O que poderia melhorar neste treinamento?"></textarea>
+
+    <div class="card-footer">
+      <button type="submit" class="btn-dark">Enviar e liberar a prova →</button>
+    </div>
+  </form>
+
+</div>
+
+</body>
+</html>

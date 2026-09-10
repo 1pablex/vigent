@@ -152,3 +152,6 @@ VIGENT = {
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = "nao-responda@vigent.local"
+
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"

@@ -1,0 +1,139 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigent - {{ curso.nome }}</title>
+<link rel="stylesheet" href="{% static 'css/curso.css' %}">
+</head>
+<body>
+
+<div class="container">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">VIGENT<span class="dot">.</span></div>
+      <div class="course-badge mono">{{ curso.nome }}</div>
+    </div>
+    <a href="{% url 'treinamentos:inicio' %}" class="btn-close">Voltar</a>
+  </div>
+
+  <div class="stepper">
+    <div class="step active">
+      <div class="step-circle">1</div>
+      Conteúdo
+    </div>
+    <span class="step-arrow">→</span>
+    <div class="step pending">
+      <div class="step-circle">2</div>
+      Avaliação de reação
+    </div>
+    <span class="step-arrow">→</span>
+    <div class="step pending">
+      <div class="step-circle">3</div>
+      Prova
+    </div>
+  </div>
+
+  <div class="lesson-header">
+    <div>
+      <h1>Aula {{ aula.ordem }} — {{ aula.titulo }}</h1>
+      <p class="lesson-sub">Aula {{ aula.ordem }} de {{ total_aulas }}</p>
+    </div>
+    {% if presenca %}
+      <div class="presence-badge mono">✓ PRESENÇA REGISTRADA · {{ presenca.data_hora_acesso|date:"d/m/Y H:i" }}</div>
+    {% endif %}
+  </div>
+
+  <div class="lesson-tabs">
+    {% for item in navegacao %}
+      {% if item.liberada %}
+        <a href="{% url 'treinamentos:curso' curso.id %}?aula={{ item.aula.id }}"
+           class="lesson-tab {% if item.atual %}active{% endif %}">
+          Aula {{ item.aula.ordem }}{% if item.concluida %} ✓{% endif %}
+        </a>
+      {% else %}
+        <span class="lesson-tab locked">Aula {{ item.aula.ordem }}</span>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="progress-row">
+    <span>Slide {{ posicao }} de {{ total_slides }}</span>
+    <span class="mono">{{ percentual }}% da aula percorrido</span>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-bar-fill" style="width: {{ percentual }}%;" ></div>
+  </div>
+
+  <div class="slide-viewer">
+    <div class="slide-eyebrow mono">AULA {{ aula.ordem }} · SLIDE {{ posicao }}</div>
+    {% if slide %}
+      {% if slide.imagem %}
+        <img src="{{ slide.imagem.url }}" alt="{{ slide.titulo }}" class="slide-image">
+        {% if slide.corpo %}<p>{{ slide.corpo|safe }}</p>{% endif %}
+      {% else %}
+        <h2>{{ slide.titulo }}</h2>
+        {% if slide.corpo %}<p>{{ slide.corpo|safe }}</p>{% endif %}
+      {% endif %}
+    {% else %}
+      <p>Esta aula ainda não tem slides cadastrados.</p>
+    {% endif %}
+    <div class="slide-counter mono">{{ posicao }} / {{ total_slides }}</div>
+  </div>
+
+  <div class="nav-controls">
+    {% if anterior is not None %}
+      <a href="{% url 'treinamentos:curso' curso.id %}?aula={{ aula.id }}&slide={{ anterior }}" class="nav-btn">←</a>
+    {% else %}
+      <button class="nav-btn" disabled>←</button>
+    {% endif %}
+
+    <div class="dots">
+      {% for m in marcadores %}
+        {% if m.visto %}
+          <a href="{% url 'treinamentos:curso' curso.id %}?aula={{ aula.id }}&slide={{ m.ordem }}"
+             class="dot {% if m.atual %}active{% endif %}"></a>
+        {% else %}
+          <div class="dot"></div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {% if seguinte is not None %}
+      <a href="{% url 'treinamentos:curso' curso.id %}?aula={{ aula.id }}&slide={{ seguinte }}" class="nav-btn">→</a>
+    {% else %}
+      <button class="nav-btn" disabled>→</button>
+    {% endif %}
+  </div>
+
+  {% if not concluida %}
+    <div class="lock-bar">
+      <div>
+        <h3>Etapa seguinte bloqueada</h3>
+        <p>Percorra todos os slides desta aula para continuar.</p>
+      </div>
+      <button class="btn-locked" disabled>Bloqueado</button>
+    </div>
+  {% elif proxima %}
+    <div class="lock-bar">
+      <div>
+        <h3>Aula concluída</h3>
+        <p>Você já pode seguir para a próxima aula.</p>
+      </div>
+      <a href="{% url 'treinamentos:curso' curso.id %}?aula={{ proxima.id }}" class="btn-unlocked">Ir para a aula {{ proxima.ordem }} →</a>
+    </div>
+  {% elif curso_concluido %}
+    <div class="lock-bar">
+      <div>
+        <h3>Conteúdo concluído</h3>
+        <p>Você já pode seguir para a avaliação de reação.</p>
+      </div>
+      <a href="{% url 'avaliacoes:reacao' curso.id %}" class="btn-unlocked">Ir para a avaliação de reação →</a>
+    </div>
+  {% endif %}
+
+</div>
+
+</body>
+</html>
