@@ -10,9 +10,11 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: atribuição de
 
 Este repositório está em desenvolvimento. 
 
-- Banco de dados: campo `senha_provisoria` no model `Usuario`
-- Back-end: `SenhaProvisoriaMiddleware` intercepta toda requisição enquanto a senha não for trocada; a view `definir_senha` processa a troca
-- Front-end: tela de login e tela de definição de senha
+- **Banco de dados**: campo `senha_provisoria` no model `Usuario`
+- **Back-end**: `SenhaProvisoriaMiddleware` intercepta toda requisição enquanto a senha não for trocada; a view `definir_senha` processa a troca
+- **Front-end**: tela de login e tela de definição de senha
+- **Avaliação de reação** (RN-06) — obrigatória antes da prova, não influencia a nota
+- **Prova de conhecimento** (RN-09, RN-20) — questões em ordem fixa, histórico de tentativas preservado
 
 Falta:
 O restante do fluxo (conteúdo do curso, avaliação de reação, prova, certificado) já tem a lógica de back-end escrita, falta conectar os templates.
@@ -41,11 +43,17 @@ O restante do fluxo (conteúdo do curso, avaliação de reação, prova, certifi
    ```
    python manage.py migrate
    ```
-6. Suba o servidor:
+
+6. Popule o banco com dados de demonstração (opcional, recomendado):
+    ```
+   python manage.py carregar_dados_colaboradores
+   python manage.py carregar_dados_cursos
+   ```
+7. Suba o servidor:
    ```
    python manage.py runserver
    ```
-7. Acesse `http://127.0.0.1:8000/`
+8. Acesse `http://127.0.0.1:8000/`
 
 ## Estrutura dos apps
 
