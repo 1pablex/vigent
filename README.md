@@ -1,23 +1,23 @@
 # Vigent
 
-Plataforma de gestão de treinamentos corporativos. Projeto Final de Curso (PFC), Engenharia de Software, Universidade de Mogi das Cruzes.
+Plataforma de gestão de treinamentos corporativos obrigatórios — Projeto Final de Curso (PFC), Engenharia de Software, Universidade de Mogi das Cruzes.
 
 ## Sobre o projeto
 
 O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: atribuição de curso, percurso de conteúdo, avaliação de reação, prova de conhecimento e emissão de certificado, com trilha de auditoria.
 
-## Status atual ( em desenvolvimento para a entrega do dia 14/09/2026)
+## Status atual
 
-Este repositório está em desenvolvimento. 
+O fluxo de treinamento está completo, de ponta a ponta:
 
-- **Banco de dados**: campo `senha_provisoria` no model `Usuario`
-- **Back-end**: `SenhaProvisoriaMiddleware` intercepta toda requisição enquanto a senha não for trocada; a view `definir_senha` processa a troca
-- **Front-end**: tela de login e tela de definição de senha
+- **Login e senha provisória** (RN-27) — bloqueio de acesso até a troca da senha no primeiro acesso
+- **Conteúdo do curso** (RN-23) — percurso por slides, com trava de avanço sequencial
 - **Avaliação de reação** (RN-06) — obrigatória antes da prova, não influencia a nota
 - **Prova de conhecimento** (RN-09, RN-20) — questões em ordem fixa, histórico de tentativas preservado
+- **Certificado** (RN-08, RN-21) — emissão automática após aprovação, com nota mínima e reação registrada como pré-requisitos, gravando a versão do curso vigente. Ainda não existe tela própria para visualizar ou baixar o certificado — hoje ele só é mencionado na tela de resultado da prova
+- **Reciclagem** (RN-19) — reprovação após todas as tentativas reinicia o progresso do curso
 
-Falta:
-O restante do fluxo (conteúdo do curso, avaliação de reação, prova, certificado) já tem a lógica de back-end escrita, falta conectar os templates.
+O painel de conformidade do RH, a notificação automática de vencimento, a reciclagem em lote e a visualização/PDF do certificado ainda não foram implementados — ficam para as próximas etapas.
 
 ## Stack
 
@@ -43,9 +43,8 @@ O restante do fluxo (conteúdo do curso, avaliação de reação, prova, certifi
    ```
    python manage.py migrate
    ```
-
 6. Popule o banco com dados de demonstração (opcional, recomendado):
-    ```
+   ```
    python manage.py carregar_dados_colaboradores
    python manage.py carregar_dados_cursos
    ```
@@ -54,6 +53,18 @@ O restante do fluxo (conteúdo do curso, avaliação de reação, prova, certifi
    python manage.py runserver
    ```
 8. Acesse `http://127.0.0.1:8000/`
+
+## Contas de demonstração
+
+Criadas pelo comando `carregar_dados_colaboradores`:
+
+| Papel | E-mail | Senha |
+|---|---|---|
+| RH | ricardo.lima@nortex.com.br | 123456 |
+| Colaboradora (Vendas) | fernanda.lima@nortex.com.br | 123456 |
+| Primeiro acesso (Sala Limpa) | bruno.tavares@nortex.com.br | Nortex@2026 |
+
+O comando `carregar_dados_cursos` cria três treinamentos: **LGPD — Proteção de Dados** e **Código de Conduta Ética** (todos os departamentos), e **Parametrização de Sala Limpa** (restrito ao departamento Sala Limpa) — cada um já com aulas, slides, prova e questões prontas para teste.
 
 ## Estrutura dos apps
 
@@ -64,4 +75,4 @@ O restante do fluxo (conteúdo do curso, avaliação de reação, prova, certifi
 | `avaliacoes` | Avaliação de reação e prova |
 | `certificacao` | Certificados |
 | `auditoria` | Logs, e-mails enviados, registros de acesso |
-| `relatorios` | Camada de regras de negócio (`services.py`) e ponto de entrada pós-login |
+| `relatorios` | Camada de regras de negócio (`services.py`), ponto de entrada pós-login e comandos de carga de dados |
