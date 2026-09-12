@@ -1,6 +1,6 @@
 # Vigent
 
-Plataforma de gestão de treinamentos corporativos obrigatórios — Projeto Final de Curso (PFC), Engenharia de Software, Universidade de Mogi das Cruzes.
+Plataforma de gestão de treinamentos corporativos obrigatórios. Projeto Final de Curso (PFC), Engenharia de Software, Universidade de Mogi das Cruzes.
 
 ## Sobre o projeto
 
@@ -14,8 +14,9 @@ O fluxo de treinamento está completo, de ponta a ponta:
 - **Conteúdo do curso** (RN-23) — percurso por slides, com trava de avanço sequencial
 - **Avaliação de reação** (RN-06) — obrigatória antes da prova, não influencia a nota
 - **Prova de conhecimento** (RN-09, RN-20) — questões em ordem fixa, histórico de tentativas preservado
-- **Certificado** (RN-08, RN-21) — emissão automática após aprovação, com nota mínima e reação registrada como pré-requisitos, gravando a versão do curso vigente. Ainda não existe tela própria para visualizar ou baixar o certificado — hoje ele só é mencionado na tela de resultado da prova
+- **Certificado** (RN-08, RN-21) — emissão automática após aprovação, com nota mínima e reação registrada como pré-requisitos, gravando a versão do curso vigente. Ainda não existe tela própria para visualizar ou baixar o certificado, hoje ele só é mencionado na tela de resultado da prova
 - **Reciclagem** (RN-19) — reprovação após todas as tentativas reinicia o progresso do curso
+
 
 O painel de conformidade do RH, a notificação automática de vencimento, a reciclagem em lote e a visualização/PDF do certificado ainda não foram implementados ficam para as próximas etapas.
 
