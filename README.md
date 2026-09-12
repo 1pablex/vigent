@@ -17,7 +17,7 @@ O fluxo de treinamento está completo, de ponta a ponta:
 - **Certificado** (RN-08, RN-21) — emissão automática após aprovação, com nota mínima e reação registrada como pré-requisitos, gravando a versão do curso vigente. Ainda não existe tela própria para visualizar ou baixar o certificado — hoje ele só é mencionado na tela de resultado da prova
 - **Reciclagem** (RN-19) — reprovação após todas as tentativas reinicia o progresso do curso
 
-O painel de conformidade do RH, a notificação automática de vencimento, a reciclagem em lote e a visualização/PDF do certificado ainda não foram implementados — ficam para as próximas etapas.
+O painel de conformidade do RH, a notificação automática de vencimento, a reciclagem em lote e a visualização/PDF do certificado ainda não foram implementados ficam para as próximas etapas.
 
 ## Stack
 
@@ -64,7 +64,7 @@ Criadas pelo comando `carregar_dados_colaboradores`:
 | Colaboradora (Vendas) | fernanda.lima@nortex.com.br | 123456 |
 | Primeiro acesso (Sala Limpa) | bruno.tavares@nortex.com.br | Nortex@2026 |
 
-O comando `carregar_dados_cursos` cria três treinamentos: **LGPD — Proteção de Dados** e **Código de Conduta Ética** (todos os departamentos), e **Parametrização de Sala Limpa** (restrito ao departamento Sala Limpa) — cada um já com aulas, slides, prova e questões prontas para teste.
+O comando `carregar_dados_cursos` cria três treinamentos: **LGPD — Proteção de Dados** e **Código de Conduta Ética** (todos os departamentos), e **Parametrização de Sala Limpa** (restrito ao departamento Sala Limpa) cada um já com aulas, slides, prova e questões prontas para teste.
 
 ## Estrutura dos apps
 
@@ -75,4 +75,4 @@ O comando `carregar_dados_cursos` cria três treinamentos: **LGPD — Proteção
 | `avaliacoes` | Avaliação de reação e prova |
 | `certificacao` | Certificados |
 | `auditoria` | Logs, e-mails enviados, registros de acesso |
-| `relatorios` | Camada de regras de negócio (`services.py`), ponto de entrada pós-login e comandos de carga de dados |
+| `core` | Camada de regras de negócio (`services.py`), ponto de entrada pós-login e comandos de carga de dados |

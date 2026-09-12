@@ -33,7 +33,7 @@ INSTALLED_APPS = [
     'treinamentos',
     'auditoria',
     'avaliacoes',
-    'relatorios',
+    'core',
     'certificacao',
 ]
 
@@ -142,7 +142,7 @@ AUTH_USER_MODEL = "contas.Usuario"
 AUTHENTICATION_BACKENDS = ["contas.backends.EmailBackend"]
 
 LOGIN_URL = "contas:login"
-LOGIN_REDIRECT_URL = "relatorios:inicio"
+LOGIN_REDIRECT_URL = "core:inicio"
 LOGOUT_REDIRECT_URL = "contas:login"
 
 VIGENT = {

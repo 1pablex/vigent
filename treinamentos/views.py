@@ -2,7 +2,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
-from relatorios import services
+from core import services
 from treinamentos.models import Aula, Curso
 
 

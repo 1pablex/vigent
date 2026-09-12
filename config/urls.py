@@ -9,7 +9,7 @@ urlpatterns = [
     path('conta/', include('contas.urls')),
     path('treinamentos/', include('treinamentos.urls')),
     path('avaliacoes/', include('avaliacoes.urls')),
-    path('relatorios/', include('relatorios.urls')),
+    path('', include('core.urls')),
 ]
 
 if settings.DEBUG:

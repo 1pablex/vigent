@@ -11,8 +11,8 @@ from django.utils import timezone
 
 from auditoria.models import LogSistema, RegistroAcesso
 from contas.models import Departamento, Usuario
-from relatorios.correio import enviar_primeiro_acesso
-from relatorios.services import registrar
+from core.correio import enviar_primeiro_acesso
+from core.services import registrar
 
 
 def _ip(request):
@@ -45,7 +45,7 @@ def _bloqueado_por_forca_bruta(email, ip):
 
 def tela_login(request):
     if request.user.is_authenticated:
-        return redirect("relatorios:inicio")
+        return redirect("core:inicio")
 
     erro = None
     if request.method == "POST":
@@ -91,7 +91,7 @@ def tela_login(request):
                       usuario, ip)
             if usuario.senha_provisoria:                            # RN-27
                 return redirect("contas:definir_senha")
-            return redirect("relatorios:inicio")
+            return redirect("core:inicio")
 
     return render(request, "contas/login.html", {"erro": erro})
 
@@ -104,7 +104,7 @@ def sair(request):
 def definir_senha(request):
     """RN-27 — troca obrigatória no primeiro acesso."""
     if not request.user.senha_provisoria:
-        return redirect("relatorios:inicio")
+        return redirect("core:inicio")
 
     erro = None
     if request.method == "POST":
@@ -124,7 +124,7 @@ def definir_senha(request):
             registrar(LogSistema.Nivel.INFO, "Senha alterada",
                       "Troca obrigatória concluída", request.user)
             messages.success(request, "Senha definida com sucesso.")
-            return redirect("relatorios:inicio")
+            return redirect("core:inicio")
 
     return render(request, "contas/definir_senha.html", {"erro": erro})
 
@@ -132,7 +132,7 @@ def definir_senha(request):
 def cadastrar_colaborador(request):
     """RF-14, RF-27, RF-32, RN-15, RN-32, RN-33."""
     if not request.user.e_rh:
-        return redirect("relatorios:inicio")
+        return redirect("core:inicio")
 
     erro = None
     if request.method == "POST":
@@ -165,7 +165,7 @@ def cadastrar_colaborador(request):
                 request,
                 f"Matrícula {novo.matricula} atribuída. "
                 f"As credenciais foram enviadas para {email}.")
-            return redirect("relatorios:colaboradores")
+            return redirect("core:colaboradores")
 
     return render(request, "contas/cadastrar.html", {
         "erro": erro,

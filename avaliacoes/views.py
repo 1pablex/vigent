@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from auditoria.models import LogSistema
 from avaliacoes.models import AvaliacaoReacao
-from relatorios import services
+from core import services
 from treinamentos.models import Curso
 
 """Avaliação de reação e prova de conhecimento."""
