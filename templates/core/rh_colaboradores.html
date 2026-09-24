@@ -1,0 +1,55 @@
+{% extends "core/rh_base.html" %}
+{% block titulo %}Colaboradores{% endblock %}
+{% block conteudo %}
+
+<div class="head">
+  <div><h1>Colaboradores</h1>
+    <div class="sub">O cadastro é privativo do RH. O acesso acompanha o vínculo empregatício.</div></div>
+  <a class="btn btn-primary" href="{% url 'contas:cadastrar' %}">+ Cadastrar colaborador</a>
+</div>
+
+<div class="card">
+  <div class="head" style="margin-bottom:14px">
+    <form method="get" style="display:flex;gap:9px;flex-wrap:wrap">
+      <input class="search" name="busca" value="{{ busca }}" placeholder="Buscar por matrícula, nome ou e-mail">
+      <select class="search" name="departamento" onchange="this.form.submit()">
+        <option value="TODOS" {% if departamento_selecionado == "TODOS" %}selected{% endif %}>Todos os departamentos</option>
+        {% for dep in departamentos %}
+          <option value="{{ dep.id }}" {% if departamento_selecionado == dep.id|stringformat:"s" %}selected{% endif %}>{{ dep.nome }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-ghost btn-sm">Filtrar</button>
+    </form>
+    <span class="pill-soft">{{ total_ativos }} ativos · {{ total_desligados }} desligados</span>
+  </div>
+
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Matrícula</th><th>Nome</th><th>E-mail corporativo</th><th>Cargo</th>
+      <th>Departamento</th><th>Grupo</th><th>Conta</th></tr></thead>
+    <tbody>
+      {% for c in colaboradores %}
+      <tr>
+        <td class="mono">{{ c.matricula }}</td>
+        <td>{{ c.nome }}</td>
+        <td class="mono">{{ c.email }}</td>
+        <td>{{ c.cargo }}</td>
+        <td>{{ c.departamento.nome|default:"—" }}</td>
+        <td>
+          {% if c.e_rh %}<span class="badge badge-warn">RH</span>
+          {% else %}<span class="badge badge-idle">Colaborador</span>{% endif %}
+        </td>
+        <td>
+          {% if c.is_active %}<span class="badge badge-ok">Ativa</span>
+          {% else %}<span class="badge badge-expired">Desligado</span>{% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="sub" style="text-align:center;padding:30px 0">Nenhum colaborador encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% endblock %}

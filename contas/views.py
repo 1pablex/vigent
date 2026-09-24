@@ -14,6 +14,10 @@ from contas.models import Departamento, Usuario
 from core.correio import enviar_primeiro_acesso
 from core.services import registrar
 
+from core.correio import enviar_codigo_verificacao, enviar_primeiro_acesso
+from core.services import gerar_codigo_verificacao, registrar
+from contas.models import CodigoVerificacao, Departamento, Usuario
+
 
 def _ip(request):
     encaminhado = request.META.get("HTTP_X_FORWARDED_FOR")
@@ -81,17 +85,12 @@ def tela_login(request):
                     identificacao=email or "—", evento="Credencial inválida",
                     grupo="—", ip=ip, resultado="Negado")
         else:
-            login(request, usuario)
-            RegistroAcesso.objects.create(
-                identificacao=usuario.email, evento="Login realizado",
-                grupo=usuario.get_grupo_display(), ip=ip,
-                resultado="Autorizado")
-            registrar(LogSistema.Nivel.INFO, "Login realizado",
-                      f"{usuario.nome} — grupo {usuario.get_grupo_display()}",
-                      usuario, ip)
-            if usuario.senha_provisoria:                            # RN-27
-                return redirect("contas:definir_senha")
-            return redirect("core:inicio")
+            codigo_obj = gerar_codigo_verificacao(usuario)
+            enviar_codigo_verificacao(usuario, codigo_obj)
+            request.session["pre_2fa_usuario_id"] = usuario.id
+            registrar(LogSistema.Nivel.INFO, "Código de verificação enviado",
+                      f"Senha correta para {usuario.email}; aguardando segundo fator", ip=ip)
+            return redirect("contas:verificar_codigo")
 
     return render(request, "contas/login.html", {"erro": erro})
 
@@ -165,7 +164,7 @@ def cadastrar_colaborador(request):
                 request,
                 f"Matrícula {novo.matricula} atribuída. "
                 f"As credenciais foram enviadas para {email}.")
-            return redirect("core:colaboradores")
+            return redirect("core:rh_colaboradores")
 
     return render(request, "contas/cadastrar.html", {
         "erro": erro,
@@ -173,3 +172,43 @@ def cadastrar_colaborador(request):
         "grupos": Usuario.Grupo.choices,
         "valores": request.POST,
     })
+
+def verificar_codigo(request):
+    usuario_id = request.session.get("pre_2fa_usuario_id")
+    if not usuario_id:
+        return redirect("contas:login")
+    usuario = Usuario.objects.filter(pk=usuario_id).first()
+    if usuario is None:
+        del request.session["pre_2fa_usuario_id"]
+        return redirect("contas:login")
+
+    erro = None
+    if request.method == "POST":
+        if "reenviar" in request.POST:
+            codigo_obj = gerar_codigo_verificacao(usuario)
+            enviar_codigo_verificacao(usuario, codigo_obj)
+            messages.success(request, "Um novo código foi enviado.")
+        else:
+            digitado = (request.POST.get("codigo") or "").strip()
+            pendente = (CodigoVerificacao.objects
+                        .filter(usuario=usuario, utilizado=False)
+                        .order_by("-data_geracao").first())
+            if pendente and pendente.valido and digitado == pendente.codigo:
+                pendente.utilizado = True
+                pendente.save()
+                del request.session["pre_2fa_usuario_id"]
+                login(request, usuario)
+                ip = _ip(request)
+                RegistroAcesso.objects.create(
+                    identificacao=usuario.email, evento="Login realizado",
+                    grupo=usuario.get_grupo_display(), ip=ip, resultado="Autorizado")
+                registrar(LogSistema.Nivel.INFO, "Login realizado",
+                          f"{usuario.nome} — grupo {usuario.get_grupo_display()}",
+                          usuario, ip)
+                if usuario.senha_provisoria:
+                    return redirect("contas:definir_senha")
+                return redirect("core:inicio")
+            else:
+                erro = "Código inválido ou expirado."
+
+    return render(request, "contas/verificar_codigo.html", {"erro": erro, "email": usuario.email})
