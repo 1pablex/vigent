@@ -1,6 +1,6 @@
 # Vigent
 
-Plataforma de gestão de treinamentos corporativos obrigatórios. Projeto Final de Curso (PFC), Engenharia de Software, Universidade de Mogi das Cruzes.
+Plataforma de gestão de treinamentos corporativos obrigatórios, Projeto Final de Curso (PFC), Engenharia de Software, Universidade de Mogi das Cruzes.
 
 ## Sobre o projeto
 
@@ -8,23 +8,33 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: atribuição de
 
 ## Status atual
 
-O fluxo de treinamento está completo, de ponta a ponta:
+**Fluxo de treinamento**, completo de ponta a ponta:
+- Login com autenticação em duas etapas (segundo fator por e-mail) e senha provisória no primeiro acesso
+- Conteúdo do curso, com trava de avanço sequencial pelos slides
+- Avaliação de reação, obrigatória antes da prova
+- Prova de conhecimento, com histórico de tentativas e reciclagem após reprovações repetidas
+- Conclusão do curso registrada automaticamente na aprovação (nota mínima atingida); a tela para visualizar ou imprimir o certificado ainda não foi construída
 
-- **Login e senha provisória** (RN-27) — bloqueio de acesso até a troca da senha no primeiro acesso
-- **Conteúdo do curso** (RN-23) — percurso por slides, com trava de avanço sequencial
-- **Avaliação de reação** (RN-06) — obrigatória antes da prova, não influencia a nota
-- **Prova de conhecimento** (RN-09, RN-20) — questões em ordem fixa, histórico de tentativas preservado
-- **Certificado** (RN-08, RN-21) — emissão automática após aprovação, com nota mínima e reação registrada como pré-requisitos, gravando a versão do curso vigente. Ainda não existe tela própria para visualizar ou baixar o certificado, hoje ele só é mencionado na tela de resultado da prova
-- **Reciclagem** (RN-19) — reprovação após todas as tentativas reinicia o progresso do curso
+**Painel do RH:**
+- Cadastro de colaborador, com matrícula automática e envio de credenciais por e-mail
+- Listagem de colaboradores, com busca e filtro por departamento
+- Registros e auditoria: logs do sistema, execuções de rotina, e-mails enviados e histórico de acesso, todos com paginação e filtro
 
+**Segurança:**
+- Hash de senha com Argon2 (migração progressiva: contas antigas em PBKDF2 são atualizadas sozinhas no próximo login bem-sucedido)
+- Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail)
+- Bloqueio temporário após tentativas de login malsucedidas repetidas
+- Toda verificação de permissão ocorre no back-end, nunca só ocultando elemento na tela
 
-O painel de conformidade do RH, a notificação automática de vencimento, a reciclagem em lote e a visualização/PDF do certificado ainda não foram implementados ficam para as próximas etapas.
+**Pendente:** painel de conformidade do RH (indicadores agregados), notificação automática de vencimento, tela para visualizar e imprimir o certificado, política de privacidade e termos de uso, tela de "meus dados" para o colaborador.
 
 ## Stack
 
 - Python 3.11 ou 3.12
 - Django 5.2 (LTS)
 - PostgreSQL (local em desenvolvimento; Supabase em produção)
+- Argon2 (`argon2-cffi`): hash de senha
+- Brevo (`brevo-python`): envio de e-mail transacional via API REST, não SMTP (credenciais de primeiro acesso e código de autenticação em duas etapas)
 
 ## Como rodar localmente
 
@@ -39,7 +49,7 @@ O painel de conformidade do RH, a notificação automática de vencimento, a rec
    ```
    pip install -r requirements.txt
    ```
-4. Copie `.env.example` para `.env` e preencha `SECRET_KEY` e `DATABASE_URL`
+4. Copie `.env.example` para `.env` e preencha `SECRET_KEY`, `DATABASE_URL` e `BREVO_API_KEY`
 5. Rode as migrações:
    ```
    python manage.py migrate
@@ -65,15 +75,15 @@ Criadas pelo comando `carregar_dados_colaboradores`:
 | Colaboradora (Vendas) | fernanda.lima@nortex.com.br | 123456 |
 | Primeiro acesso (Sala Limpa) | bruno.tavares@nortex.com.br | Nortex@2026 |
 
-O comando `carregar_dados_cursos` cria três treinamentos: **LGPD — Proteção de Dados** e **Código de Conduta Ética** (todos os departamentos), e **Parametrização de Sala Limpa** (restrito ao departamento Sala Limpa) cada um já com aulas, slides, prova e questões prontas para teste.
+O comando `carregar_dados_cursos` cria três treinamentos: **LGPD (Proteção de Dados)** e **Código de Conduta Ética** (todos os departamentos), e **Parametrização de Sala Limpa** (restrito ao departamento Sala Limpa), cada um já com aulas, slides, prova e questões prontas para teste.
 
 ## Estrutura dos apps
 
 | App | Responsabilidade |
 |---|---|
-| `contas` | Usuário, autenticação, departamentos |
+| `contas` | Usuário, autenticação, autenticação em duas etapas, departamentos |
 | `treinamentos` | Cursos, aulas, slides, progresso |
 | `avaliacoes` | Avaliação de reação e prova |
 | `certificacao` | Certificados |
-| `auditoria` | Logs, e-mails enviados, registros de acesso |
-| `core` | Camada de regras de negócio (`services.py`), ponto de entrada pós-login e comandos de carga de dados |
+| `auditoria` | Logs, e-mails enviados, registros de acesso, execuções de rotina |
+| `core` | Camada de regras de negócio (`services.py`), envio de e-mail via Brevo (`correio.py`), ponto de entrada pós-login, comandos de carga de dados e as telas do painel do RH |
