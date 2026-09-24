@@ -3,6 +3,9 @@ Regras de negócio centrais do Vigent para a entrega de 14/09.
 
 Cobre apenas o necessário para login e para o fluxo de treinamento completo (conteúdo, avaliação de reação, prova, certificado).
 """
+import secrets
+from datetime import timedelta
+from django.conf import settings
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 
@@ -10,13 +13,21 @@ from auditoria.models import LogSistema
 from avaliacoes.models import AvaliacaoReacao, RespostaProva
 from certificacao.models import Certificado
 from treinamentos.models import Curso, Presenca, ProgressoAula
-
+from contas.models import CodigoVerificacao
 
 def registrar(nivel, evento, detalhe="", usuario=None, ip=None):
     return LogSistema.objects.create(
         nivel=nivel, evento=evento, detalhe=detalhe, usuario=usuario, ip=ip
     )
 
+def gerar_codigo_verificacao(usuario):
+    """RN-18 — código de 6 dígitos, válido por 5 minutos, uso único."""
+    codigo = f"{secrets.randbelow(1_000_000):06d}"
+    minutos = settings.VIGENT["VALIDADE_CODIGO_2FA_MIN"]
+    return CodigoVerificacao.objects.create(
+        usuario=usuario, codigo=codigo,
+        data_expiracao=timezone.now() + timedelta(minutes=minutos),
+    )
 
 #RN-02/RN-04 visibilidade de cursos
 def cursos_do_usuario(usuario):

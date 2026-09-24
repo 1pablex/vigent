@@ -1,0 +1,51 @@
+{% extends "core/rh_base.html" %}
+{% block titulo %}Cadastrar colaborador{% endblock %}
+{% block conteudo %}
+
+<div class="head">
+  <div><h1>Cadastrar colaborador</h1>
+    <div class="sub">A matrícula é atribuída automaticamente, por ordem de cadastro, e não pode ser alterada depois.</div></div>
+    <a class="btn btn-ghost" href="{% url 'core:rh_colaboradores' %}">← Voltar</a>
+</div>
+
+<div class="card">
+  {% if erro %}
+    <p class="err">{{ erro }}</p>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="g2" style="margin-bottom:0">
+      <div class="field"><div class="q-lbl">Nome completo</div>
+        <input class="txt" name="nome" value="{{ valores.nome }}" placeholder="Nome e sobrenome" autofocus></div>
+      <div class="field"><div class="q-lbl">E-mail corporativo</div>
+        <input class="txt" name="email" value="{{ valores.email }}" placeholder="nome.sobrenome@nortex.com.br"></div>
+      <div class="field"><div class="q-lbl">Cargo</div>
+        <input class="txt" name="cargo" value="{{ valores.cargo }}" placeholder="Analista, Técnico, Assistente…"></div>
+      <div class="field"><div class="q-lbl">Departamento</div>
+        <select class="search" name="departamento" style="width:100%">
+          <option value="">— Nenhum —</option>
+          {% for dep in departamentos %}
+            <option value="{{ dep.id }}" {% if valores.departamento == dep.id|stringformat:"s" %}selected{% endif %}>{{ dep.nome }}</option>
+          {% endfor %}
+        </select></div>
+    </div>
+    <div class="field">
+      <div class="q-lbl">Perfil de acesso</div>
+      <select class="search" name="grupo" style="width:100%;max-width:280px">
+        {% for valor, rotulo in grupos %}
+          <option value="{{ valor }}" {% if valores.grupo == valor %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <p class="sub" style="margin:0 0 16px">
+      O sistema gera uma senha provisória e a envia por e-mail ao próprio colaborador,
+      que deverá substituí-la no primeiro acesso. Os treinamentos do departamento escolhido
+      passam a valer imediatamente.</p>
+    <div style="display:flex;justify-content:flex-end;align-items:center;gap:14px">
+      <a class="btn btn-ghost" href="{% url 'core:rh_colaboradores' %}">Cancelar</a>
+      <button class="btn btn-primary">Cadastrar</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
