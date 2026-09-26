@@ -60,6 +60,8 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     data_cadastro = models.DateTimeField(default=timezone.now, editable=False)
+    aceitou_termos = models.BooleanField(default=False)
+    data_aceite_termos = models.DateTimeField(null=True, blank=True)
 
     objects = UsuarioManager()
 

@@ -14,7 +14,7 @@ from contas.models import Departamento, Usuario
 from core.correio import enviar_primeiro_acesso
 from core.services import registrar
 
-from core.correio import enviar_codigo_verificacao, enviar_primeiro_acesso
+from core.correio import enviar_codigo_verificacao, enviar_primeiro_acesso, enviar_codigo_redefinicao
 from core.services import gerar_codigo_verificacao, registrar
 from contas.models import CodigoVerificacao, Departamento, Usuario
 
@@ -84,6 +84,18 @@ def tela_login(request):
                 RegistroAcesso.objects.create(
                     identificacao=email or "—", evento="Credencial inválida",
                     grupo="—", ip=ip, resultado="Negado")
+        elif usuario.senha_provisoria:
+            # Login com senha provisória: pula o 2FA — o código chegaria pelo
+            # mesmo e-mail que já entregou a credencial, então não agrega
+            # segurança aqui. Vai direto para a troca obrigatória de senha.
+            login(request, usuario)
+            RegistroAcesso.objects.create(
+                identificacao=usuario.email, evento="Login realizado",
+                grupo=usuario.get_grupo_display(), ip=ip, resultado="Autorizado")
+            registrar(LogSistema.Nivel.INFO, "Login realizado (senha provisória)",
+                      f"{usuario.nome} — grupo {usuario.get_grupo_display()}; "
+                      f"2FA dispensado no primeiro acesso", usuario, ip)
+            return redirect("contas:definir_senha")
         else:
             codigo_obj = gerar_codigo_verificacao(usuario)
             enviar_codigo_verificacao(usuario, codigo_obj)
@@ -97,6 +109,10 @@ def tela_login(request):
 def sair(request):
     logout(request)
     return redirect("contas:login")
+
+
+def ver_politica_privacidade(request):
+    return render(request, "contas/politica_privacidade.html")
 
 #obrigatorio apos o login, para que o usuario troque a senha provisoria
 @login_required
@@ -212,3 +228,79 @@ def verificar_codigo(request):
                 erro = "Código inválido ou expirado."
 
     return render(request, "contas/verificar_codigo.html", {"erro": erro, "email": usuario.email})
+
+def esqueci_senha(request):
+    erro = None
+    if request.method == "POST":
+        email = (request.POST.get("email") or "").strip().lower()
+        if not email:
+            erro = "Informe seu e-mail corporativo."
+        else:
+            usuario = Usuario.objects.filter(email=email, is_active=True).first()
+            if usuario:
+                codigo_obj = gerar_codigo_verificacao(usuario)
+                enviar_codigo_redefinicao(usuario, codigo_obj)
+                registrar(LogSistema.Nivel.INFO, "Código de redefinição enviado",
+                          f"Solicitação de redefinição para {email}", ip=_ip(request))
+            request.session["reset_email"] = email
+            messages.success(request, "Se o e-mail informado estiver cadastrado, um código foi enviado.")
+            return redirect("contas:redefinir_senha")
+
+    return render(request, "contas/esqueci_senha.html", {"erro": erro})
+
+
+def redefinir_senha(request):
+    email = request.session.get("reset_email")
+    if not email:
+        return redirect("contas:esqueci_senha")
+
+    erro = None
+    if request.method == "POST":
+        codigo_digitado = (request.POST.get("codigo") or "").strip()
+        nova = request.POST.get("nova1") or ""
+        repetida = request.POST.get("nova2") or ""
+
+        usuario = Usuario.objects.filter(email=email, is_active=True).first()
+        pendente = None
+        if usuario:
+            pendente = (CodigoVerificacao.objects
+                        .filter(usuario=usuario, utilizado=False)
+                        .order_by("-data_geracao").first())
+
+        if len(nova) < 6:
+            erro = "A senha deve ter ao menos 6 caracteres."
+        elif nova != repetida:
+            erro = "As senhas não coincidem."
+        elif not usuario or not pendente or not pendente.valido or codigo_digitado != pendente.codigo:
+            erro = "Código inválido ou expirado."
+        else:
+            pendente.utilizado = True
+            pendente.save()
+            usuario.set_password(nova)
+            usuario.senha_provisoria = False
+            usuario.save()
+            del request.session["reset_email"]
+            registrar(LogSistema.Nivel.INFO, "Senha redefinida",
+                      "Redefinição via 'esqueci minha senha' concluída", usuario)
+            messages.success(request, "Senha redefinida com sucesso. Faça login com a nova senha.")
+            return redirect("contas:login")
+
+    return render(request, "contas/redefinir_senha.html", {"erro": erro, "email": email})
+@login_required
+def aceitar_termo(request):
+    if request.user.aceitou_termos:
+        return redirect("core:inicio")
+
+    erro = None
+    if request.method == "POST":
+        if request.POST.get("aceito") == "on":
+            request.user.aceitou_termos = True
+            request.user.data_aceite_termos = timezone.now()
+            request.user.save()
+            registrar(LogSistema.Nivel.INFO, "Termo de uso aceito",
+                      "Aceite registrado no primeiro acesso pós-definição de senha",
+                      request.user)
+            return redirect("core:inicio")
+        erro = "É necessário marcar a caixa de aceite para continuar."
+
+    return render(request, "contas/aceitar_termo.html", {"erro": erro})

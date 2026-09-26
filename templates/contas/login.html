@@ -12,7 +12,7 @@
     <div class="logo">VIGENT<span class="dot">.</span></div>
 
     <h1>Acesso à plataforma</h1>
-    <p class="subtitle">Autenticação por e-mail corporativo</p>
+    <p class="subtitle">A sua plafatorma de cursos corporativos</p>
 
     <form method="post">
       {% csrf_token %}
@@ -23,13 +23,16 @@
 
       <div class="field">
         <label for="email">E-mail corporativo</label>
-        <input type="email" id="email" name="email" placeholder="nome.sobrenome@organizacao.com.br" required>
+        <input type="email" id="email" name="email" placeholder="email@email.com.br" required>
       </div>
 
       <div class="field">
         <label for="password">Senha</label>
         <input type="password" id="password" name="senha" placeholder="••••••" required>
       </div>
+      <a class="link-out" style="margin-top:-8px;margin-bottom:16px;text-align:center;display:block"
+      href="{% url 'contas:esqueci_senha' %}">Esqueci minha senha</a>
+      <a class="link-out" href="{% url 'contas:politica_privacidade' %}" target="_blank">Política de Privacidade</a>
 
       <button type="submit">Entrar</button>
     </form>

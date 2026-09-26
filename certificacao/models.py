@@ -32,3 +32,18 @@ class Certificado(models.Model):
         if d <= 30:
             return "VENCENDO"
         return "EM DIA"
+
+class NotificacaoEnviada(models.Model):
+    """RN-11 trava de idempotencia: um e-mail por marco, nunca repetido."""
+
+    certificado = models.ForeignKey(Certificado, on_delete=models.CASCADE, related_name="notificacoes")
+    marco_dias = models.PositiveSmallIntegerField()
+    data_envio = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("certificado", "marco_dias")]
+        verbose_name = "notificação enviada"
+        verbose_name_plural = "notificações enviadas"
+
+    def __str__(self):
+        return f"{self.certificado} — {self.marco_dias} dias"

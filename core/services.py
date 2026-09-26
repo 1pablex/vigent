@@ -1,19 +1,19 @@
 """
-Regras de negócio centrais do Vigent para a entrega de 14/09.
-
-Cobre apenas o necessário para login e para o fluxo de treinamento completo (conteúdo, avaliação de reação, prova, certificado).
+regras de negócio do sistema, implementadas como funções de serviço.
 """
 import secrets
+from collections import defaultdict
 from datetime import timedelta
 from django.conf import settings
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
+from django.db.models import Avg
 
 from auditoria.models import LogSistema
 from avaliacoes.models import AvaliacaoReacao, RespostaProva
 from certificacao.models import Certificado
 from treinamentos.models import Curso, Presenca, ProgressoAula
-from contas.models import CodigoVerificacao
+from contas.models import CodigoVerificacao, Usuario
 
 def registrar(nivel, evento, detalhe="", usuario=None, ip=None):
     return LogSistema.objects.create(
@@ -21,7 +21,7 @@ def registrar(nivel, evento, detalhe="", usuario=None, ip=None):
     )
 
 def gerar_codigo_verificacao(usuario):
-    """RN-18 — código de 6 dígitos, válido por 5 minutos, uso único."""
+    """RN-18 - código de 6 dígitos, válido por 5 minutos, uso único."""
     codigo = f"{secrets.randbelow(1_000_000):06d}"
     minutos = settings.VIGENT["VALIDADE_CODIGO_2FA_MIN"]
     return CodigoVerificacao.objects.create(
@@ -152,5 +152,69 @@ def corrigir_prova(usuario, curso, marcadas):
         reciclar(usuario, curso)
         reciclou = True
         registrar(LogSistema.Nivel.WARN, "Tentativas esgotadas",
-                  f"{curso.nome} — curso reiniciado para reciclagem", usuario)
+                  f"{curso.nome} - curso reiniciado para reciclagem", usuario)
     return nota, aprovado, reciclou
+
+def matriz_conformidade():
+    """RF 11 - lista de todos os colaboradores com seus cursos e situação."""
+    linhas = []
+    colaboradores = (Usuario.objects
+                     .filter(is_active=True, grupo=Usuario.Grupo.COLABORADOR)
+                     .select_related("departamento"))
+    for usuario in colaboradores:
+        for curso in cursos_publicados_do_usuario(usuario):
+            sit, cert = situacao(usuario, curso)
+            linhas.append({"usuario": usuario, "curso": curso,
+                           "situacao": sit, "certificado": cert})
+    return linhas
+
+def kpis_conformidade(linhas):
+    """RF-12 - indicadores consolidados da organização."""
+    return {
+        "em_dia": sum(1 for l in linhas if l["situacao"] == "EM DIA"),
+        "vencendo": sum(1 for l in linhas if l["situacao"] == "VENCENDO"),
+        "vencido": sum(1 for l in linhas if l["situacao"] == "VENCIDO"),
+        "pendente": sum(1 for l in linhas if l["situacao"] == "PENDENTE"),
+    }
+
+
+def conformidade_por_departamento(linhas):
+    por_dep = defaultdict(lambda: {"total": 0, "em_dia": 0})
+    for l in linhas:
+        nome_dep = l["usuario"].departamento.nome if l["usuario"].departamento else "Sem departamento"
+        por_dep[nome_dep]["total"] += 1
+        if l["situacao"] == "EM DIA":
+            por_dep[nome_dep]["em_dia"] += 1
+
+    resultado = []
+    for dep, dados in por_dep.items():
+        pct = round(dados["em_dia"] / dados["total"] * 100) if dados["total"] else 0
+        if pct >= 90:
+            cor = "var(--green)"
+        elif pct >= 50:
+            cor = "var(--amber)"
+        else:
+            cor = "var(--red)"
+        resultado.append({"departamento": dep, "percentual": pct, "cor": cor})
+    return sorted(resultado, key=lambda x: x["percentual"])
+
+
+def qualidade_percebida(linhas):
+    """RF 13 - MEDIA, SITUACAO, CONCLUSAO."""
+    total = len(linhas)
+    pendentes = sum(1 for l in linhas if l["situacao"] == "PENDENTE")
+    taxa_conclusao = round((total - pendentes) / total * 100) if total else 0
+
+    nota_media_prova = Certificado.objects.aggregate(media=Avg("nota_prova"))["media"] or 0
+
+    reacoes = list(AvaliacaoReacao.objects.all())
+    if reacoes:
+        media_reacao = round(sum(r.media for r in reacoes) / len(reacoes), 1)
+    else:
+        media_reacao = 0
+
+    return {
+        "taxa_conclusao": taxa_conclusao,
+        "nota_media_prova": round(nota_media_prova, 1),
+        "media_reacao": media_reacao,
+    }

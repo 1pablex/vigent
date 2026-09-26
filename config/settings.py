@@ -16,9 +16,9 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 BREVO_API_KEY = os.getenv('BREVO_API_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False").strip().lower() in ("1", "true", "yes")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
 
 
 # Application definition
@@ -46,7 +46,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'contas.middleware.SenhaProvisoriaMiddleware'
+    'contas.middleware.SenhaProvisoriaMiddleware',
+    'contas.middleware.TermoAceiteMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
