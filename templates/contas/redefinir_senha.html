@@ -1,0 +1,42 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigent - Redefinir senha</title>
+<link rel="stylesheet" href="{% static 'css/vigent.css' %}">
+</head>
+<body>
+
+  <div class="logo">VIGENT<span class="dot">.</span></div>
+
+  <div class="card">
+    <h1>Redefinir senha</h1>
+    <p class="subtitle">Enviamos um código de 6 dígitos para {{ email }}. Ele expira em 5 minutos.</p>
+
+    {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
+    {% for m in messages %}<div class="erro" style="background:#dcf5ec;color:#1a9c76">{{ m }}</div>{% endfor %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="field">
+        <label for="codigo">Código de redefinição</label>
+        <input type="text" id="codigo" name="codigo" inputmode="numeric"
+               pattern="[0-9]{6}" maxlength="6" placeholder="000000" required autofocus>
+      </div>
+      <div class="field">
+        <label for="nova1">Nova senha</label>
+        <input type="password" id="nova1" name="nova1" placeholder="mínimo de 6 caracteres" required minlength="6">
+      </div>
+      <div class="field">
+        <label for="nova2">Repita a nova senha</label>
+        <input type="password" id="nova2" name="nova2" required minlength="6">
+      </div>
+      <button type="submit">Redefinir senha</button>
+    </form>
+
+    <a class="link-out" href="{% url 'contas:esqueci_senha' %}">Pedir um novo código</a>
+  </div>
+
+</body>
+</html>

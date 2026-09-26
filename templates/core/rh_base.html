@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block titulo %}Vigent{% endblock %} — Vigent</title>
+<title>{% block titulo %}Vigent{% endblock %} - Vigent</title>
 <link rel="stylesheet" href="{% static 'css/rh.css' %}">
 </head>
 <body>
@@ -22,14 +22,18 @@
   </header>
 
   <nav class="tabs">
-    <a class="btn-tab {% if secao == 'conformidade' %}active{% endif %}" href="/rh/conformidade/">Conformidade</a>
+    <a class="btn-tab {% if secao == 'conformidade' %}active{% endif %}" href="{% url 'core:rh_conformidade' %}">Conformidade</a>
     <a class="btn-tab" href="/admin/treinamentos/curso/">Cursos</a>
     <a class="btn-tab" href="/admin/treinamentos/atribuicaomanual/">Atribuições</a>
     <a class="btn-tab {% if secao == 'colaboradores' %}active{% endif %}" href="{% url 'core:rh_colaboradores' %}">Colaboradores</a>
-    <a class="btn-tab" href="{% url 'core:rh_auditoria' %}">Registros e auditoria</a>
+    <a class="btn-tab {% if secao == 'auditoria' %}active{% endif %}" href="{% url 'core:rh_auditoria' %}">Registros e auditoria</a>
   </nav>
 
   {% block conteudo %}{% endblock %}
+
+  <div style="text-align: center; margin-top: 32px; padding-bottom: 20px;">
+    <a href="{% url 'contas:politica_privacidade' %}" target="_blank" style="font-size: 12.5px; color: #8a94a6;">Política de Privacidade</a>
+  </div>
 
 </div>
 </body>

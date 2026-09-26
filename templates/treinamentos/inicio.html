@@ -58,7 +58,7 @@
             {% if item.situacao == "VENCIDO" %}
               Vencido em {{ item.certificado.data_validade|date:"d/m/Y" }}
             {% elif item.situacao == "VENCENDO" %}
-              Vence em {{ item.certificado.dias_para_vencer }} dias — notificação enviada por e-mail
+              Vence em {{ item.certificado.dias_para_vencer }} dias, notificação enviada por e-mail
             {% elif item.situacao == "EM DIA" %}
               Certificado válido até {{ item.certificado.data_validade|date:"d/m/Y" }}
             {% else %}
@@ -89,6 +89,10 @@
     {% empty %}
       <p>Nenhum treinamento atribuído ao seu perfil no momento.</p>
     {% endfor %}
+  </div>
+
+  <div style="text-align: center; margin-top: 32px;">
+    <a href="{% url 'contas:politica_privacidade' %}" target="_blank" style="font-size: 12.5px; color: #8a94a6;">Política de Privacidade</a>
   </div>
 
 </div>

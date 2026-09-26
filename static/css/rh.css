@@ -216,6 +216,7 @@ input.search{ min-width:230px; }
 .qual{ display:flex; gap:26px; flex-wrap:wrap; margin-top:11px; }
 .qual .n{ font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600; color:var(--navy); }
 table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+th.col-acao, td.col-acao{ text-align:center; }
 th{ text-align:left; font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase;
     letter-spacing:.05em; color:var(--ink-soft); padding:0 9px 9px; border-bottom:2px solid var(--ink); white-space:nowrap; }
 td{ padding:11px 9px; border-bottom:1px solid var(--line); vertical-align:top; }

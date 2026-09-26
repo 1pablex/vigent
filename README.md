@@ -9,7 +9,8 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: atribuição de
 ## Status atual
 
 **Fluxo de treinamento**, completo de ponta a ponta:
-- Login com autenticação em duas etapas (segundo fator por e-mail) e senha provisória no primeiro acesso
+- Login com autenticação em duas etapas (segundo fator por e-mail); no primeiro acesso com senha provisória, o 2FA é dispensado — o código chegaria pelo mesmo e-mail que já entregou a credencial — e o colaborador vai direto para a troca obrigatória de senha
+- Aceite obrigatório do termo de uso após a primeira troca de senha, com política de privacidade acessível a partir da tela de login
 - Conteúdo do curso, com trava de avanço sequencial pelos slides
 - Avaliação de reação, obrigatória antes da prova
 - Prova de conhecimento, com histórico de tentativas e reciclagem após reprovações repetidas
@@ -19,14 +20,17 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: atribuição de
 - Cadastro de colaborador, com matrícula automática e envio de credenciais por e-mail
 - Listagem de colaboradores, com busca e filtro por departamento
 - Registros e auditoria: logs do sistema, execuções de rotina, e-mails enviados e histórico de acesso, todos com paginação e filtro
+- Painel de conformidade: indicadores agregados (em dia, vencendo, vencido, pendente), conformidade por departamento, qualidade percebida (nota média da prova e da avaliação de reação), rotina de notificação de vencimento disparável manualmente e solicitação de reciclagem para treinamentos vencidos
 
 **Segurança:**
 - Hash de senha com Argon2 (migração progressiva: contas antigas em PBKDF2 são atualizadas sozinhas no próximo login bem-sucedido)
-- Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail)
+- Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail) em todo login com senha já definida
+- Senha provisória de uso único: deixa de valer assim que o colaborador define a senha definitiva
 - Bloqueio temporário após tentativas de login malsucedidas repetidas
 - Toda verificação de permissão ocorre no back-end, nunca só ocultando elemento na tela
+- `DEBUG` e `ALLOWED_HOSTS` controlados por variável de ambiente, nunca fixos no código
 
-**Pendente:** painel de conformidade do RH (indicadores agregados), notificação automática de vencimento, tela para visualizar e imprimir o certificado, política de privacidade e termos de uso, tela de "meus dados" para o colaborador.
+**Pendente:** tela para visualizar e imprimir o certificado, tela de "meus dados" para o colaborador.
 
 ## Stack
 
@@ -49,7 +53,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: atribuição de
    ```
    pip install -r requirements.txt
    ```
-4. Copie `.env.example` para `.env` e preencha `SECRET_KEY`, `DATABASE_URL` e `BREVO_API_KEY`
+4. Copie `.env.example` para `.env` e preencha `SECRET_KEY`, `DATABASE_URL` e `BREVO_API_KEY`. Em desenvolvimento local mantenha `DEBUG=True`; em produção defina `DEBUG=False` e liste os domínios liberados em `ALLOWED_HOSTS`
 5. Rode as migrações:
    ```
    python manage.py migrate

@@ -1,0 +1,34 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigent - Política de Privacidade</title>
+<link rel="stylesheet" href="{% static 'css/vigent.css' %}">
+<link rel="stylesheet" href="{% static 'css/politica.css' %}">
+<link rel="stylesheet" href="{% static 'css/termo.css' %}">
+</head>
+<body>
+
+  <div class="logo">VIGENT<span class="dot">.</span></div>
+
+  <div class="card">
+    <h1>Política de Privacidade</h1>
+    <p class="subtitle">Antes de continuar, é necessário ler e aceitar a política abaixo.</p>
+
+    {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
+
+    {% include "contas/_politica_conteudo.html" %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="aceite-row">
+        <input type="checkbox" id="aceito" name="aceito" required>
+        <label for="aceito">Li e aceito a Política de Privacidade do Vigent.</label>
+      </div>
+      <button type="submit">Continuar</button>
+    </form>
+  </div>
+
+</body>
+</html>

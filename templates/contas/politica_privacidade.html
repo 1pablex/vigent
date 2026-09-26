@@ -1,0 +1,24 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigent - Política de Privacidade</title>
+<link rel="stylesheet" href="{% static 'css/vigent.css' %}">
+<link rel="stylesheet" href="{% static 'css/politica.css' %}">
+</head>
+<body>
+
+  <div class="logo">VIGENT<span class="dot">.</span></div>
+
+  <div class="card">
+    <h1>Política de Privacidade</h1>
+    <p class="subtitle">Como tratamos os seus dados pessoais no Vigent.</p>
+
+    {% include "contas/_politica_conteudo.html" %}
+
+    <a class="link-out" href="{% url 'contas:login' %}">Voltar ao login</a>
+  </div>
+
+</body>
+</html>

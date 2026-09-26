@@ -1,0 +1,22 @@
+body {
+  background-color: rgba(20, 33, 61, 0.55);
+}
+
+.aceite-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.aceite-row input {
+  width: auto;
+  margin-top: 3px;
+}
+
+.aceite-row label {
+  font-size: 13.5px;
+  color: #374151;
+  font-weight: 400;
+}
