@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_1"
+                  targetNamespace="http://bpmn.io/schema/bpmn"
+                  exporter="bpmn.io"
+                  exporterVersion="1.0">
+  <bpmn:process id="Process_Vigent" isExecutable="false">
+    <bpmn:startEvent id="StartEvent_1" name="Acesso ao sistema">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <bpmn:task id="Task_Login" name="Fazer login">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:exclusiveGateway id="Gateway_PrimeiroAcesso" name="Primeiro acesso?">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:task id="Task_TrocarSenha" name="Trocar senha provisória">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_AceitarTermos" name="Aceitar termos de uso">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_2FA" name="Validar autenticação em duas etapas">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_VisualizarCursos" name="Visualizar cursos disponíveis">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_RegistrarPresenca" name="Registrar presença no curso">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_Conteudo" name="Assistir aulas em sequência">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_AvaliacaoReacao" name="Responder avaliação de reação">
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_Prova" name="Realizar prova de conhecimento">
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:exclusiveGateway id="Gateway_Aprovado" name="Nota mínima atingida?">
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+      <bpmn:outgoing>Flow_14</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:exclusiveGateway id="Gateway_Tentativas" name="Há tentativas restantes?">
+      <bpmn:incoming>Flow_14</bpmn:incoming>
+      <bpmn:outgoing>Flow_15</bpmn:outgoing>
+      <bpmn:outgoing>Flow_16</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+
+    <bpmn:task id="Task_NovaTentativa" name="Fazer nova tentativa">
+      <bpmn:incoming>Flow_15</bpmn:incoming>
+      <bpmn:outgoing>Flow_17</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_Reciclar" name="Reciclar curso e reiniciar progresso">
+      <bpmn:incoming>Flow_16</bpmn:incoming>
+      <bpmn:outgoing>Flow_18</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:task id="Task_EmitirCertificado" name="Emitir certificado">
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+      <bpmn:outgoing>Flow_19</bpmn:outgoing>
+    </bpmn:task>
+
+    <bpmn:endEvent id="EndEvent_1" name="Treinamento concluído">
+      <bpmn:incoming>Flow_19</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_Login" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_Login" targetRef="Gateway_PrimeiroAcesso" />
+    <bpmn:sequenceFlow id="Flow_3" name="Sim" sourceRef="Gateway_PrimeiroAcesso" targetRef="Task_TrocarSenha" />
+    <bpmn:sequenceFlow id="Flow_4" name="Não" sourceRef="Gateway_PrimeiroAcesso" targetRef="Task_2FA" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_TrocarSenha" targetRef="Task_AceitarTermos" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_AceitarTermos" targetRef="Task_2FA" />
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="Task_2FA" targetRef="Task_VisualizarCursos" />
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="Task_VisualizarCursos" targetRef="Task_RegistrarPresenca" />
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="Task_RegistrarPresenca" targetRef="Task_Conteudo" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="Task_Conteudo" targetRef="Task_AvaliacaoReacao" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="Task_AvaliacaoReacao" targetRef="Task_Prova" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="Task_Prova" targetRef="Gateway_Aprovado" />
+    <bpmn:sequenceFlow id="Flow_13" name="Sim" sourceRef="Gateway_Aprovado" targetRef="Task_EmitirCertificado" />
+    <bpmn:sequenceFlow id="Flow_14" name="Não" sourceRef="Gateway_Aprovado" targetRef="Gateway_Tentativas" />
+    <bpmn:sequenceFlow id="Flow_15" name="Sim" sourceRef="Gateway_Tentativas" targetRef="Task_NovaTentativa" />
+    <bpmn:sequenceFlow id="Flow_16" name="Não" sourceRef="Gateway_Tentativas" targetRef="Task_Reciclar" />
+    <bpmn:sequenceFlow id="Flow_17" sourceRef="Task_NovaTentativa" targetRef="Task_Prova" />
+    <bpmn:sequenceFlow id="Flow_18" sourceRef="Task_Reciclar" targetRef="Task_Conteudo" />
+    <bpmn:sequenceFlow id="Flow_19" sourceRef="Task_EmitirCertificado" targetRef="EndEvent_1" />
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_Vigent">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="150" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_Login_di" bpmnElement="Task_Login">
+        <dc:Bounds x="240" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Gateway_PrimeiroAcesso_di" bpmnElement="Gateway_PrimeiroAcesso">
+        <dc:Bounds x="390" y="95" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_TrocarSenha_di" bpmnElement="Task_TrocarSenha">
+        <dc:Bounds x="500" y="20" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_AceitarTermos_di" bpmnElement="Task_AceitarTermos">
+        <dc:Bounds x="660" y="20" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_2FA_di" bpmnElement="Task_2FA">
+        <dc:Bounds x="660" y="140" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_VisualizarCursos_di" bpmnElement="Task_VisualizarCursos">
+        <dc:Bounds x="820" y="140" width="140" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_RegistrarPresenca_di" bpmnElement="Task_RegistrarPresenca">
+        <dc:Bounds x="980" y="140" width="140" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_Conteudo_di" bpmnElement="Task_Conteudo">
+        <dc:Bounds x="1140" y="140" width="140" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_AvaliacaoReacao_di" bpmnElement="Task_AvaliacaoReacao">
+        <dc:Bounds x="1300" y="140" width="160" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_Prova_di" bpmnElement="Task_Prova">
+        <dc:Bounds x="1490" y="140" width="150" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Gateway_Aprovado_di" bpmnElement="Gateway_Aprovado">
+        <dc:Bounds x="1680" y="155" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Gateway_Tentativas_di" bpmnElement="Gateway_Tentativas">
+        <dc:Bounds x="1680" y="300" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_NovaTentativa_di" bpmnElement="Task_NovaTentativa">
+        <dc:Bounds x="1510" y="290" width="120" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_Reciclar_di" bpmnElement="Task_Reciclar">
+        <dc:Bounds x="1500" y="430" width="140" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="Task_EmitirCertificado_di" bpmnElement="Task_EmitirCertificado">
+        <dc:Bounds x="1810" y="140" width="140" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="2000" y="162" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="186" y="118"/>
+        <di:waypoint x="240" y="118"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="340" y="120"/>
+        <di:waypoint x="390" y="120"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="415" y="95"/>
+        <di:waypoint x="415" y="60"/>
+        <di:waypoint x="500" y="60"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="415" y="145"/>
+        <di:waypoint x="415" y="180"/>
+        <di:waypoint x="660" y="180"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="620" y="60"/>
+        <di:waypoint x="660" y="60"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="720" y="100"/>
+        <di:waypoint x="720" y="140"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="790" y="180"/>
+        <di:waypoint x="820" y="180"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="960" y="180"/>
+        <di:waypoint x="980" y="180"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="1120" y="180"/>
+        <di:waypoint x="1140" y="180"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="1280" y="180"/>
+        <di:waypoint x="1300" y="180"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="1460" y="180"/>
+        <di:waypoint x="1490" y="180"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="1640" y="180"/>
+        <di:waypoint x="1680" y="180"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13">
+        <di:waypoint x="1730" y="180"/>
+        <di:waypoint x="1810" y="180"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14">
+        <di:waypoint x="1705" y="205"/>
+        <di:waypoint x="1705" y="300"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15">
+        <di:waypoint x="1680" y="325"/>
+        <di:waypoint x="1630" y="325"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_16_di" bpmnElement="Flow_16">
+        <di:waypoint x="1705" y="350"/>
+        <di:waypoint x="1705" y="470"/>
+        <di:waypoint x="1640" y="470"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_17_di" bpmnElement="Flow_17">
+        <di:waypoint x="1510" y="330"/>
+        <di:waypoint x="1470" y="330"/>
+        <di:waypoint x="1470" y="220"/>
+        <di:waypoint x="1490" y="220"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_18_di" bpmnElement="Flow_18">
+        <di:waypoint x="1500" y="470"/>
+        <di:waypoint x="1210" y="470"/>
+        <di:waypoint x="1210" y="220"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="Flow_19_di" bpmnElement="Flow_19">
+        <di:waypoint x="1950" y="180"/>
+        <di:waypoint x="2000" y="180"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
