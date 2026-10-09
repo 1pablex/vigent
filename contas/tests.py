@@ -1,16 +1,23 @@
-"""Testes de autenticação: RN-27 (senha provisória) e RN-35 (força bruta)."""
+"""Testes de autenticação: RN-18 (2FA), RN-27 (senha provisória) e RN-35 (força bruta).
+
+O envio do código pelo Brevo é substituído por mock: nenhum teste chama a API real.
+"""
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.test import TestCase
 from django.urls import reverse
 
 from auditoria.models import LogSistema
-from contas.models import Departamento
+from contas.models import CodigoVerificacao, Departamento
 
 Usuario = get_user_model()
 
 
 class AutenticacaoTestCase(TestCase):
     def setUp(self):
+        self.enviar_codigo = patch("contas.views.enviar_codigo_verificacao").start()
+        self.addCleanup(patch.stopall)
         self.departamento = Departamento.objects.create(nome="Vendas")
         self.colaborador = Usuario.objects.create_user(
             email="teste@nortex.com.br", nome="Colaborador Teste",
@@ -18,11 +25,28 @@ class AutenticacaoTestCase(TestCase):
             departamento=self.departamento, senha_provisoria=False,
         )
 
-    def test_login_com_credenciais_corretas(self):
+    def test_login_com_credenciais_corretas_envia_codigo_e_aguarda_segundo_fator(self):
         resposta = self.client.post(reverse("contas:login"), {
             "email": "teste@nortex.com.br", "senha": "senha-correta-123",
         })
-        self.assertTrue(resposta.wsgi_request.user.is_authenticated)
+        self.assertRedirects(resposta, reverse("contas:verificar_codigo"))
+        self.assertFalse(resposta.wsgi_request.user.is_authenticated)
+        codigo = CodigoVerificacao.objects.get(usuario=self.colaborador)
+        self.enviar_codigo.assert_called_once_with(self.colaborador, codigo)
+
+    def test_rn18_codigo_correto_conclui_login_e_invalida_o_codigo(self):
+        self.client.post(reverse("contas:login"), {
+            "email": "teste@nortex.com.br", "senha": "senha-correta-123",
+        })
+        codigo = CodigoVerificacao.objects.get(usuario=self.colaborador)
+
+        resposta = self.client.post(reverse("contas:verificar_codigo"),
+                                    {"codigo": codigo.codigo})
+
+        self.assertRedirects(resposta, reverse("core:inicio"), fetch_redirect_response=False)
+        self.assertEqual(int(self.client.session["_auth_user_id"]), self.colaborador.pk)
+        codigo.refresh_from_db()
+        self.assertTrue(codigo.utilizado)
 
     def test_login_com_senha_errada(self):
         resposta = self.client.post(reverse("contas:login"), {
@@ -36,7 +60,8 @@ class AutenticacaoTestCase(TestCase):
         resposta = self.client.post(reverse("contas:login"), {
             "email": "  TESTE@Nortex.COM.BR  ", "senha": "senha-correta-123",
         })
-        self.assertTrue(resposta.wsgi_request.user.is_authenticated)
+        self.assertRedirects(resposta, reverse("contas:verificar_codigo"))
+        self.assertEqual(self.client.session["pre_2fa_usuario_id"], self.colaborador.pk)
 
     def test_rn27_senha_provisoria_redireciona_para_definir_senha(self):
         Usuario.objects.create_user(
@@ -59,7 +84,7 @@ class AutenticacaoTestCase(TestCase):
         resposta = self.client.get(reverse("treinamentos:inicio"), follow=True)
         self.assertRedirects(resposta, reverse("contas:definir_senha"))
 
-    def test_rn27_definir_senha_libera_acesso(self):
+    def test_rn27_definir_senha_libera_e_segue_para_aceite_do_termo(self):
         usuario = Usuario.objects.create_user(
             email="troca@nortex.com.br", nome="Troca Senha",
             password="Provisoria@2026", cargo="Estagiário",
@@ -71,8 +96,9 @@ class AutenticacaoTestCase(TestCase):
         })
         usuario.refresh_from_db()
         self.assertFalse(usuario.senha_provisoria)
+        # Saiu do bloqueio da senha provisória; o próximo passo obrigatório é o aceite LGPD.
         resposta = self.client.get(reverse("treinamentos:inicio"))
-        self.assertEqual(resposta.status_code, 200)
+        self.assertRedirects(resposta, reverse("contas:aceitar_termo"))
 
     def test_rn35_bloqueio_apos_cinco_tentativas(self):
         for _ in range(5):
