@@ -25,7 +25,7 @@ class AvaliacaoReacao(models.Model):
         verbose_name_plural = "avaliações de reação"
 
     def __str__(self):
-        return f"{self.usuario} — {self.curso}"
+        return f"{self.usuario} - {self.curso}"
 
     @property
     def media(self):
@@ -36,7 +36,7 @@ class Prova(models.Model):
                                  related_name="prova")
 
     def __str__(self):
-        return f"Prova — {self.curso}"
+        return f"Prova - {self.curso}"
 
     @property
     def total_questoes(self):
@@ -54,7 +54,7 @@ class Questao(models.Model):
         verbose_name_plural = "questões"
 
     def __str__(self):
-        return f"{self.prova.curso} — questão {self.ordem}"
+        return f"{self.prova.curso} - questão {self.ordem}"
 
 class Alternativa(models.Model):
     LETRAS = [("A", "A"), ("B", "B"), ("C", "C"), ("D", "D"), ("E", "E")]
@@ -88,4 +88,4 @@ class RespostaProva(models.Model):
         verbose_name_plural = "respostas de prova"
 
     def __str__(self):
-        return f"{self.usuario} — {self.prova.curso} (tentativa {self.numero_tentativa})"
+        return f"{self.usuario} - {self.prova.curso} (tentativa {self.numero_tentativa})"

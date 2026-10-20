@@ -22,7 +22,7 @@ class Curso(models.Model):
 
     @property
     def publicado(self):
-        """RN-04 — exige ao menos uma aula e uma questão cadastradas."""
+        """RN-04 - exige ao menos uma aula e uma questão cadastradas."""
         return self.aulas.exists() and Questao_existe(self)
 
     @property
@@ -45,7 +45,7 @@ class Aula(models.Model):
         unique_together = [("curso", "ordem")]
 
     def __str__(self):
-        return f"{self.curso} — aula {self.ordem}"
+        return f"{self.curso} - aula {self.ordem}"
 
 #conteudo em slides
 class SlideAula(models.Model):
@@ -63,11 +63,11 @@ class SlideAula(models.Model):
         verbose_name = "slide"
 
     def __str__(self):
-        return f"{self.aula} — slide {self.ordem}"
+        return f"{self.aula} - slide {self.ordem}"
 
 
 class CursoDepartamento(models.Model):
-    """RN-02 — obrigatoriedade por setor."""
+    """RN-02 - obrigatoriedade por setor."""
 
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name="departamentos")
     departamento = models.ForeignKey("contas.Departamento", on_delete=models.CASCADE,
@@ -84,7 +84,7 @@ class CursoDepartamento(models.Model):
 
 
 class AtribuicaoManual(models.Model):
-    """RN-02 — exceção individual à regra do departamento."""
+    """RN-02 - exceção individual à regra do departamento."""
 
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name="atribuicoes")
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
@@ -102,7 +102,7 @@ class AtribuicaoManual(models.Model):
         return f"{self.usuario} → {self.curso}"
 
 class Presenca(models.Model):
-    """RN-05 — registrada uma única vez, no primeiro acesso ao curso."""
+    """RN-05 - registrada uma única vez, no primeiro acesso ao curso."""
 
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name="presencas")
@@ -119,7 +119,7 @@ class Presenca(models.Model):
 
 
 class ProgressoAula(models.Model):
-    """RN-23 — a aula conclui quando todos os slides são percorridos."""
+    """RN-23 - a aula conclui quando todos os slides são percorridos."""
 
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name="progressos")
@@ -144,4 +144,4 @@ class ProgressoAula(models.Model):
         self.save()
 
     def __str__(self):
-        return f"{self.usuario} — {self.aula}"
+        return f"{self.usuario} - {self.aula}"

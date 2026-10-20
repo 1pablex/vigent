@@ -36,7 +36,7 @@ class Command(BaseCommand):
             except Exception as exc:
                 sucesso = False
                 registrar(LogSistema.Nivel.ERRO, "Falha ao notificar vencimento",
-                          f"{cert.usuario.email} — {cert.curso.nome} — {exc}"[:500])
+                          f"{cert.usuario.email} - {cert.curso.nome} - {exc}"[:500])
 
         duracao = time.monotonic() - inicio
         ExecucaoRotina.objects.create(

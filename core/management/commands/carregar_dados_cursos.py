@@ -1,4 +1,4 @@
-"""Popula o banco com os cursos de demonstração — cenário Nortex Soluções Ltda."""
+"""Popula o banco com os cursos de demonstração - cenário Nortex Soluções Ltda."""
 from django.core.management.base import BaseCommand
 
 from avaliacoes.models import Alternativa, Prova, Questao
@@ -31,7 +31,7 @@ class Command(BaseCommand):
         todos = [deps["Vendas"], deps["Operações"], deps["Sala Limpa"]]
 
         self._criar_curso(
-            nome="LGPD — Proteção de Dados",
+            nome="LGPD - Proteção de Dados",
             categoria="Compliance",
             carga_horaria="2 horas",
             departamentos=todos,
@@ -127,7 +127,7 @@ class Command(BaseCommand):
                      "para decisões em situações de ambiguidade."),
                     ("Conflito de interesse",
                      "Ocorre quando interesses pessoais podem influenciar decisões "
-                     "profissionais — deve ser sempre declarado à liderança ou ao "
+                     "profissionais - deve ser sempre declarado à liderança ou ao "
                      "compliance."),
                     ("Canal de denúncias",
                      "Permite relato, inclusive anônimo, de condutas que violem o "

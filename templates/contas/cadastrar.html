@@ -23,7 +23,7 @@
         <input class="txt" name="cargo" value="{{ valores.cargo }}" placeholder="Analista, Técnico, Assistente…"></div>
       <div class="field"><div class="q-lbl">Departamento</div>
         <select class="search" name="departamento" style="width:100%">
-          <option value="">— Nenhum —</option>
+          <option value="">- Nenhum -</option>
           {% for dep in departamentos %}
             <option value="{{ dep.id }}" {% if valores.departamento == dep.id|stringformat:"s" %}selected{% endif %}>{{ dep.nome }}</option>
           {% endfor %}

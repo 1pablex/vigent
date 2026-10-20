@@ -31,7 +31,7 @@ def gerar_senha_provisoria(tamanho=10):
 
 def _bloqueado_por_forca_bruta(email, ip):
     """
-    RN-35 — trava temporária contra força bruta.
+    RN-35 - trava temporária contra força bruta.
 
     Conta tentativas malsucedidas de login para o e-mail informado e para o IP de origem. Basta um dos
     dois exceder o limite para bloquear temporariamente o acesso. O bloqueio é registrado no log de auditoria.
@@ -61,8 +61,8 @@ def tela_login(request):
             erro = ("Muitas tentativas de acesso em pouco tempo. Aguarde alguns "
                     "minutos antes de tentar novamente.")
             RegistroAcesso.objects.create(
-                identificacao=email or "—", evento="Bloqueio por força bruta",
-                grupo="—", ip=ip, resultado="Bloqueado temporariamente")
+                identificacao=email or "-", evento="Bloqueio por força bruta",
+                grupo="-", ip=ip, resultado="Bloqueado temporariamente")
             registrar(LogSistema.Nivel.WARN, "Login bloqueado",
                       f"Limite de {settings.VIGENT['MAX_TENTATIVAS_LOGIN']} tentativas "
                       f"excedido para {email or ip}")
@@ -76,21 +76,21 @@ def tela_login(request):
                 erro = "Conta desativada. Procure o setor de RH."   # RN-16
                 RegistroAcesso.objects.create(
                     identificacao=email, evento="Tentativa de login",
-                    grupo="—", ip=ip, resultado="Conta desativada")
+                    grupo="-", ip=ip, resultado="Conta desativada")
                 registrar(LogSistema.Nivel.WARN, "Login recusado",
-                          f"Conta desativada — {email}")
+                          f"Conta desativada - {email}")
             else:
                 erro = "E-mail ou senha inválidos."
                 RegistroAcesso.objects.create(
-                    identificacao=email or "—", evento="Credencial inválida",
-                    grupo="—", ip=ip, resultado="Negado")
+                    identificacao=email or "-", evento="Credencial inválida",
+                    grupo="-", ip=ip, resultado="Negado")
         elif usuario.senha_provisoria:
             login(request, usuario)
             RegistroAcesso.objects.create(
                 identificacao=usuario.email, evento="Login realizado",
                 grupo=usuario.get_grupo_display(), ip=ip, resultado="Autorizado")
             registrar(LogSistema.Nivel.INFO, "Login realizado (senha provisória)",
-                      f"{usuario.nome} — grupo {usuario.get_grupo_display()}; "
+                      f"{usuario.nome} - grupo {usuario.get_grupo_display()}; "
                       f"2FA dispensado no primeiro acesso", usuario, ip)
             return redirect("contas:definir_senha")
         else:
@@ -114,7 +114,7 @@ def ver_politica_privacidade(request):
 #obrigatorio apos o login, para que o usuario troque a senha provisoria
 @login_required
 def definir_senha(request):
-    """RN-27 — troca obrigatória no primeiro acesso."""
+    """RN-27 - troca obrigatória no primeiro acesso."""
     if not request.user.senha_provisoria:
         return redirect("core:inicio")
 
@@ -171,7 +171,7 @@ def cadastrar_colaborador(request):
             )
             enviar_primeiro_acesso(novo, senha)     # RN-32
             registrar(LogSistema.Nivel.INFO, "Colaborador cadastrado",
-                      f"Matrícula {novo.matricula} — {nome} · {email} · grupo {grupo} · "
+                      f"Matrícula {novo.matricula} - {nome} · {email} · grupo {grupo} · "
                       f"credenciais enviadas ao titular", request.user)
             messages.success(
                 request,
@@ -216,7 +216,7 @@ def verificar_codigo(request):
                     identificacao=usuario.email, evento="Login realizado",
                     grupo=usuario.get_grupo_display(), ip=ip, resultado="Autorizado")
                 registrar(LogSistema.Nivel.INFO, "Login realizado",
-                          f"{usuario.nome} — grupo {usuario.get_grupo_display()}",
+                          f"{usuario.nome} - grupo {usuario.get_grupo_display()}",
                           usuario, ip)
                 if usuario.senha_provisoria:
                     return redirect("contas:definir_senha")
@@ -304,7 +304,7 @@ def aceitar_termo(request):
 
 @login_required
 def meus_dados(request):
-    """Dados cadastrais do próprio usuário, somente leitura (LGPD, art. 18, II — acesso aos dados)."""
+    """Dados cadastrais do próprio usuário, somente leitura (LGPD, art. 18, II - acesso aos dados)."""
     usuario = (Usuario.objects
                .select_related("departamento")
                .only("nome", "matricula", "cargo", "data_cadastro", "departamento__nome")

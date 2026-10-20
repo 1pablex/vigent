@@ -4,7 +4,7 @@ from .models import EmailEnviado, ExecucaoRotina, LogSistema, RegistroAcesso
 
 
 class SomenteLeitura(admin.ModelAdmin):
-    """RN-24 — a trilha não pode ser editada nem removida."""
+    """RN-24 - a trilha não pode ser editada nem removida."""
 
     def has_add_permission(self, request):
         return False

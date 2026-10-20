@@ -34,7 +34,7 @@
         <td>{{ c.nome }}</td>
         <td class="mono">{{ c.email }}</td>
         <td>{{ c.cargo }}</td>
-        <td>{{ c.departamento.nome|default:"—" }}</td>
+        <td>{{ c.departamento.nome|default:"-" }}</td>
         <td>
           {% if c.e_rh %}<span class="badge badge-warn">RH</span>
           {% else %}<span class="badge badge-idle">Colaborador</span>{% endif %}
@@ -52,7 +52,7 @@
                 {% csrf_token %}
                 <button class="btn btn-danger btn-sm">Remover</button>
               </form>
-            {% else %}<span class="sub">—</span>{% endif %}
+            {% else %}<span class="sub">-</span>{% endif %}
           {% endif %}
         </td>
       </tr>
