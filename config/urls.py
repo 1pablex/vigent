@@ -10,6 +10,7 @@ urlpatterns = [
     path('treinamentos/', include('treinamentos.urls')),
     path('avaliacoes/', include('avaliacoes.urls')),
     path('', include('core.urls')),
+    path("certificados/", include("certificacao.urls")),
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,45 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigent - Certificado</title>
+<link rel="stylesheet" href="{% static 'css/certificado.css' %}">
+</head>
+<body>
+
+<div class="no-print">
+  <a href="{% url 'certificacao:meus' %}" class="btn-back">← Voltar</a>
+  <button onclick="window.print()" class="btn-print">Imprimir certificado</button>
+</div>
+
+<div class="folha">
+  <img class="fundo" src="{% static 'img/certificado-fundo.png' %}" alt="">
+
+  <div class="bloco-nome">
+    <p class="intro">Certificamos que o funcionário</p>
+    <p class="nome">{{ certificado.usuario.nome }}</p>
+    <p class="intro">realizou o treinamento</p>
+    <p class="curso">{{ certificado.curso.nome }}</p>
+  </div>
+
+  <div class="bloco-detalhes">
+    <p>
+      {% if certificado.curso.carga_horaria %}Com carga horária de <strong>{{ certificado.curso.carga_horaria }}</strong>,
+      concluído{% else %}Concluído{% endif %} com nota <strong>{{ certificado.nota_prova }}</strong>
+      em <strong>{{ certificado.data_emissao|date:"d/m/Y" }}</strong>.
+    </p>
+    <p class="pequeno">
+      Válido até {{ certificado.data_validade|date:"d/m/Y" }}
+      &nbsp;·&nbsp; Versão do curso v{{ certificado.versao_curso }}
+      &nbsp;·&nbsp; Nortex Soluções Ltda. - Sistema Vigent
+    </p>
+    {% if certificado.situacao == "VENCIDO" %}<div class="selo-vencido">VENCIDO</div>{% endif %}
+  </div>
+
+  <div class="assinatura esq">Diretoria</div>
+  <div class="assinatura dir">Recursos Humanos</div>
+</div>
+
+</body>
+</html>

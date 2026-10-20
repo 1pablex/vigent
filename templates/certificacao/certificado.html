@@ -1,0 +1,59 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigent - Meus certificados</title>
+<link rel="stylesheet" href="{% static 'css/inicio.css' %}">
+<link rel="stylesheet" href="{% static 'css/cabecalho.css' %}">
+</head>
+<body>
+
+<div class="container">
+
+  {% include "_cabecalho.html" %}
+
+  <div class="section-header">
+    <div>
+      <h2>Meus certificados</h2>
+      <p>Certificados emitidos a partir das aprovações em prova.</p>
+    </div>
+    <div class="count-label mono">{{ certificados|length }} emitido{{ certificados|length|pluralize }}</div>
+  </div>
+
+  <div class="training-list">
+    {% for cert in certificados %}
+    <div class="training-card">
+      <div class="training-left">
+        {% if cert.situacao == "VENCIDO" %}
+          <div class="icon red">✕</div>
+        {% elif cert.situacao == "VENCENDO" %}
+          <div class="icon orange">!</div>
+        {% else %}
+          <div class="icon navy">✓</div>
+        {% endif %}
+        <div>
+          <p class="training-title">{{ cert.curso.nome }}</p>
+          <p class="training-sub">Emitido em {{ cert.data_emissao|date:"d/m/Y" }}, nota {{ cert.nota_prova }}</p>
+        </div>
+      </div>
+      <div class="training-right">
+        {% if cert.situacao == "VENCIDO" %}
+          <span class="status vencido mono">VENCIDO</span>
+        {% elif cert.situacao == "VENCENDO" %}
+          <span class="status vencendo mono">VENCENDO</span>
+        {% else %}
+          <span class="status em-dia mono">EM DIA</span>
+        {% endif %}
+        <a href="{% url 'certificacao:ver' cert.id %}" class="btn-action dark">Ver certificado</a>
+      </div>
+    </div>
+    {% empty %}
+      <p>Nenhum certificado emitido ainda.</p>
+    {% endfor %}
+  </div>
+
+</div>
+
+</body>
+</html>

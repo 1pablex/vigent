@@ -5,29 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vigent - Área do colaborador</title>
 <link rel="stylesheet" href="{% static 'css/inicio.css' %}">
+<link rel="stylesheet" href="{% static 'css/cabecalho.css' %}">
 </head>
 <body>
 
 <div class="container">
 
-  <div class="header">
-    <div class="header-left">
-      <div class="logo">VIGENT<span class="dot">.</span></div>
-      <div class="badge-area mono">ÁREA DO COLABORADOR</div>
-    </div>
-    <div class="header-right">
-      <div class="user-info">
-        <div class="name">{{ request.user.nome }}</div>
-        <div class="role">{{ request.user.cargo }} · {{ request.user.departamento }}</div>
-      </div>
-      <a href="{% url 'contas:logout' %}" class="btn-logout">Sair</a>
-    </div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab active">Meus treinamentos</button>
-    <button class="tab" disabled title="Ainda não implementado">Certificados</button>
-  </div>
+  {% include "_cabecalho.html" %}
 
   <div class="section-header">
     <div>
@@ -79,7 +63,7 @@
           <a href="{% url 'treinamentos:abrir' item.curso.id %}" class="btn-action dark">Continuar</a>
         {% elif item.situacao == "EM DIA" %}
           <span class="status em-dia mono">EM DIA</span>
-          <button class="btn-action light" disabled title="Tela de certificado ainda não implementada">Ver certificado</button>
+          <a href="{% url 'certificacao:ver' item.certificado.id %}" class="btn-action light">Ver certificado</a>
         {% else %}
           <span class="status nao-iniciado mono">NÃO INICIADO</span>
           <a href="{% url 'treinamentos:abrir' item.curso.id %}" class="btn-action light">Iniciar</a>
