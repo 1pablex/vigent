@@ -85,9 +85,6 @@ def tela_login(request):
                     identificacao=email or "—", evento="Credencial inválida",
                     grupo="—", ip=ip, resultado="Negado")
         elif usuario.senha_provisoria:
-            # Login com senha provisória: pula o 2FA — o código chegaria pelo
-            # mesmo e-mail que já entregou a credencial, então não agrega
-            # segurança aqui. Vai direto para a troca obrigatória de senha.
             login(request, usuario)
             RegistroAcesso.objects.create(
                 identificacao=usuario.email, evento="Login realizado",
@@ -304,3 +301,12 @@ def aceitar_termo(request):
         erro = "É necessário marcar a caixa de aceite para continuar."
 
     return render(request, "contas/aceitar_termo.html", {"erro": erro})
+
+@login_required
+def meus_dados(request):
+    """Dados cadastrais do próprio usuário, somente leitura (LGPD, art. 18, II — acesso aos dados)."""
+    usuario = (Usuario.objects
+               .select_related("departamento")
+               .only("nome", "matricula", "cargo", "data_cadastro", "departamento__nome")
+               .get(pk=request.user.pk))
+    return render(request, "contas/meus_dados.html", {"usuario": usuario})

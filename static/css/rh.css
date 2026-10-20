@@ -10,7 +10,7 @@
 }
 *{box-sizing:border-box;}
 body{ margin:0; background:var(--bg); font-family:'IBM Plex Sans',sans-serif; color:var(--ink); }
-.app{ max-width:1060px; margin:0 auto; padding:24px 24px 70px; }
+.app{ max-width:1280px; margin:0 auto; padding:40px 24px 80px; }
 .hide{ display:none !important; }
 
 /*login*/
@@ -33,26 +33,6 @@ body{ margin:0; background:var(--bg); font-family:'IBM Plex Sans',sans-serif; co
 .demo b{ display:block; font-family:'Manrope',sans-serif; font-size:13.5px; }
 .demo em{ font-style:normal; color:var(--ink-soft); font-size:11.5px; }
 
-/* shell*/
-header.top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-.brandrow{ display:flex; align-items:center; gap:11px; }
-.brandrow img{ width:34px; height:34px; border-radius:7px; display:block; }
-.brand{ font-family:'Manrope',sans-serif; font-weight:800; font-size:20px; letter-spacing:-0.01em; color:var(--navy); }
-.brand span{ color:var(--amber); }
-.area{ font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase;
-       letter-spacing:.1em; padding:5px 10px; border-radius:20px; margin-left:6px; }
-.area-col{ background:var(--teal-bg); color:var(--teal); }
-.area-rh{ background:var(--amber-bg); color:var(--amber); }
-.userbox{ display:flex; align-items:center; gap:14px; }
-.who{ text-align:right; font-size:12px; color:var(--ink-soft); line-height:1.35; }
-.who b{ display:block; font-family:'Manrope',sans-serif; font-size:13.5px; color:var(--ink); }
-
-nav.tabs{ display:flex; flex-wrap:wrap; gap:4px; margin-bottom:22px; background:var(--panel);
-          border:1px solid var(--line); padding:4px; border-radius:9px; }
-nav.tabs button{ font-family:'Manrope',sans-serif; font-weight:600; font-size:12.5px; padding:9px 15px;
-                 border:none; background:transparent; color:var(--ink-soft); cursor:pointer; border-radius:6px; }
-nav.tabs button.active{ background:var(--navy); color:#fff; }
-nav.tabs button:not(.active):hover{ background:#EDF0F4; }
 
 .view{ display:none; } .view.on{ display:block; animation:fade .18s ease; }
 @keyframes fade{ from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
@@ -84,6 +64,8 @@ h2.sec-t{ font-family:'Manrope',sans-serif; font-size:17px; margin:0; letter-spa
 .btn-locked{ background:var(--line); color:var(--ink-soft); cursor:not-allowed; }
 .btn-icon{ width:40px; height:40px; padding:0; font-size:15px; }
 .btn-sm{ padding:7px 12px; font-size:11.5px; }
+.btn-danger{ background:var(--red-bg); color:var(--red); border:1px solid var(--red); }
+.btn-danger:hover{ background:var(--red); color:#fff; }
 
 .stack{ display:flex; flex-direction:column; gap:11px; }
 .row{ display:grid; grid-template-columns:42px 1fr 128px 165px; align-items:center; gap:15px;

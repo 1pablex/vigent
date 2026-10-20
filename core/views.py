@@ -45,6 +45,24 @@ def rh_colaboradores(request):
         "total_desligados": Usuario.objects.filter(is_active=False).count(),
     })
 
+
+@login_required
+def rh_remover_colaborador(request, usuario_id):
+    if not request.user.e_rh:
+        return redirect("treinamentos:inicio")
+    if request.method != "POST":
+        return redirect("core:rh_colaboradores")
+
+    usuario = get_object_or_404(Usuario, pk=usuario_id)
+    if usuario.pk == request.user.pk:
+        messages.error(request, "Você não pode remover a sua própria conta.")
+    elif usuario.is_active:
+        matricula = usuario.matricula
+        services.remover_colaborador(usuario, request.user)
+        messages.success(request, f"Matrícula {matricula} desligada e dados pseudonimizados.")
+    return redirect("core:rh_colaboradores")
+
+
 @login_required
 def rh_auditoria(request):
     if not request.user.e_rh:
@@ -89,7 +107,8 @@ def rh_conformidade(request):
 
     if request.method == "POST" and "rodar_rotina" in request.POST:
         call_command("verificar_vencimentos")
-        messages.success(request, "Rotina de verificação executada.")
+        call_command("expurgar_reidentificacoes")
+        messages.success(request, "Rotinas de vencimento e expurgo executadas.")
         return redirect("core:rh_conformidade")
 
     linhas_completas = services.matriz_conformidade()
@@ -135,3 +154,4 @@ def rh_solicitar_reciclagem(request, usuario_id, curso_id):
     messages.success(request,
         f"{usuario.nome} foi notificado por e-mail, e o treinamento em {curso.nome} foi reiniciado.")
     return redirect("core:rh_conformidade")
+

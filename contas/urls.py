@@ -14,4 +14,5 @@ urlpatterns = [
     path("redefinir-senha/", views.redefinir_senha, name="redefinir_senha"),
     path("aceitar-termo/", views.aceitar_termo, name="aceitar_termo"),
     path("politica-privacidade/", views.ver_politica_privacidade, name="politica_privacidade"),
+    path("meus-dados/", views.meus_dados, name="meus_dados"),
 ]

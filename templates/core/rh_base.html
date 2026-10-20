@@ -5,29 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block titulo %}Vigent{% endblock %} - Vigent</title>
 <link rel="stylesheet" href="{% static 'css/rh.css' %}">
+<link rel="stylesheet" href="{% static 'css/cabecalho.css' %}">
 </head>
 <body>
 <div class="app">
 
-  <header class="top">
-    <div class="brandrow">
-      <span class="brand">VIGENT<span>.</span></span>
-      <span class="area area-rh">Área do RH</span>
-    </div>
-    <div class="userbox">
-      <div class="who"><b>{{ request.user.nome }}</b>
-        {{ request.user.cargo }} · {{ request.user.get_grupo_display }}</div>
-      <a class="btn btn-ghost btn-sm" href="{% url 'contas:logout' %}">Sair</a>
-    </div>
-  </header>
+  {% include "_cabecalho.html" %}
 
-  <nav class="tabs">
-    <a class="btn-tab {% if secao == 'conformidade' %}active{% endif %}" href="{% url 'core:rh_conformidade' %}">Conformidade</a>
-    <a class="btn-tab" href="/admin/treinamentos/curso/">Cursos</a>
-    <a class="btn-tab" href="/admin/treinamentos/atribuicaomanual/">Atribuições</a>
-    <a class="btn-tab {% if secao == 'colaboradores' %}active{% endif %}" href="{% url 'core:rh_colaboradores' %}">Colaboradores</a>
-    <a class="btn-tab {% if secao == 'auditoria' %}active{% endif %}" href="{% url 'core:rh_auditoria' %}">Registros e auditoria</a>
-  </nav>
+  {% for m in messages %}
+    <div class="aviso aviso-{{ m.tags|default:'info' }}">{{ m }}</div>
+  {% endfor %}
 
   {% block conteudo %}{% endblock %}
 

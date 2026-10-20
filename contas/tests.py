@@ -96,7 +96,6 @@ class AutenticacaoTestCase(TestCase):
         })
         usuario.refresh_from_db()
         self.assertFalse(usuario.senha_provisoria)
-        # Saiu do bloqueio da senha provisória; o próximo passo obrigatório é o aceite LGPD.
         resposta = self.client.get(reverse("treinamentos:inicio"))
         self.assertRedirects(resposta, reverse("contas:aceitar_termo"))
 
@@ -112,3 +111,43 @@ class AutenticacaoTestCase(TestCase):
         self.assertFalse(resposta.wsgi_request.user.is_authenticated)
         self.assertTrue(
             LogSistema.objects.filter(evento="Login bloqueado").exists())
+
+class MeusDadosTestCase(TestCase):
+    def setUp(self):
+        self.departamento = Departamento.objects.create(nome="Vendas")
+        self.colaborador = Usuario.objects.create_user(
+            email="dados@nortex.com.br", nome="Maria Souza",
+            password="senha-correta-123", cargo="Analista",
+            departamento=self.departamento, senha_provisoria=False,
+            aceitou_termos=True,
+        )
+        self.outro = Usuario.objects.create_user(
+            email="outro@nortex.com.br", nome="Joao Lima",
+            password="senha-correta-123", cargo="Gerente",
+            senha_provisoria=False, aceitou_termos=True,
+        )
+
+    def test_exige_login(self):
+        resposta = self.client.get(reverse("contas:meus_dados"))
+        self.assertEqual(resposta.status_code, 302)
+        self.assertIn(reverse("contas:login"), resposta.url)
+
+    def test_exibe_dados_do_proprio_usuario(self):
+        self.client.force_login(self.colaborador)
+        resposta = self.client.get(reverse("contas:meus_dados"))
+        self.assertEqual(resposta.status_code, 200)
+        conteudo = resposta.content.decode()
+        self.assertIn("Maria Souza", conteudo)
+        self.assertIn(self.colaborador.matricula, conteudo)
+        self.assertIn(self.colaborador.data_cadastro.strftime("%d/%m/%Y"), conteudo)
+        self.assertIn("Analista", conteudo)
+        self.assertIn("Vendas", conteudo)
+        self.assertNotIn("Gerente", conteudo)
+
+    def test_usuario_sem_cargo_e_setor_mostra_placeholder(self):
+        self.client.force_login(self.outro)
+        self.outro.cargo = ""
+        self.outro.save()
+        conteudo = self.client.get(reverse("contas:meus_dados")).content.decode()
+        self.assertIn("Não informado", conteudo)
+        self.assertIn("Sem departamento", conteudo)

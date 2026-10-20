@@ -1,0 +1,37 @@
+{% comment %}
+Cabeçalho e abas comuns a todas as telas internas. O RH vê as mesmas abas em
+qualquer tela (inclusive quando faz seus próprios cursos); o colaborador vê só as dele.
+Requer static/css/cabecalho.css.
+{% endcomment %}
+{% with tela=request.resolver_match.view_name %}
+<div class="vg-header">
+  <div class="vg-header-left">
+    <div class="vg-logo">VIGENT<span class="vg-dot">.</span></div>
+    {% if request.user.e_rh %}
+      <div class="vg-badge vg-badge-rh">ÁREA DO RH</div>
+    {% else %}
+      <div class="vg-badge">ÁREA DO COLABORADOR</div>
+    {% endif %}
+  </div>
+  <div class="vg-header-right">
+    <div class="vg-user">
+      <div class="vg-user-name">{{ request.user.nome }}</div>
+      <div class="vg-user-role">{{ request.user.cargo }} · {{ request.user.departamento|default:"Sem departamento" }}</div>
+    </div>
+    <a href="{% url 'contas:logout' %}" class="vg-btn-logout">Sair</a>
+  </div>
+</div>
+
+<nav class="vg-tabs">
+  {% if request.user.e_rh %}
+    <a href="{% url 'core:rh_conformidade' %}" class="vg-tab {% if tela == 'core:rh_conformidade' %}active{% endif %}">Conformidade</a>
+    <a href="/admin/treinamentos/curso/" class="vg-tab">Cursos</a>
+    <a href="/admin/treinamentos/atribuicaomanual/" class="vg-tab">Atribuições</a>
+    <a href="{% url 'core:rh_colaboradores' %}" class="vg-tab {% if tela == 'core:rh_colaboradores' or tela == 'contas:cadastrar' %}active{% endif %}">Colaboradores</a>
+    <a href="{% url 'core:rh_auditoria' %}" class="vg-tab {% if tela == 'core:rh_auditoria' %}active{% endif %}">Registros e auditoria</a>
+  {% endif %}
+  <a href="{% url 'treinamentos:inicio' %}" class="vg-tab {% if tela == 'treinamentos:inicio' %}active{% endif %}">Meus treinamentos</a>
+  <a href="{% url 'certificacao:meus' %}" class="vg-tab {% if tela == 'certificacao:meus' %}active{% endif %}">Certificados</a>
+  <a href="{% url 'contas:meus_dados' %}" class="vg-tab {% if tela == 'contas:meus_dados' %}active{% endif %}">Meus dados</a>
+</nav>
+{% endwith %}

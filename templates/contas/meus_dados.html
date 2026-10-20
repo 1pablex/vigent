@@ -1,0 +1,50 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vigent - Meus dados</title>
+<link rel="stylesheet" href="{% static 'css/inicio.css' %}">
+<link rel="stylesheet" href="{% static 'css/cabecalho.css' %}">
+<link rel="stylesheet" href="{% static 'css/meus_dados.css' %}">
+</head>
+<body>
+
+<div class="container">
+
+  {% include "_cabecalho.html" %}
+
+  <div class="section-header">
+    <div>
+      <h2>Meus dados</h2>
+      <p>Informações cadastrais mantidas pelo RH. Para corrigir algum dado, procure o RH.</p>
+    </div>
+  </div>
+
+  <dl class="dados-card">
+    <div class="dados-item dados-item-largo">
+      <dt>Nome</dt>
+      <dd>{{ usuario.nome }}</dd>
+    </div>
+    <div class="dados-item">
+      <dt>Matrícula</dt>
+      <dd class="mono">{{ usuario.matricula }}</dd>
+    </div>
+    <div class="dados-item">
+      <dt>Data de cadastro</dt>
+      <dd>{{ usuario.data_cadastro|date:"d/m/Y" }}</dd>
+    </div>
+    <div class="dados-item">
+      <dt>Cargo</dt>
+      <dd>{{ usuario.cargo|default:"Não informado" }}</dd>
+    </div>
+    <div class="dados-item">
+      <dt>Setor</dt>
+      <dd>{{ usuario.departamento|default:"Sem departamento" }}</dd>
+    </div>
+  </dl>
+
+</div>
+
+</body>
+</html>
