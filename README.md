@@ -9,7 +9,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: atribuição de
 ## Status atual
 
 **Fluxo de treinamento**, completo de ponta a ponta:
-- Login com autenticação em duas etapas (segundo fator por e-mail); no primeiro acesso com senha provisória, o 2FA é dispensado — o código chegaria pelo mesmo e-mail que já entregou a credencial — e o colaborador vai direto para a troca obrigatória de senha
+- Login com autenticação em duas etapas (segundo fator por e-mail); no primeiro acesso com senha provisória, o 2FA é dispensado, o código chegaria pelo mesmo e-mail que já entregou a credencial e o colaborador vai direto para a troca obrigatória de senha
 - Aceite obrigatório do termo de uso após a primeira troca de senha, com política de privacidade acessível a partir da tela de login
 - Conteúdo do curso, com trava de avanço sequencial pelos slides
 - Avaliação de reação, obrigatória antes da prova
