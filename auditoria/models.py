@@ -62,7 +62,7 @@ class RegistroAcesso(models.Model):
         verbose_name_plural = "registros de acesso"
 
     def __str__(self):
-        return f"{self.identificacao} — {self.resultado}"
+        return f"{self.identificacao} - {self.resultado}"
 
 
 class ExecucaoRotina(models.Model):
@@ -82,4 +82,4 @@ class ExecucaoRotina(models.Model):
         verbose_name_plural = "execuções de rotina"
 
     def __str__(self):
-        return f"{self.rotina} — {self.data_hora:%d/%m/%Y}"
+        return f"{self.rotina} - {self.data_hora:%d/%m/%Y}"

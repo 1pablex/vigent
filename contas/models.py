@@ -16,7 +16,7 @@ class Departamento(models.Model):
         return self.nome
 
 class UsuarioManager(BaseUserManager):
-    """RN-26 — o endereço é sempre normalizado antes de gravar."""
+    """RN-26 - o endereço é sempre normalizado antes de gravar."""
 
     """normaliza o email para minusculo e remove espaços em branco antes de gravar no banco de dados."""
     def normalize_email(self, email):
@@ -73,7 +73,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         verbose_name_plural = "usuários"
 
     def __str__(self):
-        return f"{self.matricula} — {self.nome}"
+        return f"{self.matricula} - {self.nome}"
 
     def save(self, *args, **kwargs):
         self.email = (self.email or "").strip().lower()

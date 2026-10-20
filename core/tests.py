@@ -146,7 +146,7 @@ class ServicosTestCase(TestCase):
             usuario=self.colaborador, curso=self.curso,
             nota_didatica=8, nota_entendimento=8)
 
-        #curso.max_tentativas = 3 — as duas primeiras não devem reciclar
+        #curso.max_tentativas = 3 - as duas primeiras não devem reciclar
         _, aprovado1, reciclou1 = services.corrigir_prova(
             self.colaborador, self.curso, marcadas_erradas)
         _, aprovado2, reciclou2 = services.corrigir_prova(
@@ -182,7 +182,7 @@ class ServicosTestCase(TestCase):
         self.assertEqual(cert.situacao, "EM DIA")
 
 class RemoverColaboradorTestCase(TestCase):
-    """RN-29 — o desligamento pseudonimiza o colaborador sem apagar o histórico."""
+    """RN-29 - o desligamento pseudonimiza o colaborador sem apagar o histórico."""
 
     def setUp(self):
         from django.urls import reverse
@@ -254,7 +254,7 @@ class RemoverColaboradorTestCase(TestCase):
 
 
 class ExpurgoReidentificacaoTestCase(TestCase):
-    """RN-29 — dados originais ficam no cofre por 90 dias e depois são excluídos."""
+    """RN-29 - dados originais ficam no cofre por 90 dias e depois são excluídos."""
 
     def setUp(self):
         self.rh = Usuario.objects.create_user(

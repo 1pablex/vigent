@@ -1,4 +1,4 @@
-"""RN-27 — enquanto a senha provisória não for substituída, apenas a tela
+"""RN-27 - enquanto a senha provisória não for substituída, apenas a tela
 de definição de senha permanece acessível."""
 from django.shortcuts import redirect
 from django.urls import reverse

@@ -1,4 +1,4 @@
-"""Popula o banco com dados de demonstração — cenário Nortex Soluções Ltda."""
+"""Popula o banco com dados de demonstração - cenário Nortex Soluções Ltda."""
 from django.core.management.base import BaseCommand
 
 from contas.models import Departamento, Usuario
@@ -36,6 +36,6 @@ class Command(BaseCommand):
                 senha_provisoria=provisoria,
             )
             self.stdout.write(self.style.SUCCESS(
-                f"Criado: {usuario.matricula} — {nome} ({email})"))
+                f"Criado: {usuario.matricula} - {nome} ({email})"))
 
         self.stdout.write(self.style.SUCCESS("Concluído."))

@@ -17,7 +17,7 @@ class Certificado(models.Model):
         ordering = ["-data_emissao"]
 
     def __str__(self):
-        return f"{self.usuario} — {self.curso} ({self.data_emissao:%d/%m/%Y})"
+        return f"{self.usuario} - {self.curso} ({self.data_emissao:%d/%m/%Y})"
 
     @property
     def dias_para_vencer(self):
@@ -25,7 +25,7 @@ class Certificado(models.Model):
 
     @property
     def situacao(self):
-        """RN-13 — calculada na consulta, nunca armazenada."""
+        """RN-13 - calculada na consulta, nunca armazenada."""
         d = self.dias_para_vencer
         if d < 0:
             return "VENCIDO"
@@ -46,4 +46,4 @@ class NotificacaoEnviada(models.Model):
         verbose_name_plural = "notificações enviadas"
 
     def __str__(self):
-        return f"{self.certificado} — {self.marco_dias} dias"
+        return f"{self.certificado} - {self.marco_dias} dias"

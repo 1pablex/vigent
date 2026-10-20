@@ -15,7 +15,7 @@ def reacao(request, curso_id):
     if curso not in services.cursos_do_usuario(request.user):
         return redirect("treinamentos:inicio")
 
-    # RN-23 — só abre com todas as aulas concluídas
+    # RN-23 - só abre com todas as aulas concluídas
     if not services.curso_concluido(request.user, curso):
         messages.warning(request, "Conclua todas as aulas antes da avaliação de reação.")
         return redirect("treinamentos:curso", curso_id=curso.id)
@@ -52,7 +52,7 @@ def prova(request, curso_id):
     if curso not in services.cursos_do_usuario(request.user):
         return redirect("treinamentos:inicio")
 
-    # RN-06 — a prova exige avaliação de reação registrada
+    # RN-06 - a prova exige avaliação de reação registrada
     if not services.tem_reacao(request.user, curso):
         messages.warning(request, "Responda a avaliação de reação antes da prova.")
         return redirect("avaliacoes:reacao", curso_id=curso.id)

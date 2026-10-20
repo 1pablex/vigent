@@ -7,6 +7,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from auditoria.models import LogSistema
 from contas.models import CodigoVerificacao, Departamento
@@ -139,7 +140,7 @@ class MeusDadosTestCase(TestCase):
         conteudo = resposta.content.decode()
         self.assertIn("Maria Souza", conteudo)
         self.assertIn(self.colaborador.matricula, conteudo)
-        self.assertIn(self.colaborador.data_cadastro.strftime("%d/%m/%Y"), conteudo)
+        self.assertIn(timezone.localtime(self.colaborador.data_cadastro).strftime("%d/%m/%Y"), conteudo)
         self.assertIn("Analista", conteudo)
         self.assertIn("Vendas", conteudo)
         self.assertNotIn("Gerente", conteudo)
