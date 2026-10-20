@@ -1,5 +1,5 @@
 """Testes das regras de negócio implementadas em services.py."""
-from datetime import date
+from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -180,3 +180,118 @@ class ServicosTestCase(TestCase):
         sit, _ = services.situacao(self.colaborador, self.curso)
         self.assertEqual(sit, "EM DIA")
         self.assertEqual(cert.situacao, "EM DIA")
+
+class RemoverColaboradorTestCase(TestCase):
+    """RN-29 — o desligamento pseudonimiza o colaborador sem apagar o histórico."""
+
+    def setUp(self):
+        from django.urls import reverse
+        self.reverse = reverse
+        self.rh = Usuario.objects.create_user(
+            email="rh@nortex.com.br", nome="Ana RH", password="senha-correta-123",
+            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceitou_termos=True,
+        )
+        self.colaborador = Usuario.objects.create_user(
+            email="maria@nortex.com.br", nome="Maria Souza", password="senha-correta-123",
+            cargo="Analista", senha_provisoria=False, aceitou_termos=True,
+        )
+        self.url = reverse("core:rh_remover", args=[self.colaborador.pk])
+
+    def test_remover_pseudonimiza_nome_e_email_e_desliga(self):
+        from auditoria.models import LogSistema
+        from contas.models import Reidentificacao
+
+        self.client.force_login(self.rh)
+        resposta = self.client.post(self.url)
+        self.assertRedirects(resposta, self.reverse("core:rh_colaboradores"))
+
+        self.colaborador.refresh_from_db()
+        pseudonimo = f"colab{self.colaborador.matricula}"
+        self.assertEqual(self.colaborador.nome, pseudonimo)
+        self.assertEqual(self.colaborador.email, f"{pseudonimo}@pseudonimizado.invalid")
+        self.assertEqual(self.colaborador.cargo, "")
+        self.assertFalse(self.colaborador.is_active)
+        self.assertTrue(self.colaborador.pseudonimizado)
+        self.assertFalse(self.colaborador.has_usable_password())
+
+        cofre = Reidentificacao.objects.get(usuario=self.colaborador)
+        self.assertEqual(cofre.nome_original, "Maria Souza")
+        self.assertEqual(cofre.email_original, "maria@nortex.com.br")
+        self.assertEqual(cofre.registrado_por, self.rh)
+        self.assertEqual((cofre.data_exclusao - cofre.data_desligamento).days, 90)
+
+        log = LogSistema.objects.get(evento="Colaborador removido")
+        self.assertNotIn("Maria", log.detalhe)
+
+    def test_remover_mantem_certificados(self):
+        curso = Curso.objects.create(nome="NR-10", categoria="Segurança")
+        Certificado.objects.create(
+            usuario=self.colaborador, curso=curso, nota_prova=9, versao_curso=1,
+            data_emissao=date(2026, 1, 10), data_validade=date(2027, 1, 10),
+        )
+        self.client.force_login(self.rh)
+        self.client.post(self.url)
+        self.assertEqual(Certificado.objects.filter(usuario=self.colaborador).count(), 1)
+
+    def test_colaborador_nao_pode_remover(self):
+        self.client.force_login(self.colaborador)
+        self.client.post(self.url)
+        self.colaborador.refresh_from_db()
+        self.assertTrue(self.colaborador.is_active)
+
+    def test_get_nao_remove(self):
+        self.client.force_login(self.rh)
+        self.client.get(self.url)
+        self.colaborador.refresh_from_db()
+        self.assertTrue(self.colaborador.is_active)
+
+    def test_rh_nao_remove_a_propria_conta(self):
+        self.client.force_login(self.rh)
+        self.client.post(self.reverse("core:rh_remover", args=[self.rh.pk]))
+        self.rh.refresh_from_db()
+        self.assertTrue(self.rh.is_active)
+        self.assertFalse(self.rh.pseudonimizado)
+
+
+class ExpurgoReidentificacaoTestCase(TestCase):
+    """RN-29 — dados originais ficam no cofre por 90 dias e depois são excluídos."""
+
+    def setUp(self):
+        self.rh = Usuario.objects.create_user(
+            email="rh@nortex.com.br", nome="Ana RH", password="123456",
+            grupo=Usuario.Grupo.RH,
+        )
+        self.colaborador = Usuario.objects.create_user(
+            email="maria@nortex.com.br", nome="Maria Souza", password="123456",
+        )
+        services.remover_colaborador(self.colaborador, self.rh)
+        from contas.models import Reidentificacao
+        self.cofre = Reidentificacao.objects.get(usuario=self.colaborador)
+
+    def test_dentro_do_prazo_mantem_no_cofre(self):
+        dia_89 = self.cofre.data_desligamento + timedelta(days=89)
+        self.assertEqual(services.expurgar_reidentificacoes(hoje=dia_89), (1, 0))
+        self.assertTrue(type(self.cofre).objects.filter(pk=self.cofre.pk).exists())
+
+    def test_no_dia_90_expurga_e_mantem_usuario_pseudonimizado(self):
+        dia_90 = self.cofre.data_desligamento + timedelta(days=90)
+        self.assertEqual(services.expurgar_reidentificacoes(hoje=dia_90), (1, 1))
+        self.assertFalse(type(self.cofre).objects.filter(pk=self.cofre.pk).exists())
+
+        self.colaborador.refresh_from_db()
+        self.assertEqual(self.colaborador.nome, f"colab{self.colaborador.matricula}")
+        self.assertTrue(self.colaborador.pseudonimizado)
+
+        from auditoria.models import LogSistema
+        log = LogSistema.objects.get(evento="Dados de reidentificação expurgados")
+        self.assertNotIn("Maria", log.detalhe)
+
+    def test_comando_registra_execucao_da_rotina(self):
+        from io import StringIO
+        from django.core.management import call_command
+        from auditoria.models import ExecucaoRotina
+
+        call_command("expurgar_reidentificacoes", stdout=StringIO())
+        execucao = ExecucaoRotina.objects.get(rotina="expurgar_reidentificacoes")
+        self.assertTrue(execucao.sucesso)
+        self.assertEqual((execucao.avaliados, execucao.ignorados), (1, 1))

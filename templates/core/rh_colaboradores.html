@@ -26,7 +26,7 @@
   <div style="overflow-x:auto">
   <table>
     <thead><tr><th>Matrícula</th><th>Nome</th><th>E-mail corporativo</th><th>Cargo</th>
-      <th>Departamento</th><th>Grupo</th><th>Conta</th></tr></thead>
+      <th>Departamento</th><th>Grupo</th><th>Conta</th><th>Ações</th></tr></thead>
     <tbody>
       {% for c in colaboradores %}
       <tr>
@@ -41,11 +41,23 @@
         </td>
         <td>
           {% if c.is_active %}<span class="badge badge-ok">Ativa</span>
+          {% elif c.pseudonimizado %}<span class="badge badge-idle">Pseudonimizado</span>
           {% else %}<span class="badge badge-expired">Desligado</span>{% endif %}
+        </td>
+        <td>
+          {% if c.pk != request.user.pk %}
+            {% if c.is_active %}
+              <form method="post" action="{% url 'core:rh_remover' c.pk %}"
+                    onsubmit="return confirm('Remover a matrícula {{ c.matricula }}? A conta será desligada e o nome e o e-mail serão substituídos por colab{{ c.matricula }}. Essa ação não pode ser desfeita.')">
+                {% csrf_token %}
+                <button class="btn btn-danger btn-sm">Remover</button>
+              </form>
+            {% else %}<span class="sub">—</span>{% endif %}
+          {% endif %}
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="7" class="sub" style="text-align:center;padding:30px 0">Nenhum colaborador encontrado.</td></tr>
+      <tr><td colspan="8" class="sub" style="text-align:center;padding:30px 0">Nenhum colaborador encontrado.</td></tr>
       {% endfor %}
     </tbody>
   </table>

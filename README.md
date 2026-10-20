@@ -14,13 +14,16 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: atribuição de
 - Conteúdo do curso, com trava de avanço sequencial pelos slides
 - Avaliação de reação, obrigatória antes da prova
 - Prova de conhecimento, com histórico de tentativas e reciclagem após reprovações repetidas
-- Conclusão do curso registrada automaticamente na aprovação (nota mínima atingida); a tela para visualizar ou imprimir o certificado ainda não foi construída
+- Conclusão do curso registrada automaticamente na aprovação (nota mínima atingida), com emissão do certificado
+- Meus certificados: lista dos certificados emitidos, com situação (em dia, vencendo, vencido) e tela para visualizar e imprimir o certificado
+- Meus dados: consulta, somente leitura, de nome, matrícula, data de cadastro, cargo e setor
 
 **Painel do RH:**
 - Cadastro de colaborador, com matrícula automática e envio de credenciais por e-mail
 - Listagem de colaboradores, com busca e filtro por departamento
+- Remoção de colaborador: desliga a conta e pseudonimiza nome e e-mail (`colab<matrícula>`); os dados originais ficam num cofre de reidentificação por 90 dias e depois são excluídos. Certificados e histórico de treinamento são mantidos
 - Registros e auditoria: logs do sistema, execuções de rotina, e-mails enviados e histórico de acesso, todos com paginação e filtro
-- Painel de conformidade: indicadores agregados (em dia, vencendo, vencido, pendente), conformidade por departamento, qualidade percebida (nota média da prova e da avaliação de reação), rotina de notificação de vencimento disparável manualmente e solicitação de reciclagem para treinamentos vencidos
+- Painel de conformidade: indicadores agregados (em dia, vencendo, vencido, pendente), conformidade por departamento, qualidade percebida (nota média da prova e da avaliação de reação), rotinas de notificação de vencimento e de expurgo do cofre disparáveis manualmente e solicitação de reciclagem para treinamentos vencidos
 
 **Segurança:**
 - Hash de senha com Argon2 (migração progressiva: contas antigas em PBKDF2 são atualizadas sozinhas no próximo login bem-sucedido)
@@ -29,8 +32,9 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: atribuição de
 - Bloqueio temporário após tentativas de login malsucedidas repetidas
 - Toda verificação de permissão ocorre no back-end, nunca só ocultando elemento na tela
 - `DEBUG` e `ALLOWED_HOSTS` controlados por variável de ambiente, nunca fixos no código
+- LGPD: pseudonimização no desligamento, expurgo dos dados originais após 90 dias (comando `expurgar_reidentificacoes`) e registros de remoção e expurgo na auditoria sem o nome real do colaborador
 
-**Pendente:** tela para visualizar e imprimir o certificado, tela de "meus dados" para o colaborador.
+**Pendente:** agendamento automático (cron) das rotinas `verificar_vencimentos` e `expurgar_reidentificacoes`; hoje elas rodam pelo botão do painel de conformidade ou pelo terminal.
 
 ## Stack
 

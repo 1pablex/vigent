@@ -7,13 +7,14 @@ from datetime import timedelta
 from django.conf import settings
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
+from django.db import transaction
 from django.db.models import Avg
 
 from auditoria.models import LogSistema
 from avaliacoes.models import AvaliacaoReacao, RespostaProva
 from certificacao.models import Certificado
 from treinamentos.models import Curso, Presenca, ProgressoAula
-from contas.models import CodigoVerificacao, Usuario
+from contas.models import CodigoVerificacao, Reidentificacao, Usuario
 
 def registrar(nivel, evento, detalhe="", usuario=None, ip=None):
     return LogSistema.objects.create(
@@ -218,3 +219,69 @@ def qualidade_percebida(linhas):
         "nota_media_prova": round(nota_media_prova, 1),
         "media_reacao": media_reacao,
     }
+
+#RN-29 desligamento e pseudonimização
+DIAS_COFRE_REIDENTIFICACAO = 90
+DOMINIO_PSEUDONIMO = "pseudonimizado.invalid"
+
+
+def pseudonimo_de(usuario):
+    return f"colab{usuario.matricula}"
+
+
+@transaction.atomic
+def remover_colaborador(usuario, registrado_por):
+    """
+    Desliga o colaborador: substitui nome e e-mail por colab<matrícula>, guarda os
+    originais no cofre de reidentificação (expurgo em 90 dias) e encerra o acesso.
+    Nada é apagado: histórico de treinamento e certificados continuam vinculados
+    ao mesmo registro (LGPD, art. 16, I).
+    """
+    usuario = Usuario.objects.select_for_update().get(pk=usuario.pk)
+    if usuario.pseudonimizado:
+        return usuario
+
+    pseudonimo = pseudonimo_de(usuario)
+    hoje = timezone.localdate()
+    Reidentificacao.objects.create(
+        usuario=usuario,
+        matricula=usuario.matricula,
+        pseudonimo=pseudonimo,
+        nome_original=usuario.nome,
+        email_original=usuario.email,
+        cargo_original=usuario.cargo,
+        data_desligamento=hoje,
+        registrado_por=registrado_por,
+        data_exclusao=hoje + timedelta(days=DIAS_COFRE_REIDENTIFICACAO),
+    )
+
+    usuario.nome = pseudonimo
+    usuario.email = f"{pseudonimo}@{DOMINIO_PSEUDONIMO}"
+    usuario.cargo = ""
+    usuario.is_active = False
+    usuario.pseudonimizado = True
+    usuario.set_unusable_password()
+    usuario.save()
+    CodigoVerificacao.objects.filter(usuario=usuario).delete()
+
+    # O detalhe do log não leva o nome original, senão a pseudonimização seria inócua.
+    registrar(LogSistema.Nivel.WARN, "Colaborador removido",
+              f"Matrícula {usuario.matricula} desligada - dados substituídos por {pseudonimo}",
+              registrado_por)
+    return usuario
+
+
+def expurgar_reidentificacoes(hoje=None):
+    """
+    Exclui do cofre os dados originais cujo prazo de 90 dias venceu. Depois disso o
+    pseudônimo não pode mais ser revertido. Retorna (avaliados, expurgados).
+    """
+    hoje = hoje or timezone.localdate()
+    avaliados = Reidentificacao.objects.count()
+    vencidos = Reidentificacao.objects.filter(data_exclusao__lte=hoje)
+    pseudonimos = list(vencidos.values_list("pseudonimo", flat=True))
+    if pseudonimos:
+        vencidos.delete()
+        registrar(LogSistema.Nivel.OK, "Dados de reidentificação expurgados",
+                  f"{len(pseudonimos)} registro(s): {', '.join(pseudonimos)}"[:500])
+    return avaliados, len(pseudonimos)
