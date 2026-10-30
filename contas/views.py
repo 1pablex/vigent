@@ -47,6 +47,29 @@ def _bloqueado_por_forca_bruta(email, ip):
     return por_email >= limite or por_ip >= limite
 
 
+def _erro_de_codigo(pendente, usuario, ip, como_pedir_outro):
+    """
+    Conta o erro no código pendente e devolve a mensagem para a tela.
+
+    Ao atingir MAX_TENTATIVAS_CODIGO o código é invalidado: nem o valor certo é aceito
+    depois disso, e o usuário precisa solicitar um novo código.
+    """
+    if pendente is None or pendente.utilizado or timezone.now() >= pendente.data_expiracao:
+        return "Código inválido ou expirado."
+
+    limite = settings.VIGENT["MAX_TENTATIVAS_CODIGO"]
+    bloqueio = f"Código bloqueado após {limite} tentativas incorretas. {como_pedir_outro}"
+    if pendente.bloqueado:
+        return bloqueio
+
+    pendente.registrar_erro()
+    if pendente.bloqueado:
+        registrar(LogSistema.Nivel.WARN, "Código de verificação bloqueado",
+                  f"{limite} tentativas incorretas para {usuario.email}", usuario, ip)
+        return bloqueio
+    return f"Código incorreto. Tentativas restantes: {limite - pendente.tentativas_erradas}."
+
+
 def tela_login(request):
     if request.user.is_authenticated:
         return redirect("core:inicio")
@@ -206,7 +229,7 @@ def verificar_codigo(request):
             pendente = (CodigoVerificacao.objects
                         .filter(usuario=usuario, utilizado=False)
                         .order_by("-data_geracao").first())
-            if pendente and pendente.valido and digitado == pendente.codigo:
+            if pendente and pendente.valido and pendente.confere(digitado):
                 pendente.utilizado = True
                 pendente.save()
                 del request.session["pre_2fa_usuario_id"]
@@ -222,7 +245,8 @@ def verificar_codigo(request):
                     return redirect("contas:definir_senha")
                 return redirect("core:inicio")
             else:
-                erro = "Código inválido ou expirado."
+                erro = _erro_de_codigo(pendente, usuario, _ip(request),
+                                       'Clique em "Reenviar código" para receber outro.')
 
     return render(request, "contas/verificar_codigo.html", {"erro": erro, "email": usuario.email})
 
@@ -268,8 +292,9 @@ def redefinir_senha(request):
             erro = "A senha deve ter ao menos 6 caracteres."
         elif nova != repetida:
             erro = "As senhas não coincidem."
-        elif not usuario or not pendente or not pendente.valido or codigo_digitado != pendente.codigo:
-            erro = "Código inválido ou expirado."
+        elif not usuario or not pendente or not pendente.valido or not pendente.confere(codigo_digitado):
+            erro = _erro_de_codigo(pendente, usuario, _ip(request),
+                                   'Clique em "Pedir um novo código" para receber outro.')
         else:
             pendente.utilizado = True
             pendente.save()
