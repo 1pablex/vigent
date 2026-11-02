@@ -58,7 +58,7 @@ def enviar_primeiro_acesso(usuario, senha_provisoria):
 
 
 def enviar_codigo_verificacao(usuario, codigo_obj):
-    """RN-18 - segundo fator de autenticação."""
+    """RN-25 - segundo fator de autenticação."""
     assunto = "Seu código de verificação Vigent"
     corpo = (
         f"Olá, {usuario.get_short_name()}.\n\n"
@@ -81,7 +81,7 @@ def enviar_codigo_redefinicao(usuario, codigo_obj):
     return _enviar(usuario.email, assunto, corpo, "Redefinição de senha")
 
 def enviar_alerta_vencimento(usuario, certificado, dias):
-    """RF-10 - alerta nos marcos de 30, 15 e 7 dias antes do vencimento."""
+    """RF-12 - alerta nos marcos de 30, 15 e 7 dias antes do vencimento."""
     assunto = f"Seu certificado vence em {dias} dias - Vigent"
     corpo = (
         f"Olá, {usuario.get_short_name()}.\n\n"

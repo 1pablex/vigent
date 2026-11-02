@@ -79,7 +79,7 @@ class FluxoTreinamentoIntegracaoTest(TestCase):
         self.assertEqual(Certificado.objects.filter(usuario=self.colaborador).count(), 2)
 
     def test_deve_emitir_certificado_ao_aprovar_na_prova_e_exibir_em_dia(self):
-        # Arrange: conteúdo concluído e avaliação de reação respondida (RN-06/RN-23)
+        # Arrange: conteúdo concluído e avaliação de reação respondida (RN-06/RN-07)
         ProgressoAula.objects.create(usuario=self.colaborador, aula=self.aula, concluida=True)
         AvaliacaoReacao.objects.create(usuario=self.colaborador, curso=self.curso,
                                        nota_didatica=9, nota_entendimento=8)

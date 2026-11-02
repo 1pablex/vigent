@@ -78,7 +78,7 @@ class ServicosTestCase(TestCase):
         self.assertFalse(criada2)
         self.assertEqual(self.curso.presencas.filter(usuario=self.colaborador).count(), 1)
 
-    #RN-23: progressão de etapas
+    #RN-06: progressão de etapas
     def test_rn23_etapa_1_enquanto_conteudo_incompleto(self):
         self.assertEqual(services.etapa_atual(self.colaborador, self.curso), 1)
 
@@ -117,7 +117,7 @@ class ServicosTestCase(TestCase):
             cert.data_validade,
             date(cert.data_emissao.year + 1, cert.data_emissao.month, cert.data_emissao.day))
 
-    #RN-09/RN-20: correção da prova
+    #RN-09/RN-31: correção da prova
     def test_rn09_corrigir_prova_calcula_nota_e_grava_tentativa(self):
         marcadas = {str(self.questao1.id): str(self.alt1_certa.id),
                     str(self.questao2.id): str(self.alt2_certa.id)}
@@ -137,7 +137,7 @@ class ServicosTestCase(TestCase):
         ultima = RespostaProva.objects.filter(usuario=self.colaborador).latest("id")
         self.assertEqual(ultima.numero_tentativa, 2)
 
-    #RN-19: reciclagem após esgotar tentativas
+    #RN-29: reciclagem após esgotar tentativas
     def test_rn19_reciclagem_apos_esgotar_tentativas(self):
         marcadas_erradas = {str(self.questao1.id): str(self.alt1_errada.id),
                             str(self.questao2.id): str(self.alt2_errada.id)}
@@ -182,7 +182,7 @@ class ServicosTestCase(TestCase):
         self.assertEqual(cert.situacao, "EM DIA")
 
 class RemoverColaboradorTestCase(TestCase):
-    """RN-29 - o desligamento pseudonimiza o colaborador sem apagar o histórico."""
+    """RN-34 - o desligamento pseudonimiza o colaborador sem apagar o histórico."""
 
     def setUp(self):
         from django.urls import reverse
@@ -254,7 +254,7 @@ class RemoverColaboradorTestCase(TestCase):
 
 
 class ExpurgoReidentificacaoTestCase(TestCase):
-    """RN-29 - dados originais ficam no cofre por 90 dias e depois são excluídos."""
+    """RN-35 - dados originais ficam no cofre por 90 dias e depois são excluídos."""
 
     def setUp(self):
         self.rh = Usuario.objects.create_user(

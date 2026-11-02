@@ -1,0 +1,57 @@
+{% extends "core/rh_base.html" %}
+{% block titulo %}{% if aula %}Aula {{ aula.ordem }}{% else %}Nova aula{% endif %}{% endblock %}
+{% block conteudo %}
+
+<div class="head">
+  <div><h1>{% if aula %}Aula {{ aula.ordem }}: {{ aula.titulo }}{% else %}Nova aula{% endif %}</h1>
+    <div class="sub">{{ curso.nome }}. O conteúdo é apresentado em slides; a aula conclui quando o colaborador percorre todos eles.</div></div>
+  <a class="btn btn-ghost" href="{% url 'cursos_rh:editar' curso.id %}">← Voltar ao curso</a>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="card" style="margin-bottom:18px">
+    {{ form.non_field_errors }}
+    <div class="slide-grid">
+      {% include "treinamentos/rh/_campo.html" with campo=form.ordem %}
+      {% include "treinamentos/rh/_campo.html" with campo=form.titulo %}
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="sec-head">
+      <div><h2 class="sec-t">Slides</h2>
+        <div class="sub">O texto aceita HTML simples (parágrafos e listas). Para adicionar mais slides, salve e continue editando: sempre aparece um slide em branco no final.</div></div>
+    </div>
+    {{ slides.management_form }}
+    {{ slides.non_form_errors }}
+    {% for s in slides %}
+    <div class="item-card">
+      {% for oculto in s.hidden_fields %}{{ oculto }}{% endfor %}
+      <div class="item-top">
+        <div class="item-t">{% if s.instance.pk %}Slide {{ forloop.counter }}{% else %}Novo slide{% endif %}</div>
+        {% if s.instance.pk %}
+          <label class="sub" style="display:flex;gap:6px;align-items:center;cursor:pointer">{{ s.DELETE }} Excluir este slide</label>
+        {% endif %}
+      </div>
+      <div class="slide-grid">
+        {% include "treinamentos/rh/_campo.html" with campo=s.ordem %}
+        {% include "treinamentos/rh/_campo.html" with campo=s.titulo %}
+      </div>
+      {% include "treinamentos/rh/_campo.html" with campo=s.corpo %}
+      {% if s.instance.imagem %}
+        <img src="{{ s.instance.imagem.url }}" alt="" style="max-width:220px;border-radius:8px;border:1px solid var(--line);margin-bottom:8px">
+      {% endif %}
+      {% include "treinamentos/rh/_campo.html" with campo=s.imagem %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="acoes">
+    <a class="btn btn-ghost" href="{% url 'cursos_rh:editar' curso.id %}">Cancelar</a>
+    <button class="btn btn-ghost" name="continuar" value="1">Salvar e continuar editando</button>
+    <button class="btn btn-primary">Salvar aula</button>
+  </div>
+</form>
+
+{% endblock %}

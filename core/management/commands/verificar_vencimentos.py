@@ -1,5 +1,5 @@
 """Verifica certificados próximos do vencimento e envia alerta por e-mail.
-RF-09, RF-10, RN-11 (idempotencia), RN-12 (vencido não notifica de novo)."""
+RF-11, RF-12, RN-11 (idempotencia), RN-12 (vencido não notifica de novo)."""
 import time
 
 from django.core.management.base import BaseCommand

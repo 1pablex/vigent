@@ -1,0 +1,112 @@
+{% extends "core/rh_base.html" %}
+{% block titulo %}{% if curso %}{{ curso.nome }}{% else %}Novo curso{% endif %}{% endblock %}
+{% block conteudo %}
+
+<div class="head">
+  <div><h1>{% if curso %}{{ curso.nome }}{% else %}Novo curso{% endif %}</h1>
+    <div class="sub">{% if curso %}Versão {{ curso.versao }}. Edite os dados, as aulas e a prova do curso.{% else %}Depois de salvar os dados você cadastra as aulas e as questões da prova.{% endif %}</div></div>
+  <a class="btn btn-ghost" href="{% url 'cursos_rh:lista' %}">← Voltar</a>
+</div>
+
+{% if curso %}
+<div class="status-pub">
+  {% if aulas %}<span class="badge badge-ok">✓ {{ aulas|length }} aula{{ aulas|length|pluralize }}</span>
+  {% else %}<span class="badge badge-warn">Falta cadastrar aula</span>{% endif %}
+  {% if questoes %}<span class="badge badge-ok">✓ {{ questoes|length }} questõ{{ questoes|length|pluralize:"ão,es" }}</span>
+  {% else %}<span class="badge badge-warn">Falta cadastrar questão</span>{% endif %}
+  {% if curso.publicado %}<span class="badge badge-ok">Publicado para os colaboradores</span>
+  {% else %}<span class="badge badge-idle">Rascunho: ainda não aparece para os colaboradores</span>{% endif %}
+</div>
+{% endif %}
+
+<div class="card" style="margin-bottom:18px">
+  <h2 class="sec-t" style="margin-bottom:16px">Dados do curso</h2>
+  {{ form.non_field_errors }}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="g2" style="margin-bottom:0">
+      {% include "treinamentos/rh/_campo.html" with campo=form.nome %}
+      {% include "treinamentos/rh/_campo.html" with campo=form.categoria %}
+      {% include "treinamentos/rh/_campo.html" with campo=form.carga_horaria %}
+      {% include "treinamentos/rh/_campo.html" with campo=form.validade_meses %}
+      {% include "treinamentos/rh/_campo.html" with campo=form.nota_minima %}
+      {% include "treinamentos/rh/_campo.html" with campo=form.max_tentativas %}
+    </div>
+    <div class="field">
+      <div class="q-lbl">{{ form.departamentos.label }}</div>
+      <div class="check-list">{{ form.departamentos }}</div>
+      <div class="help">{{ form.departamentos.help_text }}</div>
+      {{ form.departamentos.errors }}
+    </div>
+    {% include "treinamentos/rh/_campo.html" with campo=form.imagem_capa %}
+    <div class="acoes">
+      <a class="btn btn-ghost" href="{% url 'cursos_rh:lista' %}">Cancelar</a>
+      <button class="btn btn-primary">{% if curso %}Salvar dados{% else %}Criar curso{% endif %}</button>
+    </div>
+  </form>
+</div>
+
+{% if curso %}
+<div class="card" style="margin-bottom:18px">
+  <div class="sec-head">
+    <div><h2 class="sec-t">Aulas</h2>
+      <div class="sub">O colaborador percorre as aulas na ordem; cada aula libera a seguinte (RN-06).</div></div>
+    <a class="btn btn-primary btn-sm" href="{% url 'cursos_rh:aula_nova' curso.id %}">+ Nova aula</a>
+  </div>
+  <table>
+    <thead><tr><th>Ordem</th><th>Título</th><th>Slides</th><th class="col-acao">Ações</th></tr></thead>
+    <tbody>
+      {% for a in aulas %}
+      <tr>
+        <td class="mono">{{ a.ordem }}</td>
+        <td>{{ a.titulo }}</td>
+        <td class="mono">{{ a.total_slides }}</td>
+        <td class="col-acao">
+          <div class="acoes" style="justify-content:center">
+            <a class="btn btn-ghost btn-sm" href="{% url 'cursos_rh:aula_editar' curso.id a.id %}">Editar</a>
+            <form class="inline" method="post" action="{% url 'cursos_rh:aula_excluir' curso.id a.id %}"
+                  onsubmit="return confirm('Excluir a aula {{ a.ordem }} e todos os slides dela? O progresso dos colaboradores nessa aula também é apagado.')">
+              {% csrf_token %}<button class="btn btn-danger btn-sm">Excluir</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="sub" style="text-align:center;padding:24px 0">Nenhuma aula cadastrada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <div class="sec-head">
+    <div><h2 class="sec-t">Prova</h2>
+      <div class="sub">Nota mínima {{ curso.nota_minima }} · {{ curso.max_tentativas }} tentativa{{ curso.max_tentativas|pluralize }}. As questões aparecem sempre nessa ordem (RN-31).</div></div>
+    <a class="btn btn-primary btn-sm" href="{% url 'cursos_rh:questao_nova' curso.id %}">+ Nova questão</a>
+  </div>
+  {% for q in questoes %}
+  <div class="item-card">
+    <div class="item-top">
+      <div class="item-t">Questão {{ q.ordem }}</div>
+      <div class="acoes">
+        <a class="btn btn-ghost btn-sm" href="{% url 'cursos_rh:questao_editar' curso.id q.id %}">Editar</a>
+        <form class="inline" method="post" action="{% url 'cursos_rh:questao_excluir' curso.id q.id %}"
+              onsubmit="return confirm('Excluir a questão {{ q.ordem }}?')">
+          {% csrf_token %}<button class="btn btn-danger btn-sm">Excluir</button>
+        </form>
+      </div>
+    </div>
+    <p style="margin:0 0 10px;font-size:13.5px">{{ q.enunciado|linebreaksbr }}</p>
+    {% for alt in q.alternativas.all %}
+      <div class="{% if alt.correta %}alt-certa{% endif %}" style="font-size:12.5px;margin-bottom:4px">
+        {{ alt.letra }}) {{ alt.texto }}{% if alt.correta %} ✓{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  {% empty %}
+  <p class="sub" style="text-align:center;padding:16px 0">Nenhuma questão cadastrada.</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

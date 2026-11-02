@@ -1,4 +1,4 @@
-"""Testes de autenticação: RN-18 (2FA), RN-27 (senha provisória) e RN-35 (força bruta).
+"""Testes de autenticação: RN-25 (2FA), RN-18 (senha provisória) e RN-22 (força bruta).
 
 O envio do código pelo Brevo é substituído por mock: nenhum teste chama a API real.
 """
@@ -57,7 +57,7 @@ class AutenticacaoTestCase(TestCase):
         self.assertFalse(resposta.wsgi_request.user.is_authenticated)
 
     def test_email_normalizado_no_login(self):
-        """RN-26 — maiúsculo/espaço não deveriam impedir o login."""
+        """RN-17 - maiúsculo/espaço não deveriam impedir o login."""
         resposta = self.client.post(reverse("contas:login"), {
             "email": "  TESTE@Nortex.COM.BR  ", "senha": "senha-correta-123",
         })

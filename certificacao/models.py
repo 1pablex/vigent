@@ -25,7 +25,7 @@ class Certificado(models.Model):
 
     @property
     def situacao(self):
-        """RN-13 - calculada na consulta, nunca armazenada."""
+        """RN-13/RNF-09 - calculada na consulta, nunca armazenada."""
         d = self.dias_para_vencer
         if d < 0:
             return "VENCIDO"

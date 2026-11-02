@@ -16,7 +16,7 @@ class Departamento(models.Model):
         return self.nome
 
 class UsuarioManager(BaseUserManager):
-    """RN-26 - o endereço é sempre normalizado antes de gravar."""
+    """RN-17 - o endereço é sempre normalizado antes de gravar."""
 
     """normaliza o email para minusculo e remove espaços em branco antes de gravar no banco de dados."""
     def normalize_email(self, email):
@@ -99,7 +99,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         return self.nome.split(" ")[0]
 
 class Reidentificacao(models.Model):
-    """Cofre de dados originais de colaboradores desligados (RN-29)."""
+    """Cofre de dados originais de colaboradores desligados (RN-35)."""
 
     usuario = models.OneToOneField(Usuario, on_delete=models.CASCADE, related_name="reidentificacao")
     matricula = models.CharField(max_length=10)
@@ -122,7 +122,7 @@ class Reidentificacao(models.Model):
 
 
 class CodigoVerificacao(models.Model):
-    """Segundo fator enviado por api brevo (RN-18)."""
+    """Segundo fator enviado por api brevo (RN-25)."""
 
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="codigos")
     codigo = models.CharField(max_length=6)

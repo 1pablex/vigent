@@ -6,7 +6,7 @@ from django.utils import timezone
 """avaliação de reação e prova de conhecimento."""
 
 class AvaliacaoReacao(models.Model):
-    """nível 1 do modelo de Kirkpatrick. RN-06:da o acesso à prova."""
+    """nível 1 do modelo de Kirkpatrick. RN-07:da o acesso à prova."""
 
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name="reacoes")
@@ -45,7 +45,7 @@ class Prova(models.Model):
 
 class Questao(models.Model):
     prova = models.ForeignKey(Prova, on_delete=models.CASCADE, related_name="questoes")
-    ordem = models.PositiveSmallIntegerField(default=1)   # RN-20 ordem fixa
+    ordem = models.PositiveSmallIntegerField(default=1)   # RN-31 ordem fixa
     enunciado = models.TextField()
 
     class Meta:

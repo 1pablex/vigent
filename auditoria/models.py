@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 
-"""Trilha de eventos da plataforma (RN-24, RN-25)."""
+"""Trilha de eventos da plataforma (RF-26, RN-23, RN-24)."""
 class LogSistema(models.Model):
     class Nivel(models.TextChoices):
         INFO = "INFO", "Informação"
@@ -27,7 +27,7 @@ class LogSistema(models.Model):
 
 
 class EmailEnviado(models.Model):
-    """Correspondência disparada, com o conteúdo preservado para consulta (RF-25)."""
+    """Correspondência disparada, com o conteúdo preservado para consulta (RF-27)."""
 
     data_hora = models.DateTimeField(auto_now_add=True)
     tipo = models.CharField(max_length=40)
@@ -47,7 +47,7 @@ class EmailEnviado(models.Model):
 
 
 class RegistroAcesso(models.Model):
-    """Tentativas de autenticação e acessos negados (RF-26)."""
+    """Tentativas de autenticação e acessos negados (RF-28)."""
 
     data_hora = models.DateTimeField(auto_now_add=True)
     identificacao = models.CharField(max_length=150)

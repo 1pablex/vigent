@@ -1,0 +1,54 @@
+{% extends "core/rh_base.html" %}
+{% block titulo %}Cursos{% endblock %}
+{% block conteudo %}
+
+<div class="head">
+  <div><h1>Cursos</h1>
+    <div class="sub">Um curso só aparece para os colaboradores depois de ter ao menos uma aula e uma questão na prova (RN-04).</div></div>
+  <a class="btn btn-primary" href="{% url 'cursos_rh:novo' %}">+ Novo curso</a>
+</div>
+
+<div class="card">
+  <div class="head" style="margin-bottom:14px">
+    <form method="get" style="display:flex;gap:9px;flex-wrap:wrap">
+      <input class="search" name="busca" value="{{ busca }}" placeholder="Buscar por nome ou categoria">
+      <button class="btn btn-ghost btn-sm">Buscar</button>
+    </form>
+    <span class="pill-soft">{{ cursos|length }} curso{{ cursos|length|pluralize }}</span>
+  </div>
+
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Curso</th><th>Categoria</th><th>Departamentos</th><th>Aulas</th>
+      <th>Questões</th><th>Situação</th><th class="col-acao">Ações</th></tr></thead>
+    <tbody>
+      {% for c in cursos %}
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            {% if c.imagem_capa %}<img class="capa-mini" src="{{ c.imagem_capa.url }}" alt="">{% endif %}
+            <div><b>{{ c.nome }}</b><div class="sub">{{ c.carga_horaria }} · validade de {{ c.validade_meses }} meses</div></div>
+          </div>
+        </td>
+        <td>{{ c.categoria }}</td>
+        <td>
+          {% for cd in c.departamentos.all %}{{ cd.departamento.nome }}{% if not forloop.last %}, {% endif %}
+          {% empty %}<span class="sub">Nenhum</span>{% endfor %}
+        </td>
+        <td class="mono">{{ c.total_aulas }}</td>
+        <td class="mono">{{ c.total_questoes }}</td>
+        <td>
+          {% if c.total_aulas and c.total_questoes %}<span class="badge badge-ok">Publicado</span>
+          {% else %}<span class="badge badge-warn">Rascunho</span>{% endif %}
+        </td>
+        <td class="col-acao"><a class="btn btn-ghost btn-sm" href="{% url 'cursos_rh:editar' c.id %}">Editar</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="sub" style="text-align:center;padding:30px 0">Nenhum curso encontrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% endblock %}
