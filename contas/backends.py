@@ -1,4 +1,4 @@
-"""Autenticação por endereço de correio eletrônico, com normalização (RN-26)."""
+"""Autenticação por endereço de correio eletrônico, com normalização (RN-17)."""
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 

@@ -21,7 +21,7 @@ HOJE = date(2026, 10, 9)
 @patch("core.services.Certificado")
 @patch("core.services.tem_reacao", return_value=True)
 class EmitirCertificadoTest(SimpleTestCase):
-    """RN-08 (reação + nota mínima) e RN-21 (versão do curso gravada no certificado)."""
+    """RN-08 (reação + nota mínima) e RN-32 (versão do curso gravada no certificado)."""
 
     def setUp(self):
         self.usuario = MagicMock(name="usuario")
@@ -79,7 +79,7 @@ class EmitirCertificadoTest(SimpleTestCase):
 
 
 def linhas_do_departamento(nome, total, em_dia):
-    """Monta linhas da matriz de conformidade (RF-11) em memória."""
+    """Monta linhas da matriz de conformidade (RF-13) em memória."""
     departamento = SimpleNamespace(nome=nome) if nome else None
     usuario = SimpleNamespace(departamento=departamento)
     return [{"usuario": usuario, "situacao": "EM DIA" if i < em_dia else "VENCIDO"}
@@ -87,7 +87,7 @@ def linhas_do_departamento(nome, total, em_dia):
 
 
 class ConformidadePorDepartamentoTest(SimpleTestCase):
-    """RF-12: percentual em dia por departamento, com faixa de cor do painel do RH."""
+    """RF-14: percentual em dia por departamento, com faixa de cor do painel do RH."""
 
     def test_deve_calcular_percentual_e_ordenar_do_pior_para_o_melhor(self):
         # Arrange

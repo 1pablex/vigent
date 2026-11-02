@@ -1,4 +1,4 @@
-"""Exclui os dados originais de desligados após 90 dias no cofre (RN-29, LGPD art. 16)."""
+"""Exclui os dados originais de desligados após 90 dias no cofre (RN-35, LGPD art. 16)."""
 import time
 
 from django.core.management.base import BaseCommand

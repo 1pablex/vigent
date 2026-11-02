@@ -11,8 +11,8 @@ class Curso(models.Model):
     carga_horaria = models.CharField(max_length=30, default="4 horas")
     validade_meses = models.PositiveSmallIntegerField(default=12)
     nota_minima = models.DecimalField(max_digits=3, decimal_places=1, default=7)
-    max_tentativas = models.PositiveSmallIntegerField(default=3)      # RN-19
-    versao = models.PositiveIntegerField(default=1)                   # RN-21
+    max_tentativas = models.PositiveSmallIntegerField(default=3)      # RN-29
+    versao = models.PositiveIntegerField(default=1)                   # RN-32
 
     class Meta:
         ordering = ["nome"]
@@ -119,7 +119,7 @@ class Presenca(models.Model):
 
 
 class ProgressoAula(models.Model):
-    """RN-23 - a aula conclui quando todos os slides são percorridos."""
+    """RN-06 - a aula conclui quando todos os slides são percorridos."""
 
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name="progressos")

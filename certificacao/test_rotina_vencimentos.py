@@ -1,4 +1,4 @@
-"""Testes unitários da rotina verificar_vencimentos (RF-10, RN-11, RN-12).
+"""Testes unitários da rotina verificar_vencimentos (RF-12, RN-11, RN-12).
 
 Banco, envio de e-mail (Brevo) e log de auditoria são mocks: o teste verifica
 apenas a decisão da rotina de notificar ou não cada certificado.

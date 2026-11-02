@@ -57,7 +57,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: atribuição de
    ```
    pip install -r requirements.txt
    ```
-4. Copie `.env.example` para `.env` e preencha `SECRET_KEY`, `DATABASE_URL` e `BREVO_API_KEY`. Em desenvolvimento local mantenha `DEBUG=True`; em produção defina `DEBUG=False` e liste os domínios liberados em `ALLOWED_HOSTS`
+4. Copie `.env.example` para `.env` e preencha `SECRET_KEY`, `DATABASE_URL`, `BREVO_API_KEY`, `BREVO_SMTP_USER`, `BREVO_SMTP_PASSWORD` e `DEFAULT_FROM_EMAIL`. Em desenvolvimento local mantenha `DEBUG=True`; em produção defina `DEBUG=False` e liste os domínios liberados em `ALLOWED_HOSTS`
 5. Rode as migrações:
    ```
    python manage.py migrate

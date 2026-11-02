@@ -1,0 +1,43 @@
+{% extends "core/rh_base.html" %}
+{% block titulo %}{% if questao %}Questão {{ questao.ordem }}{% else %}Nova questão{% endif %}{% endblock %}
+{% block conteudo %}
+
+<div class="head">
+  <div><h1>{% if questao %}Questão {{ questao.ordem }}{% else %}Nova questão{% endif %}</h1>
+    <div class="sub">{{ curso.nome }}. Preencha de 2 a 5 alternativas e marque a correta.</div></div>
+  <a class="btn btn-ghost" href="{% url 'cursos_rh:editar' curso.id %}">← Voltar ao curso</a>
+</div>
+
+<div class="card">
+  {% if form.non_field_errors %}<p class="err" style="margin:0 0 14px">{{ form.non_field_errors.0 }}</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <div class="slide-grid">
+      {% include "treinamentos/rh/_campo.html" with campo=form.ordem %}
+      {% include "treinamentos/rh/_campo.html" with campo=form.enunciado %}
+    </div>
+
+    <div class="field">
+      <div class="q-lbl">Alternativas</div>
+      <div class="help" style="margin:0 0 10px">Marque a bolinha da alternativa correta. Deixe em branco as que não forem usadas.</div>
+      {% for letra, campo in form.alternativas %}
+      <div class="alt-linha">
+        <input type="radio" name="correta" value="{{ letra }}" id="correta_{{ letra }}"
+               {% if form.correta.value == letra %}checked{% endif %} title="Marcar {{ letra }} como correta">
+        <label for="correta_{{ letra }}" class="bub">{{ letra }}</label>
+        {{ campo }}
+      </div>
+      {{ campo.errors }}
+      {% endfor %}
+      {{ form.correta.errors }}
+    </div>
+
+    <div class="acoes">
+      <a class="btn btn-ghost" href="{% url 'cursos_rh:editar' curso.id %}">Cancelar</a>
+      <button class="btn btn-ghost" name="outra" value="1">Salvar e cadastrar outra</button>
+      <button class="btn btn-primary">Salvar questão</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

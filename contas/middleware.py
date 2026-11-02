@@ -1,4 +1,4 @@
-"""RN-27 - enquanto a senha provisória não for substituída, apenas a tela
+"""RN-18 - enquanto a senha provisória não for substituída, apenas a tela
 de definição de senha permanece acessível."""
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -19,7 +19,7 @@ class SenhaProvisoriaMiddleware:
         return self.get_response(request)
 
 class TermoAceiteMiddleware:
-    """Bloqueia acesso até o aceite do termo de uso, exceto para RH/colaborador     ainda em processo de definir a senha"""
+    """RN-33 - bloqueia acesso até o aceite do termo de uso, exceto para RH/colaborador     ainda em processo de definir a senha"""
     LIBERADAS = ("contas:aceitar_termo", "contas:logout", "contas:definir_senha")
 
     def __init__(self, get_response):

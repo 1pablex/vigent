@@ -31,7 +31,7 @@ def gerar_senha_provisoria(tamanho=10):
 
 def _bloqueado_por_forca_bruta(email, ip):
     """
-    RN-35 - trava temporária contra força bruta.
+    RN-22 - trava temporária contra força bruta.
 
     Conta tentativas malsucedidas de login para o e-mail informado e para o IP de origem. Basta um dos
     dois exceder o limite para bloquear temporariamente o acesso. O bloqueio é registrado no log de auditoria.
@@ -53,7 +53,7 @@ def tela_login(request):
 
     erro = None
     if request.method == "POST":
-        email = (request.POST.get("email") or "").strip().lower()   # RN-26
+        email = (request.POST.get("email") or "").strip().lower()   # RN-17
         senha = request.POST.get("senha") or ""
         ip = _ip(request)
 
@@ -84,7 +84,7 @@ def tela_login(request):
                 RegistroAcesso.objects.create(
                     identificacao=email or "-", evento="Credencial inválida",
                     grupo="-", ip=ip, resultado="Negado")
-        elif usuario.senha_provisoria:
+        elif usuario.senha_provisoria:   # RN-26 - 2FA dispensado no primeiro acesso
             login(request, usuario)
             RegistroAcesso.objects.create(
                 identificacao=usuario.email, evento="Login realizado",
@@ -109,12 +109,13 @@ def sair(request):
 
 
 def ver_politica_privacidade(request):
+    """RF-23 - política de privacidade disponível ao colaborador."""
     return render(request, "contas/politica_privacidade.html")
 
 #obrigatorio apos o login, para que o usuario troque a senha provisoria
 @login_required
 def definir_senha(request):
-    """RN-27 - troca obrigatória no primeiro acesso."""
+    """RN-18 - troca obrigatória no primeiro acesso."""
     if not request.user.senha_provisoria:
         return redirect("core:inicio")
 
@@ -142,7 +143,7 @@ def definir_senha(request):
 
 @login_required
 def cadastrar_colaborador(request):
-    """RF-14, RF-27, RF-32, RN-15, RN-32, RN-33."""
+    """RF-16, RF-17, RN-15, RN-19, RN-20."""
     if not request.user.e_rh:
         return redirect("core:inicio")
 
@@ -169,7 +170,7 @@ def cadastrar_colaborador(request):
                 departamento_id=dep_id or None, grupo=grupo,
                 senha_provisoria=True,
             )
-            enviar_primeiro_acesso(novo, senha)     # RN-32
+            enviar_primeiro_acesso(novo, senha)     # RN-19
             registrar(LogSistema.Nivel.INFO, "Colaborador cadastrado",
                       f"Matrícula {novo.matricula} - {nome} · {email} · grupo {grupo} · "
                       f"credenciais enviadas ao titular", request.user)
@@ -187,6 +188,7 @@ def cadastrar_colaborador(request):
     })
 
 def verificar_codigo(request):
+    """RF-20, RN-25 - segundo fator por código enviado por e-mail."""
     usuario_id = request.session.get("pre_2fa_usuario_id")
     if not usuario_id:
         return redirect("contas:login")
@@ -227,6 +229,7 @@ def verificar_codigo(request):
     return render(request, "contas/verificar_codigo.html", {"erro": erro, "email": usuario.email})
 
 def esqueci_senha(request):
+    """RF-22, RN-27 - a resposta não revela se o e-mail está cadastrado."""
     erro = None
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
@@ -247,6 +250,7 @@ def esqueci_senha(request):
 
 
 def redefinir_senha(request):
+    """RF-22, RN-25, RN-28 - redefinição por código, senha com no mínimo 6 caracteres."""
     email = request.session.get("reset_email")
     if not email:
         return redirect("contas:esqueci_senha")
@@ -285,6 +289,7 @@ def redefinir_senha(request):
     return render(request, "contas/redefinir_senha.html", {"erro": erro, "email": email})
 @login_required
 def aceitar_termo(request):
+    """RF-23, RN-33 - aceite obrigatório do termo de uso."""
     if request.user.aceitou_termos:
         return redirect("core:inicio")
 
@@ -304,7 +309,7 @@ def aceitar_termo(request):
 
 @login_required
 def meus_dados(request):
-    """Dados cadastrais do próprio usuário, somente leitura (LGPD, art. 18, II - acesso aos dados)."""
+    """Dados cadastrais do próprio usuário, somente leitura (RF-24, RN-37, LGPD, art. 18, II - acesso aos dados)."""
     usuario = (Usuario.objects
                .select_related("departamento")
                .only("nome", "matricula", "cargo", "data_cadastro", "departamento__nome")

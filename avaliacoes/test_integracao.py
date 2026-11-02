@@ -1,4 +1,4 @@
-"""Testes de integração da avaliação de reação e da prova (RN-06, RN-09, RN-19, RN-23).
+"""Testes de integração da avaliação de reação e da prova (RN-06, RN-07, RN-09, RN-29).
 
 Views, services e banco de teste são reais; nada é mockado.
 """
@@ -84,7 +84,7 @@ class AvaliacaoReacaoIntegracaoTest(CenarioCursoMixin, TestCase):
         self.assertRedirects(resposta, reverse("treinamentos:inicio"))
 
     def test_deve_exigir_conteudo_concluido_antes_da_reacao(self):
-        # Act (RN-23: aula ainda não concluída)
+        # Act (RN-06: aula ainda não concluída)
         resposta = self.client.post(reverse("avaliacoes:reacao", args=[self.curso.id]),
                                     {"didatica": 9, "entendimento": 8})
 
@@ -125,7 +125,7 @@ class AvaliacaoReacaoIntegracaoTest(CenarioCursoMixin, TestCase):
 class ProvaIntegracaoTest(CenarioCursoMixin, TestCase):
 
     def test_deve_exigir_reacao_antes_da_prova(self):
-        # Arrange (RN-06)
+        # Arrange (RN-07)
         self.concluir_conteudo()
 
         # Act
@@ -178,7 +178,7 @@ class ProvaIntegracaoTest(CenarioCursoMixin, TestCase):
         resposta = self.client.post(reverse("avaliacoes:prova", args=[self.curso.id]),
                                     self.respostas_erradas)
 
-        # Assert (RN-19: progresso, reação e tentativas zerados)
+        # Assert (RN-29: progresso, reação e tentativas zerados)
         self.assertTrue(resposta.context["reciclou"])
         self.assertFalse(ProgressoAula.objects.filter(usuario=self.colaborador).exists())
         self.assertFalse(AvaliacaoReacao.objects.filter(usuario=self.colaborador).exists())

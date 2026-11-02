@@ -48,6 +48,7 @@ def rh_colaboradores(request):
 
 @login_required
 def rh_remover_colaborador(request, usuario_id):
+    """RF-25, RN-34, RN-36 - desligamento com pseudonimização."""
     if not request.user.e_rh:
         return redirect("treinamentos:inicio")
     if request.method != "POST":
@@ -138,6 +139,7 @@ def rh_conformidade(request):
 
 @login_required
 def rh_solicitar_reciclagem(request, usuario_id, curso_id):
+    """RF-10, RN-30 - reciclagem solicitada pelo RH, com aviso ao colaborador."""
     if not request.user.e_rh:
         return redirect("treinamentos:inicio")
     if request.method != "POST":

@@ -1,4 +1,4 @@
-"""Testes de integração do painel do RH (RF-11, RF-12, RN-19).
+"""Testes de integração do painel do RH (RF-10, RF-13, RF-14, RN-30).
 
 Views, services e banco de teste são reais. Só o envio de e-mail pelo Brevo é
 substituído por mock, para nenhum teste chamar a API externa.
@@ -105,7 +105,7 @@ class PainelRhIntegracaoTest(TestCase):
         resposta = self.client.post(
             reverse("core:rh_reciclagem", args=[self.colaborador.id, self.curso.id]))
 
-        # Assert (RN-19)
+        # Assert (RN-30)
         self.assertRedirects(resposta, reverse("core:rh_conformidade"))
         self.assertFalse(ProgressoAula.objects.filter(usuario=self.colaborador).exists())
         self.assertFalse(AvaliacaoReacao.objects.filter(usuario=self.colaborador).exists())

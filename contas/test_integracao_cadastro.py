@@ -35,7 +35,7 @@ class CadastroColaboradorIntegracaoTest(TestCase):
         # Act
         resposta = self.client.post(reverse("contas:cadastrar"), self.dados)
 
-        # Assert (RN-15, RN-32)
+        # Assert (RN-15, RN-19)
         self.assertRedirects(resposta, reverse("core:rh_colaboradores"))
         novo = Usuario.objects.get(email="carlos@nortex.com.br")
         self.assertTrue(novo.matricula)

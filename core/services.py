@@ -22,7 +22,7 @@ def registrar(nivel, evento, detalhe="", usuario=None, ip=None):
     )
 
 def gerar_codigo_verificacao(usuario):
-    """RN-18 - código de 6 dígitos, válido por 5 minutos, uso único."""
+    """RN-25 - código de 6 dígitos, válido por 5 minutos, uso único."""
     codigo = f"{secrets.randbelow(1_000_000):06d}"
     minutos = settings.VIGENT["VALIDADE_CODIGO_2FA_MIN"]
     return CodigoVerificacao.objects.create(
@@ -66,7 +66,7 @@ def registrar_presenca(usuario, curso):
     return presenca, criada
 
 
-#RN-23 progresso do conteudo
+#RN-06 progresso do conteudo
 def progresso(usuario, aula):
     obj, _ = ProgressoAula.objects.get_or_create(usuario=usuario, aula=aula)
     return obj
@@ -87,7 +87,7 @@ def aula_liberada(usuario, aula):
     return anterior is None or aula_concluida(usuario, anterior)
 
 
-#RN-06 reação obrigatória antes da prova
+#RN-07 reação obrigatória antes da prova
 def tem_reacao(usuario, curso):
     return AvaliacaoReacao.objects.filter(usuario=usuario, curso=curso).exists()
 
@@ -107,14 +107,14 @@ def tentativas(usuario, curso):
 
 
 def reciclar(usuario, curso):
-    """RN-19 que zera progresso, reação e tentativas; certificados anteriores ficam intactos."""
+    """RN-29 que zera progresso, reação e tentativas; certificados anteriores ficam intactos."""
     ProgressoAula.objects.filter(usuario=usuario, aula__curso=curso).delete()
     AvaliacaoReacao.objects.filter(usuario=usuario, curso=curso).delete()
     RespostaProva.objects.filter(usuario=usuario, prova__curso=curso).delete()
 
 
 def emitir_certificado(usuario, curso, nota):
-    """RN-08/RN-21 que exige reação registrada e nota mínima e grava a versão vigente do curso."""
+    """RN-08/RN-32 que exige reação registrada e nota mínima e grava a versão vigente do curso."""
     if not tem_reacao(usuario, curso):
         raise ValueError("Certificado exige avaliação de reação registrada (RN-08).")
     if nota < curso.nota_minima:
@@ -132,7 +132,7 @@ def emitir_certificado(usuario, curso, nota):
 
 
 def corrigir_prova(usuario, curso, marcadas):
-    """RN-09/RN-19/RN-20 que corrige, grava a tentativa e devolve (nota, aprovado, reciclou)."""
+    """RN-09/RN-29/RN-31 que corrige, grava a tentativa e devolve (nota, aprovado, reciclou)."""
     prova = curso.prova
     questoes = list(prova.questoes.prefetch_related("alternativas"))
     acertos = 0
@@ -157,7 +157,7 @@ def corrigir_prova(usuario, curso, marcadas):
     return nota, aprovado, reciclou
 
 def matriz_conformidade():
-    """RF 11 - lista de todos os colaboradores com seus cursos e situação."""
+    """RF-13 - lista de todos os colaboradores com seus cursos e situação."""
     linhas = []
     colaboradores = (Usuario.objects
                      .filter(is_active=True, grupo=Usuario.Grupo.COLABORADOR)
@@ -170,7 +170,7 @@ def matriz_conformidade():
     return linhas
 
 def kpis_conformidade(linhas):
-    """RF-12 - indicadores consolidados da organização."""
+    """RF-14 - indicadores consolidados da organização."""
     return {
         "em_dia": sum(1 for l in linhas if l["situacao"] == "EM DIA"),
         "vencendo": sum(1 for l in linhas if l["situacao"] == "VENCENDO"),
@@ -201,7 +201,7 @@ def conformidade_por_departamento(linhas):
 
 
 def qualidade_percebida(linhas):
-    """RF 13 - MEDIA, SITUACAO, CONCLUSAO."""
+    """RF-15 - MEDIA, SITUACAO, CONCLUSAO."""
     total = len(linhas)
     pendentes = sum(1 for l in linhas if l["situacao"] == "PENDENTE")
     taxa_conclusao = round((total - pendentes) / total * 100) if total else 0
@@ -220,7 +220,7 @@ def qualidade_percebida(linhas):
         "media_reacao": media_reacao,
     }
 
-#RN-29 desligamento e pseudonimização
+#RN-34/RN-35 desligamento e pseudonimização
 DIAS_COFRE_REIDENTIFICACAO = 90
 DOMINIO_PSEUDONIMO = "pseudonimizado.invalid"
 
