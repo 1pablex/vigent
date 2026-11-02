@@ -1,7 +1,7 @@
 """Testes de integração do limite de tentativas nos códigos de verificação.
 
 Após 5 erros o código é invalidado e o usuário precisa solicitar outro, tanto no
-segundo fator do login (RN-18) quanto na redefinição de senha. O envio pelo Brevo
+segundo fator do login (RN-25) quanto na redefinição de senha. O envio pelo Brevo
 é substituído por mock.
 """
 from unittest.mock import patch
