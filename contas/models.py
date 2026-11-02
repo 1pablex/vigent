@@ -1,4 +1,6 @@
 """Identidade, organização e credenciais de acesso."""
+import secrets
+
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models, transaction
@@ -129,6 +131,7 @@ class CodigoVerificacao(models.Model):
     data_geracao = models.DateTimeField(auto_now_add=True)
     data_expiracao = models.DateTimeField()
     utilizado = models.BooleanField(default=False)
+    tentativas_erradas = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
         ordering = ["-data_geracao"]
@@ -136,5 +139,20 @@ class CodigoVerificacao(models.Model):
         verbose_name_plural = "códigos de verificação"
 
     @property
+    def bloqueado(self):
+        return self.tentativas_erradas >= settings.VIGENT["MAX_TENTATIVAS_CODIGO"]
+
+    @property
     def valido(self):
-        return not self.utilizado and timezone.now() < self.data_expiracao
+        return (not self.utilizado and not self.bloqueado
+                and timezone.now() < self.data_expiracao)
+
+    def confere(self, digitado):
+        return secrets.compare_digest(digitado, self.codigo)
+
+    def registrar_erro(self):
+        """Conta um erro de forma atômica; ao atingir o limite o código deixa de valer."""
+        (CodigoVerificacao.objects
+         .filter(pk=self.pk, tentativas_erradas__lt=settings.VIGENT["MAX_TENTATIVAS_CODIGO"])
+         .update(tentativas_erradas=models.F("tentativas_erradas") + 1))
+        self.refresh_from_db(fields=["tentativas_erradas"])
