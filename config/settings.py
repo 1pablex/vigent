@@ -159,6 +159,7 @@ VIGENT = {
     "MAX_TENTATIVAS_LOGIN": 5,
     "JANELA_BLOQUEIO_LOGIN_MIN": 15,
     "VALIDADE_CODIGO_2FA_MIN": 5,
+    "MAX_TENTATIVAS_CODIGO": 5,
 }
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
