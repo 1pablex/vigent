@@ -67,7 +67,7 @@ class SlideAula(models.Model):
 
 
 class CursoDepartamento(models.Model):
-    """RN-02 - obrigatoriedade por setor."""
+    """RN-02 - obrigatorio por setor."""
 
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name="departamentos")
     departamento = models.ForeignKey("contas.Departamento", on_delete=models.CASCADE,
@@ -85,10 +85,8 @@ class CursoDepartamento(models.Model):
 
 class AtribuicaoManual(models.Model):
     """Exceção individual à regra do departamento.
-
-    DESATIVADA nesta versão: o model e a tabela foram mantidos, mas nenhuma regra
-    de visibilidade os consulta (ver core.services.cursos_do_usuario). Reservado
-    para a feature futura de atribuições excepcionais.
+    Apos um trade-off: a atribuição manual é DESATIVADA nesta versão, mas o model e a tabela foram mantidos
+    para não perder o histórico de atribuições feitas servir de base para a feature futuras.
     """
 
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name="atribuicoes")
