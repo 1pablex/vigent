@@ -84,7 +84,12 @@ class CursoDepartamento(models.Model):
 
 
 class AtribuicaoManual(models.Model):
-    """RN-02 - exceção individual à regra do departamento."""
+    """Exceção individual à regra do departamento.
+
+    DESATIVADA nesta versão: o model e a tabela foram mantidos, mas nenhuma regra
+    de visibilidade os consulta (ver core.services.cursos_do_usuario). Reservado
+    para a feature futura de atribuições excepcionais.
+    """
 
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name="atribuicoes")
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,

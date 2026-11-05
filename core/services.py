@@ -32,10 +32,18 @@ def gerar_codigo_verificacao(usuario):
 
 #RN-02/RN-04 visibilidade de cursos
 def cursos_do_usuario(usuario):
-    from django.db.models import Q
-    por_departamento = Q(departamentos__departamento=usuario.departamento_id)
-    individuais = Q(atribuicoes__usuario=usuario)
-    return Curso.objects.filter(por_departamento | individuais).distinct()
+    """RN-02 - os cursos do colaborador derivam exclusivamente do departamento.
+
+    A obrigatoriedade não é gravada por pessoa: é calculada na consulta a partir de
+    CursoDepartamento. Assim, quando o colaborador muda de setor, passa a ver os
+    cursos do novo departamento sem nenhuma ação manual do RH.
+
+    A atribuição individual (AtribuicaoManual) está desativada nesta versão e
+    reservada para uma feature futura de exceções (onboarding, reciclagem pontual).
+    """
+    return (Curso.objects
+            .filter(departamentos__departamento=usuario.departamento_id)
+            .distinct())
 
 
 def cursos_publicados_do_usuario(usuario):

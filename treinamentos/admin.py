@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import (AtribuicaoManual, Aula, Curso, CursoDepartamento,
+from .models import (Aula, Curso, CursoDepartamento,
                      Presenca, ProgressoAula, SlideAula)
 
 
@@ -40,11 +40,6 @@ class AulaAdmin(admin.ModelAdmin):
     list_display = ["curso", "ordem", "titulo"]
     list_filter = ["curso"]
     inlines = [SlideInline]
-
-
-@admin.register(AtribuicaoManual)
-class AtribuicaoAdmin(admin.ModelAdmin):
-    list_display = ["usuario", "curso", "atribuido_por", "data_atribuicao"]
 
 
 @admin.register(CursoDepartamento)
