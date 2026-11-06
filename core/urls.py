@@ -9,6 +9,7 @@ urlpatterns = [
     path("rh/colaboradores/", views.rh_colaboradores, name="rh_colaboradores"),
     path("rh/colaboradores/<int:usuario_id>/remover/", views.rh_remover_colaborador, name="rh_remover"),
     path("rh/auditoria/", views.rh_auditoria, name="rh_auditoria"),
+    path("rh/dashboard/", views.rh_dashboard, name="rh_dashboard"),
     path("rh/conformidade/", views.rh_conformidade, name="rh_conformidade"),
     path("rh/reciclagem/<int:usuario_id>/<int:curso_id>/", views.rh_solicitar_reciclagem, name="rh_reciclagem"),
 ]

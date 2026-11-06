@@ -87,7 +87,7 @@ def linhas_do_departamento(nome, total, em_dia):
 
 
 class ConformidadePorDepartamentoTest(SimpleTestCase):
-    """RF-14: percentual em dia por departamento, com faixa de cor do painel do RH."""
+    """RF-14/RN-38: índice (em dia + vencendo) por departamento, com faixa de cor do painel."""
 
     def test_deve_calcular_percentual_e_ordenar_do_pior_para_o_melhor(self):
         # Arrange
@@ -99,8 +99,10 @@ class ConformidadePorDepartamentoTest(SimpleTestCase):
 
         # Assert
         self.assertEqual(resultado, [
-            {"departamento": "Operações", "percentual": 25, "cor": "var(--red)"},
-            {"departamento": "Vendas", "percentual": 100, "cor": "var(--green)"},
+            {"departamento": "Operações", "percentual": 25, "cor": "var(--red)",
+             "total": 4, "conformes": 1},
+            {"departamento": "Vendas", "percentual": 100, "cor": "var(--teal)",
+             "total": 4, "conformes": 4},
         ])
 
     def test_deve_agrupar_colaborador_sem_departamento_em_grupo_proprio(self):
@@ -118,7 +120,7 @@ class ConformidadePorDepartamentoTest(SimpleTestCase):
     def test_deve_trocar_a_cor_exatamente_nas_fronteiras_de_90_e_50_por_cento(self):
         # Arrange: (colaboradores em dia de 100, cor esperada)
         casos = [
-            (90, "var(--green)"),
+            (90, "var(--teal)"),
             (89, "var(--amber)"),
             (50, "var(--amber)"),
             (49, "var(--red)"),
@@ -142,3 +144,49 @@ class ConformidadePorDepartamentoTest(SimpleTestCase):
         # Assert
         self.assertEqual(departamentos, [])
         self.assertEqual(kpis, {"em_dia": 0, "vencendo": 0, "vencido": 0, "pendente": 0})
+
+
+def linha(situacao, departamento="Vendas", curso="LGPD", dias=None):
+    """Uma linha da matriz em memória; com `dias`, leva um certificado que vence nesse prazo."""
+    cert = SimpleNamespace(dias_para_vencer=dias) if dias is not None else None
+    return {"usuario": SimpleNamespace(departamento=SimpleNamespace(nome=departamento)),
+            "curso": SimpleNamespace(nome=curso), "situacao": situacao, "certificado": cert}
+
+
+@patch("core.services.settings", VIGENT={"META_CONFORMIDADE": 90})
+class IndiceConformidadeTest(SimpleTestCase):
+    """RN-38: um par está conforme quando o certificado está em dia ou vencendo."""
+
+    def test_deve_contar_vencendo_como_conforme(self, _settings):
+        linhas = [linha("EM DIA"), linha("VENCENDO"), linha("VENCIDO"), linha("PENDENTE")]
+
+        resultado = services.indice_conformidade(linhas)
+
+        self.assertEqual(resultado["percentual"], 50)
+        self.assertEqual(resultado["total"], 4)
+        self.assertEqual(resultado["meta"], 90)
+
+    def test_deve_retornar_zero_sem_linhas(self, _settings):
+        self.assertEqual(services.indice_conformidade([])["percentual"], 0)
+
+    def test_deve_ordenar_cursos_do_gargalo_para_o_melhor(self, _settings):
+        linhas = ([linha("EM DIA", curso="LGPD")] * 2
+                  + [linha("VENCIDO", curso="NR-35"), linha("VENCENDO", curso="NR-35")])
+
+        resultado = services.conformidade_por_curso(linhas)
+
+        self.assertEqual([(r["curso"], r["percentual"]) for r in resultado],
+                         [("NR-35", 50), ("LGPD", 100)])
+
+
+class VencimentosPorFaixaTest(SimpleTestCase):
+    """RN-39: faixas fechadas de 0-30, 31-60 e 61-90 dias; vencidos e pendentes ficam fora."""
+
+    def test_deve_distribuir_certificados_nas_fronteiras_das_faixas(self):
+        linhas = [linha("VENCENDO", dias=d) for d in (0, 30, 31, 60, 61, 90)]
+        linhas += [linha("EM DIA", dias=91), linha("VENCIDO", dias=-1), linha("PENDENTE")]
+
+        resultado = services.vencimentos_por_faixa(linhas)
+
+        self.assertEqual([(f["de_dias"], f["ate_dias"], f["quantidade"]) for f in resultado],
+                         [(0, 30, 2), (31, 60, 2), (61, 90, 2)])

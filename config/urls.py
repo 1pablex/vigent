@@ -12,6 +12,7 @@ urlpatterns = [
     path('rh/cursos/', include('treinamentos.urls_rh')),
     path('', include('core.urls')),
     path("certificados/", include("certificacao.urls")),
+    path("api/v1/", include("core.api.urls")),
 ]
 
 if settings.DEBUG:

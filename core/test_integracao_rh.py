@@ -108,7 +108,11 @@ class PainelRhIntegracaoTest(TestCase):
         # Assert (RN-30)
         self.assertRedirects(resposta, reverse("core:rh_conformidade"))
         self.assertFalse(ProgressoAula.objects.filter(usuario=self.colaborador).exists())
-        self.assertFalse(AvaliacaoReacao.objects.filter(usuario=self.colaborador).exists())
+        # RN-30: a reação não some, fica arquivada no histórico e deixa de liberar a prova
+        self.assertFalse(AvaliacaoReacao.objects.filter(
+            usuario=self.colaborador, arquivada=False).exists())
+        self.assertTrue(AvaliacaoReacao.objects.filter(
+            usuario=self.colaborador, arquivada=True).exists())
         enviar_notificacao.assert_called_once_with(self.colaborador, self.curso)
         self.assertTrue(LogSistema.objects.filter(
             evento="Reciclagem solicitada pelo RH", usuario=self.rh).exists())

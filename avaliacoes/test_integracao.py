@@ -181,6 +181,10 @@ class ProvaIntegracaoTest(CenarioCursoMixin, TestCase):
         # Assert (RN-29: progresso, reação e tentativas zerados)
         self.assertTrue(resposta.context["reciclou"])
         self.assertFalse(ProgressoAula.objects.filter(usuario=self.colaborador).exists())
-        self.assertFalse(AvaliacaoReacao.objects.filter(usuario=self.colaborador).exists())
+        # RN-30: a reação não some, fica arquivada no histórico e deixa de liberar a prova
+        self.assertFalse(AvaliacaoReacao.objects.filter(
+            usuario=self.colaborador, arquivada=False).exists())
+        self.assertTrue(AvaliacaoReacao.objects.filter(
+            usuario=self.colaborador, arquivada=True).exists())
         self.assertFalse(RespostaProva.objects.filter(usuario=self.colaborador).exists())
         self.assertTrue(LogSistema.objects.filter(evento="Tentativas esgotadas").exists())

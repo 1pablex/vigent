@@ -86,7 +86,7 @@ class CursoDepartamento(models.Model):
 class AtribuicaoManual(models.Model):
     """Exceção individual à regra do departamento.
     Apos um trade-off: a atribuição manual é DESATIVADA nesta versão, mas o model e a tabela foram mantidos
-    para não perder o histórico de atribuições feitas servir de base para a feature futuras.
+    para não perder o histórico de atribuições feitas servir de base para a feature futuras .
     """
 
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE, related_name="atribuicoes")
