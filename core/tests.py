@@ -52,11 +52,23 @@ class ServicosTestCase(TestCase):
         CursoDepartamento.objects.create(curso=self.curso, departamento=self.dep_vendas)
         self.assertIn(self.curso, services.cursos_do_usuario(self.colaborador))
 
-    def test_rn02_curso_visivel_por_atribuicao_individual(self):
+    def test_rn02_atribuicao_individual_desativada_nao_concede_curso(self):
         outro_curso = Curso.objects.create(nome="Só pra ele", categoria="X")
         AtribuicaoManual.objects.create(
             curso=outro_curso, usuario=self.colaborador, atribuido_por=self.rh)
-        self.assertIn(outro_curso, services.cursos_do_usuario(self.colaborador))
+        self.assertNotIn(outro_curso, services.cursos_do_usuario(self.colaborador))
+
+    def test_rn02_troca_de_departamento_atualiza_cursos(self):
+        CursoDepartamento.objects.create(curso=self.curso, departamento=self.dep_vendas)
+        curso_operacoes = Curso.objects.create(nome="Segurança Operacional", categoria="X")
+        CursoDepartamento.objects.create(curso=curso_operacoes, departamento=self.dep_operacoes)
+
+        self.colaborador.departamento = self.dep_operacoes
+        self.colaborador.save()
+
+        cursos = services.cursos_do_usuario(self.colaborador)
+        self.assertIn(curso_operacoes, cursos)
+        self.assertNotIn(self.curso, cursos)
 
     def test_rn02_curso_sem_vinculo_fica_invisivel(self):
         self.assertNotIn(self.curso, services.cursos_do_usuario(self.colaborador))

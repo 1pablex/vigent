@@ -8,12 +8,12 @@ from django.conf import settings
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from django.db import transaction
-from django.db.models import Avg
+from django.db.models import Avg, Count
 
 from auditoria.models import LogSistema
 from avaliacoes.models import AvaliacaoReacao, RespostaProva
 from certificacao.models import Certificado
-from treinamentos.models import Curso, Presenca, ProgressoAula
+from treinamentos.models import Curso, CursoDepartamento, Presenca, ProgressoAula
 from contas.models import CodigoVerificacao, Reidentificacao, Usuario
 
 def registrar(nivel, evento, detalhe="", usuario=None, ip=None):
@@ -32,10 +32,18 @@ def gerar_codigo_verificacao(usuario):
 
 #RN-02/RN-04 visibilidade de cursos
 def cursos_do_usuario(usuario):
-    from django.db.models import Q
-    por_departamento = Q(departamentos__departamento=usuario.departamento_id)
-    individuais = Q(atribuicoes__usuario=usuario)
-    return Curso.objects.filter(por_departamento | individuais).distinct()
+    """RN-02 - os cursos do colaborador derivam exclusivamente do departamento.
+
+    A obrigatoriedade não é gravada por pessoa: é calculada na consulta a partir de
+    CursoDepartamento. Assim, quando o colaborador muda de setor, passa a ver os
+    cursos do novo departamento sem nenhuma ação manual do RH.
+
+    A atribuição individual (AtribuicaoManual) está desativada nesta versão e
+    reservada para uma feature futura de exceções (onboarding, reciclagem pontual).
+    """
+    return (Curso.objects
+            .filter(departamentos__departamento=usuario.departamento_id)
+            .distinct())
 
 
 def cursos_publicados_do_usuario(usuario):
@@ -89,7 +97,9 @@ def aula_liberada(usuario, aula):
 
 #RN-07 reação obrigatória antes da prova
 def tem_reacao(usuario, curso):
-    return AvaliacaoReacao.objects.filter(usuario=usuario, curso=curso).exists()
+    """Só a reação do ciclo atual libera a prova; as arquivadas na reciclagem não contam."""
+    return AvaliacaoReacao.objects.filter(
+        usuario=usuario, curso=curso, arquivada=False).exists()
 
 
 def etapa_atual(usuario, curso):
@@ -106,10 +116,18 @@ def tentativas(usuario, curso):
     return RespostaProva.objects.filter(usuario=usuario, prova__curso=curso).count()
 
 
+@transaction.atomic
 def reciclar(usuario, curso):
-    """RN-29 que zera progresso, reação e tentativas; certificados anteriores ficam intactos."""
+    """RN-29/RN-30 - reinicia o ciclo do curso para o colaborador.
+
+    Zera progresso e tentativas. A avaliação de reação NÃO é apagada: é arquivada,
+    para que o colaborador responda de novo no novo ciclo sem perder o histórico
+    usado nos indicadores de qualidade percebida. Certificados ficam intactos.
+    Roda numa transação: se qualquer etapa falhar, nada é gravado (sem reciclagem pela metade).
+    """
     ProgressoAula.objects.filter(usuario=usuario, aula__curso=curso).delete()
-    AvaliacaoReacao.objects.filter(usuario=usuario, curso=curso).delete()
+    AvaliacaoReacao.objects.filter(usuario=usuario, curso=curso,
+                                   arquivada=False).update(arquivada=True)
     RespostaProva.objects.filter(usuario=usuario, prova__curso=curso).delete()
 
 
@@ -157,16 +175,42 @@ def corrigir_prova(usuario, curso, marcadas):
     return nota, aprovado, reciclou
 
 def matriz_conformidade():
-    """RF-13 - lista de todos os colaboradores com seus cursos e situação."""
+    """RF-13 - todos os pares colaborador ativo × curso publicado exigido, com a situação.
+
+    Monta a matriz com um número fixo de consultas (colaboradores, cursos publicados,
+    vínculos por departamento e certificados), em vez de consultar o banco a cada par.
+    """
+    colaboradores = list(Usuario.objects
+                         .filter(is_active=True, grupo=Usuario.Grupo.COLABORADOR)
+                         .select_related("departamento"))
+
+    # RN-04 - publicado = ao menos uma aula e uma questão cadastradas
+    cursos = {c.id: c for c in (Curso.objects
+                                .filter(aulas__isnull=False, prova__questoes__isnull=False)
+                                .distinct())}
+
+    # RN-02 - cursos exigidos de cada departamento
+    cursos_por_dep = defaultdict(list)
+    for dep_id, curso_id in (CursoDepartamento.objects
+                             .filter(curso_id__in=cursos)
+                             .values_list("departamento_id", "curso_id")):
+        cursos_por_dep[dep_id].append(cursos[curso_id])
+
+    # RN-14 - vale o certificado mais recente de cada par
+    vigentes = {}
+    for cert in (Certificado.objects
+                 .filter(usuario__in=colaboradores, curso_id__in=cursos)
+                 .order_by("-data_emissao", "-id")):
+        vigentes.setdefault((cert.usuario_id, cert.curso_id), cert)
+
     linhas = []
-    colaboradores = (Usuario.objects
-                     .filter(is_active=True, grupo=Usuario.Grupo.COLABORADOR)
-                     .select_related("departamento"))
     for usuario in colaboradores:
-        for curso in cursos_publicados_do_usuario(usuario):
-            sit, cert = situacao(usuario, curso)
+        for curso in sorted(cursos_por_dep.get(usuario.departamento_id, []),
+                            key=lambda c: c.nome):
+            cert = vigentes.get((usuario.id, curso.id))
             linhas.append({"usuario": usuario, "curso": curso,
-                           "situacao": sit, "certificado": cert})
+                           "situacao": cert.situacao if cert else "PENDENTE",
+                           "certificado": cert})
     return linhas
 
 def kpis_conformidade(linhas):
@@ -179,25 +223,108 @@ def kpis_conformidade(linhas):
     }
 
 
-def conformidade_por_departamento(linhas):
-    por_dep = defaultdict(lambda: {"total": 0, "em_dia": 0})
+# RN-38 - um par está conforme enquanto o certificado vale (em dia ou vencendo)
+SITUACOES_CONFORMES = ("EM DIA", "VENCENDO")
+
+
+def percentual_conforme(linhas):
+    """RN-38 - índice de conformidade: (em dia + vencendo) ÷ total de pares, em %."""
+    total = len(linhas)
+    conformes = sum(1 for l in linhas if l["situacao"] in SITUACOES_CONFORMES)
+    return round(conformes / total * 100) if total else 0
+
+
+def cor_do_percentual(pct):
+    """Faixa de cor do painel: verde a partir da meta, âmbar a partir de 50%."""
+    if pct >= settings.VIGENT["META_CONFORMIDADE"]:
+        return "var(--teal)"
+    if pct >= 50:
+        return "var(--amber)"
+    return "var(--red)"
+
+
+def indice_conformidade(linhas):
+    """RF-29 - índice geral comparado com a meta interna, mais a contagem por situação."""
+    return {
+        **kpis_conformidade(linhas),
+        "total": len(linhas),
+        "percentual": percentual_conforme(linhas),
+        "meta": settings.VIGENT["META_CONFORMIDADE"],
+    }
+
+
+def _agrupar_conformidade(linhas, chave, rotulo):
+    grupos = defaultdict(list)
     for l in linhas:
-        nome_dep = l["usuario"].departamento.nome if l["usuario"].departamento else "Sem departamento"
-        por_dep[nome_dep]["total"] += 1
-        if l["situacao"] == "EM DIA":
-            por_dep[nome_dep]["em_dia"] += 1
+        grupos[chave(l)].append(l)
 
     resultado = []
-    for dep, dados in por_dep.items():
-        pct = round(dados["em_dia"] / dados["total"] * 100) if dados["total"] else 0
-        if pct >= 90:
-            cor = "var(--green)"
-        elif pct >= 50:
-            cor = "var(--amber)"
-        else:
-            cor = "var(--red)"
-        resultado.append({"departamento": dep, "percentual": pct, "cor": cor})
-    return sorted(resultado, key=lambda x: x["percentual"])
+    for nome, itens in grupos.items():
+        pct = percentual_conforme(itens)
+        resultado.append({
+            rotulo: nome, "percentual": pct, "cor": cor_do_percentual(pct),
+            "total": len(itens),
+            "conformes": sum(1 for l in itens if l["situacao"] in SITUACOES_CONFORMES),
+        })
+    return sorted(resultado, key=lambda x: (x["percentual"], x[rotulo]))
+
+
+def conformidade_por_departamento(linhas):
+    """RF-14/RN-38 - índice por setor, do pior para o melhor."""
+    return _agrupar_conformidade(
+        linhas,
+        lambda l: l["usuario"].departamento.nome if l["usuario"].departamento
+        else "Sem departamento",
+        "departamento")
+
+
+def conformidade_por_curso(linhas):
+    """RF-29/RN-38 - índice por treinamento, do pior para o melhor (gargalo primeiro)."""
+    return _agrupar_conformidade(linhas, lambda l: l["curso"].nome, "curso")
+
+
+# RN-39 - faixas de vencimento previstas, em dias a partir de hoje
+FAIXAS_VENCIMENTO = ((0, 30), (31, 60), (61, 90))
+
+
+def vencimentos_por_faixa(linhas):
+    """RF-29/RN-39 - certificados vigentes que vencem em 0-30, 31-60 e 61-90 dias.
+
+    Usa só o certificado mais recente de cada par da matriz (colaborador ativo e
+    curso ainda exigido pelo setor). Certificados já vencidos não entram.
+    """
+    contagem = {faixa: 0 for faixa in FAIXAS_VENCIMENTO}
+    for l in linhas:
+        cert = l["certificado"]
+        if cert is None:
+            continue
+        dias = cert.dias_para_vencer
+        for inicio, fim in FAIXAS_VENCIMENTO:
+            if inicio <= dias <= fim:
+                contagem[(inicio, fim)] += 1
+                break
+    return [{"faixa": f"{inicio} a {fim} dias", "de_dias": inicio, "ate_dias": fim,
+             "quantidade": qtd}
+            for (inicio, fim), qtd in contagem.items()]
+
+
+def reacao_por_curso():
+    """RF-29 - médias de didática e de entendimento por curso, com todo o histórico.
+
+    Inclui as reações arquivadas em reciclagens (RN-30) e as de colaboradores já
+    desligados, porque o indicador mede a qualidade percebida do curso ao longo do tempo.
+    """
+    dados = (AvaliacaoReacao.objects
+             .values("curso_id", "curso__nome")
+             .annotate(media_didatica=Avg("nota_didatica"),
+                       media_entendimento=Avg("nota_entendimento"),
+                       respostas=Count("id"))
+             .order_by("curso__nome"))
+    return [{"curso": d["curso__nome"],
+             "media_didatica": round(d["media_didatica"], 1),
+             "media_entendimento": round(d["media_entendimento"], 1),
+             "respostas": d["respostas"]}
+            for d in dados]
 
 
 def qualidade_percebida(linhas):
@@ -208,9 +335,11 @@ def qualidade_percebida(linhas):
 
     nota_media_prova = Certificado.objects.aggregate(media=Avg("nota_prova"))["media"] or 0
 
-    reacoes = list(AvaliacaoReacao.objects.all())
-    if reacoes:
-        media_reacao = round(sum(r.media for r in reacoes) / len(reacoes), 1)
+    # média das duas notas, sobre todo o histórico (inclui reações arquivadas, RN-30)
+    medias = AvaliacaoReacao.objects.aggregate(
+        didatica=Avg("nota_didatica"), entendimento=Avg("nota_entendimento"))
+    if medias["didatica"] is not None:
+        media_reacao = round((medias["didatica"] + medias["entendimento"]) / 2, 1)
     else:
         media_reacao = 0
 

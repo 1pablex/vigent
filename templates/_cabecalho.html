@@ -26,7 +26,7 @@ Requer static/css/cabecalho.css.
   {% if request.user.e_rh %}
     <a href="{% url 'core:rh_conformidade' %}" class="vg-tab {% if tela == 'core:rh_conformidade' %}active{% endif %}">Conformidade</a>
     <a href="{% url 'cursos_rh:lista' %}" class="vg-tab {% if tela|slice:':10' == 'cursos_rh:' %}active{% endif %}">Cursos</a>
-    <a href="/admin/treinamentos/atribuicaomanual/" class="vg-tab">Atribuições</a>
+    <a href="{% url 'core:rh_dashboard' %}" class="vg-tab {% if tela == 'core:rh_dashboard' %}active{% endif %}">Dashboard</a>
     <a href="{% url 'core:rh_colaboradores' %}" class="vg-tab {% if tela == 'core:rh_colaboradores' or tela == 'contas:cadastrar' %}active{% endif %}">Colaboradores</a>
     <a href="{% url 'core:rh_auditoria' %}" class="vg-tab {% if tela == 'core:rh_auditoria' %}active{% endif %}">Registros e auditoria</a>
   {% endif %}

@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     'avaliacoes',
     'core',
     'certificacao',
+    'rest_framework',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -160,6 +162,7 @@ VIGENT = {
     "JANELA_BLOQUEIO_LOGIN_MIN": 15,
     "VALIDADE_CODIGO_2FA_MIN": 5,
     "MAX_TENTATIVAS_CODIGO": 5,
+    "META_CONFORMIDADE": 90,   # RN-38 - meta interna do índice de conformidade (%)
 }
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -172,3 +175,30 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "")
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# API REST (Django REST Framework) - só endpoints de dados em JSON, em /api/v1/.
+# As telas continuam renderizadas pelo Django (arquitetura híbrida, ver README).
+REST_FRAMEWORK = {
+    # Mesma sessão do login com 2FA: a API não abre uma segunda porta de autenticação.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    # Padrão seguro: todo endpoint exige RH, salvo declaração explícita em contrário.
+    "DEFAULT_PERMISSION_CLASSES": ["core.api.permissions.SomenteRH"],
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+        *(["rest_framework.renderers.BrowsableAPIRenderer"] if DEBUG else []),
+    ],
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.UserRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {"user": "120/min"},
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Vigent - API de indicadores",
+    "DESCRIPTION": "Indicadores de conformidade e qualidade percebida consumidos pelo "
+                   "dashboard do RH. Autenticação pela sessão do login (com 2FA).",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SERVE_PERMISSIONS": ["core.api.permissions.SomenteRH"],
+}

@@ -33,6 +33,7 @@ PUBLICAS = {
 PROTEGIDAS = {
     "core:inicio": 0, "core:rh_colaboradores": 0, "core:rh_remover": 1,
     "core:rh_auditoria": 0, "core:rh_conformidade": 0, "core:rh_reciclagem": 2,
+    "core:rh_dashboard": 0,
     "contas:definir_senha": 0, "contas:cadastrar": 0, "contas:aceitar_termo": 0,
     "contas:meus_dados": 0,
     "treinamentos:inicio": 0, "treinamentos:abrir": 1, "treinamentos:curso": 1,
@@ -46,11 +47,18 @@ PROTEGIDAS = {
 
 SOMENTE_RH = [
     "core:rh_colaboradores", "core:rh_remover", "core:rh_auditoria", "core:rh_conformidade",
-    "core:rh_reciclagem", "contas:cadastrar",
+    "core:rh_reciclagem", "core:rh_dashboard", "contas:cadastrar",
     "cursos_rh:lista", "cursos_rh:novo", "cursos_rh:editar", "cursos_rh:aula_nova",
     "cursos_rh:aula_editar", "cursos_rh:aula_excluir", "cursos_rh:questao_nova",
     "cursos_rh:questao_editar", "cursos_rh:questao_excluir",
 ]
+
+# API REST (/api/v1/): não redireciona, responde 403 em JSON para anônimo e não RH.
+# Os testes de comportamento ficam em core/test_api_indicadores.py.
+API_SOMENTE_RH = {
+    "api:conformidade", "api:conformidade_departamentos", "api:conformidade_cursos",
+    "api:vencimentos", "api:reacao", "api:qualidade", "api:schema", "api:docs",
+}
 
 XSS = "<script>alert('xss')</script>"
 
@@ -136,7 +144,7 @@ class AutenticacaoObrigatoriaTest(CenarioSeguranca):
     def test_todas_as_rotas_estao_classificadas(self):
         # Uma rota nova sem classificação faz este teste falhar até alguém decidir
         # se ela é pública ou exige login.
-        self.assertEqual(rotas_nomeadas() - PUBLICAS - set(PROTEGIDAS), set())
+        self.assertEqual(rotas_nomeadas() - PUBLICAS - set(PROTEGIDAS) - API_SOMENTE_RH, set())
 
     def test_rotas_protegidas_redirecionam_anonimo_para_login(self):
         for rota in PROTEGIDAS:
@@ -312,10 +320,9 @@ class XssTest(CenarioSeguranca):
         self.assertEqual(resposta.status_code, 200)
         self.assertNotContains(resposta, XSS)
 
-    @expectedFailure
     def test_texto_do_slide_nao_executa_script(self):
-        # VULNERÁVEL: curso.html exibe slide.corpo com |safe. Quem tem perfil RH consegue
-        # gravar um <script> que roda no navegador de todos os colaboradores do curso.
+        # Corrigido (RN-40): o texto é sanitizado ao salvar e de novo na exibição. O update
+        # em massa abaixo não passa pelo save(), então quem barra aqui é o filtro html_seguro.
         self.aula.slides.update(corpo=XSS)
         self.client.force_login(self.colaborador)
 

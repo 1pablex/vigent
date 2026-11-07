@@ -1,7 +1,15 @@
 """RN-18 - enquanto a senha provisória não for substituída, apenas a tela
 de definição de senha permanece acessível."""
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
+
+
+def _bloquear(request, destino, motivo):
+    """Telas são redirecionadas; a API (/api/) recebe 403 em JSON, sem redirect."""
+    if request.path.startswith("/api/"):
+        return JsonResponse({"detail": motivo}, status=403)
+    return redirect(destino)
 
 """enquanto o colaborador não trocar a senha provisória, ele não pode acessar nada"""
 class SenhaProvisoriaMiddleware:
@@ -15,7 +23,8 @@ class SenhaProvisoriaMiddleware:
         if usuario is not None and usuario.is_authenticated and usuario.senha_provisoria:
             liberadas = [reverse(n) for n in self.LIBERADAS]
             if request.path not in liberadas and not request.path.startswith("/static/"):
-                return redirect("contas:definir_senha")
+                return _bloquear(request, "contas:definir_senha",
+                                 "Defina a senha definitiva antes de usar o sistema.")
         return self.get_response(request)
 
 class TermoAceiteMiddleware:
@@ -33,5 +42,6 @@ class TermoAceiteMiddleware:
             if (request.path not in liberadas
                     and not request.path.startswith("/static/")
                     and not request.path.startswith("/media/")):
-                return redirect("contas:aceitar_termo")
+                return _bloquear(request, "contas:aceitar_termo",
+                                 "Aceite o termo de uso antes de usar o sistema.")
         return self.get_response(request)

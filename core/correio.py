@@ -9,9 +9,19 @@ from auditoria.models import EmailEnviado, LogSistema
 from brevo.core.api_error import ApiError
 
 
+DOMINIO_SEM_ENTREGA = ".invalid"   # RFC 2606: reservado, nunca existe na internet
+
+
 def _enviar(destinatario, assunto, corpo_texto, tipo):
     registro = EmailEnviado(tipo=tipo, destinatario=destinatario,
                             assunto=assunto, corpo=corpo_texto)
+    if destinatario.lower().endswith(DOMINIO_SEM_ENTREGA):
+        # Contas de demonstração: o e-mail fica registrado na auditoria, mas não sai
+        # pelo Brevo (não gasta cota nem prejudica a reputação do remetente).
+        registro.entregue = False
+        registro.erro = "Endereço de demonstração (.invalid): envio não realizado."
+        registro.save()
+        return registro
     try:
         cliente = Brevo(api_key=settings.BREVO_API_KEY)
         cliente.transactional_emails.send_transac_email(

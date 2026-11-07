@@ -18,9 +18,13 @@ class AvaliacaoReacao(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(10)])
     comentario = models.TextField(blank=True)
     data_resposta = models.DateTimeField(default=timezone.now)
+    # RN-29/RN-30 - na reciclagem a reação não é apagada, só arquivada: deixa de
+    # liberar a prova do novo ciclo, mas continua no histórico dos indicadores.
+    arquivada = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-data_resposta"]
+        indexes = [models.Index(fields=["usuario", "curso", "arquivada"])]
         verbose_name = "avaliação de reação"
         verbose_name_plural = "avaliações de reação"
 

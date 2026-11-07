@@ -5,6 +5,7 @@ from django.core.paginator import Paginator
 from django.core.management import call_command
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from treinamentos.models import Curso
 
 from contas.models import Departamento
@@ -100,6 +101,23 @@ def rh_auditoria(request):
         "total_warn": LogSistema.objects.filter(nivel=LogSistema.Nivel.WARN).count(),
         "total_erro": LogSistema.objects.filter(nivel=LogSistema.Nivel.ERRO).count(),
     })
+
+@login_required
+def rh_dashboard(request):
+    """RF-29 - dashboard de indicadores. A tela é HTML; os números vêm da API (/api/v1/)."""
+    if not request.user.e_rh:
+        return redirect("treinamentos:inicio")
+    endpoints = {
+        "conformidade": reverse("api:conformidade"),
+        "departamentos": reverse("api:conformidade_departamentos"),
+        "cursos": reverse("api:conformidade_cursos"),
+        "vencimentos": reverse("api:vencimentos"),
+        "reacao": reverse("api:reacao"),
+        "qualidade": reverse("api:qualidade"),
+    }
+    return render(request, "core/rh_dashboard.html",
+                  {"secao": "dashboard", "endpoints": endpoints})
+
 
 @login_required
 def rh_conformidade(request):
