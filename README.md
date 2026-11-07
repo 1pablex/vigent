@@ -34,6 +34,8 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 - Senha provisória de uso único: deixa de valer assim que o colaborador define a senha definitiva
 - Bloqueio temporário após tentativas de login malsucedidas repetidas
 - Toda verificação de permissão ocorre no back-end, nunca só ocultando elemento na tela; na API, quem não é RH recebe 403 em JSON
+- Upload de imagens dos cursos (capa e slides, RN-40): só JPG, PNG ou WEBP, identificados pelo conteúdo e não pela extensão, com no máximo 5 MB e 25 megapixels. A imagem aceita é regravada a partir dos pixels, com nome aleatório: conteúdo escondido no arquivo (script anexado) e metadados EXIF/GPS são descartados. Vale para o painel do RH e para o admin
+- Texto dos slides sanitizado com `nh3` ao salvar e de novo na exibição: só parágrafo, lista, negrito, itálico e quebra de linha; scripts e atributos como `onerror` são removidos
 - `DEBUG` e `ALLOWED_HOSTS` controlados por variável de ambiente, nunca fixos no código
 - LGPD: pseudonimização no desligamento, expurgo dos dados originais após 90 dias (comando `expurgar_reidentificacoes`) e registros de remoção e expurgo na auditoria sem o nome real do colaborador
 
@@ -41,7 +43,6 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 
 **Evoluções previstas:**
 - Atribuição individual de curso como exceção à regra do departamento (onboarding, reciclagem pontual, curso de outro setor). A estrutura de dados (`AtribuicaoManual`) foi mantida no banco, desativada, como base para essa feature
-
 ## Arquitetura: telas em HTML e dados em JSON
 
 O Vigent usa dois tipos de endpoint, cada um com uma responsabilidade:
@@ -131,6 +132,10 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
    python manage.py carregar_dados_colaboradores
    python manage.py carregar_dados_cursos
    ```
+   Para ver o dashboard com volume de dados, há também uma base grande de colaboradores fictícios (detalhes em "Contas de demonstração"):
+   ```
+   python manage.py carregar_dados_demonstracao
+   ```
 7. Suba o servidor:
    ```
    python manage.py runserver
@@ -139,7 +144,7 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
 
 ## Testes
 
-São 157 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 178 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
@@ -155,12 +160,14 @@ coverage report
 | `core/test_services_unitarios.py` | 12 | Unitários sem banco: emissão de certificado, índice de conformidade (RN-38), faixas de vencimento (RN-39) |
 | `core/test_api_indicadores.py` | 19 | API de indicadores: acesso, contrato JSON, reação histórica (RN-30), reciclagem atômica, número de consultas, tela do dashboard |
 | `core/test_seguranca_endpoints.py` | 27 | Autenticação, perfil, IDOR, CSRF, XSS, upload, redirecionamento aberto, cabeçalhos. Toda rota nova precisa ser classificada aqui |
+| `core/test_seed_demonstracao.py` | 7 | Seed de demonstração: volume e mistura de situações, perfis por departamento, repetição sem duplicar, limpeza, bloqueio sem `DEBUG` e e-mail `.invalid` que não sai pelo Brevo |
 | `core/test_integracao_rh.py` | 7 | Painel do RH: conformidade, rotinas, reciclagem |
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
 | `contas/test_integracao_cadastro.py` | 6 | Cadastro de colaborador |
 | `contas/test_integracao_codigo.py` | 6 | Segundo fator e limite de tentativas (RN-25) |
 | `treinamentos/tests.py` | 5 | Models de curso, aula, slide e progresso |
 | `treinamentos/test_integracao_gestao_cursos.py` | 17 | Gestão de cursos pelo RH |
+| `treinamentos/test_upload_seguro.py` | 14 | Upload de imagens e texto dos slides (RN-40): formatos, limites, arquivo poliglota, EXIF, nome aleatório, sanitização |
 | `avaliacoes/test_integracao.py` | 10 | Avaliação de reação e prova |
 | `certificacao/tests.py` | 3 | Situação do certificado |
 | `certificacao/test_integracao.py` | 4 | Meus certificados e acesso ao certificado |
@@ -179,6 +186,15 @@ Criadas pelo comando `carregar_dados_colaboradores`:
 | Primeiro acesso (Sala Limpa) | bruno.tavares@nortex.com.br | Nortex@2026 |
 
 O comando `carregar_dados_cursos` cria três treinamentos: **LGPD (Proteção de Dados)** e **Código de Conduta Ética** (todos os departamentos), e **Parametrização de Sala Limpa** (restrito ao departamento Sala Limpa), cada um já com aulas, slides, prova e questões prontas para teste.
+
+O comando `carregar_dados_demonstracao` cria uma base grande para o dashboard de indicadores (ele já roda os dois comandos acima):
+
+- 60 colaboradores fictícios em 5 departamentos (Vendas, Financeiro, TI, Operações e Sala Limpa), com treinamentos em dia, vencendo, vencidos e pendentes
+- Cada departamento tem um perfil: Vendas fica acima da meta de 90% e Sala Limpa fica crítico, para os gráficos terem contraste
+- Quem tem certificado também tem progresso nas aulas, avaliação de reação e tentativas de prova, então todos os indicadores são preenchidos
+- O sorteio usa semente fixa: os números são os mesmos a cada execução. Rodar de novo recria a base, e `--limpar` remove só esses colaboradores
+- Login de qualquer um deles: `nome.sobrenome@exemplo.invalid` (sem acento), senha `123456`
+- Proteções: o comando só roda com `DEBUG=True`, para nunca popular o banco de produção, e e-mails para o domínio reservado `.invalid` ficam registrados na auditoria mas não são enviados pelo Brevo
 
 ## Estrutura dos apps
 
