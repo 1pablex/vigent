@@ -199,6 +199,8 @@ body {
 
 .slide-viewer h2 { font-size: 40px; margin: 0 0 24px; max-width: 700px; }
 .slide-viewer p { font-size: 17px; color: #4b5566; max-width: 640px; line-height: 1.6; }
+.slide-viewer .slide-corpo { font-size: 17px; color: #4b5566; max-width: 640px; line-height: 1.6; }
+.slide-viewer .slide-corpo ul, .slide-viewer .slide-corpo ol { margin: 0 0 12px; padding-left: 22px; }
 
 /*imagem do slide, quando existir */
 .slide-image {

@@ -3,11 +3,21 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
+from treinamentos.seguranca import regravar_imagem, sanitizar_html, validar_imagem
+
+
+def _regravar_se_nova(campo):
+    """RN-40 - só a imagem recém-enviada é regravada; a já salva fica como está."""
+    if campo and not campo._committed:
+        return regravar_imagem(campo)
+    return campo
+
 
 class Curso(models.Model):
     nome = models.CharField(max_length=140)
     categoria = models.CharField(max_length=60)
-    imagem_capa = models.ImageField(upload_to="capas/", blank=True, null=True)
+    imagem_capa = models.ImageField(upload_to="capas/", blank=True, null=True,
+                                    validators=[validar_imagem])
     carga_horaria = models.CharField(max_length=30, default="4 horas")
     validade_meses = models.PositiveSmallIntegerField(default=12)
     nota_minima = models.DecimalField(max_digits=3, decimal_places=1, default=7)
@@ -19,6 +29,10 @@ class Curso(models.Model):
 
     def __str__(self):
         return self.nome
+
+    def save(self, *args, **kwargs):
+        self.imagem_capa = _regravar_se_nova(self.imagem_capa)
+        super().save(*args, **kwargs)
 
     @property
     def publicado(self):
@@ -55,7 +69,8 @@ class SlideAula(models.Model):
     ordem = models.PositiveSmallIntegerField()
     titulo = models.CharField(max_length=140)
     corpo = models.TextField(blank=True, help_text="Aceita HTML simples: parágrafos e listas.")
-    imagem = models.ImageField(upload_to="slides/", blank=True, null=True)
+    imagem = models.ImageField(upload_to="slides/", blank=True, null=True,
+                               validators=[validar_imagem])
 
     class Meta:
         ordering = ["aula", "ordem"]
@@ -64,6 +79,11 @@ class SlideAula(models.Model):
 
     def __str__(self):
         return f"{self.aula} - slide {self.ordem}"
+
+    def save(self, *args, **kwargs):
+        self.corpo = sanitizar_html(self.corpo)
+        self.imagem = _regravar_se_nova(self.imagem)
+        super().save(*args, **kwargs)
 
 
 class CursoDepartamento(models.Model):

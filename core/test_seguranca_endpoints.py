@@ -320,10 +320,9 @@ class XssTest(CenarioSeguranca):
         self.assertEqual(resposta.status_code, 200)
         self.assertNotContains(resposta, XSS)
 
-    @expectedFailure
     def test_texto_do_slide_nao_executa_script(self):
-        # VULNERÁVEL: curso.html exibe slide.corpo com |safe. Quem tem perfil RH consegue
-        # gravar um <script> que roda no navegador de todos os colaboradores do curso.
+        # Corrigido (RN-40): o texto é sanitizado ao salvar e de novo na exibição. O update
+        # em massa abaixo não passa pelo save(), então quem barra aqui é o filtro html_seguro.
         self.aula.slides.update(corpo=XSS)
         self.client.force_login(self.colaborador)
 
