@@ -41,6 +41,7 @@ PROTEGIDAS = {
     "certificacao:meus": 0, "certificacao:ver": 1,
     "cursos_rh:lista": 0, "cursos_rh:novo": 0, "cursos_rh:editar": 1,
     "cursos_rh:aula_nova": 1, "cursos_rh:aula_editar": 2, "cursos_rh:aula_excluir": 2,
+    "cursos_rh:slide_novo": 2, "cursos_rh:slide_editar": 3, "cursos_rh:slide_excluir": 3,
     "cursos_rh:questao_nova": 1, "cursos_rh:questao_editar": 2,
     "cursos_rh:questao_excluir": 2,
 }
@@ -49,7 +50,8 @@ SOMENTE_RH = [
     "core:rh_colaboradores", "core:rh_remover", "core:rh_auditoria", "core:rh_conformidade",
     "core:rh_reciclagem", "core:rh_dashboard", "contas:cadastrar",
     "cursos_rh:lista", "cursos_rh:novo", "cursos_rh:editar", "cursos_rh:aula_nova",
-    "cursos_rh:aula_editar", "cursos_rh:aula_excluir", "cursos_rh:questao_nova",
+    "cursos_rh:aula_editar", "cursos_rh:aula_excluir", "cursos_rh:slide_novo",
+    "cursos_rh:slide_editar", "cursos_rh:slide_excluir", "cursos_rh:questao_nova",
     "cursos_rh:questao_editar", "cursos_rh:questao_excluir",
 ]
 
@@ -95,7 +97,7 @@ class CenarioSeguranca(TestCase):
         self.curso = Curso.objects.create(nome="LGPD na Prática", categoria="Compliance")
         CursoDepartamento.objects.create(curso=self.curso, departamento=self.vendas)
         self.aula = Aula.objects.create(curso=self.curso, ordem=1, titulo="Introdução")
-        SlideAula.objects.create(aula=self.aula, ordem=0, titulo="Boas-vindas")
+        self.slide = SlideAula.objects.create(aula=self.aula, ordem=0, titulo="Boas-vindas")
         self.questao = Questao.objects.create(
             prova=Prova.objects.create(curso=self.curso), ordem=1, enunciado="Q1?")
         Alternativa.objects.create(questao=self.questao, letra="A", texto="Certa", correta=True)
@@ -116,6 +118,9 @@ class CenarioSeguranca(TestCase):
             "cursos_rh:editar": [self.curso.id], "cursos_rh:aula_nova": [self.curso.id],
             "cursos_rh:aula_editar": [self.curso.id, self.aula.id],
             "cursos_rh:aula_excluir": [self.curso.id, self.aula.id],
+            "cursos_rh:slide_novo": [self.curso.id, self.aula.id],
+            "cursos_rh:slide_editar": [self.curso.id, self.aula.id, self.slide.id],
+            "cursos_rh:slide_excluir": [self.curso.id, self.aula.id, self.slide.id],
             "cursos_rh:questao_nova": [self.curso.id],
             "cursos_rh:questao_editar": [self.curso.id, self.questao.id],
             "cursos_rh:questao_excluir": [self.curso.id, self.questao.id],
@@ -244,12 +249,16 @@ class AcessoAObjetosDeTerceirosTest(CenarioSeguranca):
         self.client.force_login(self.rh)
         for rota, objeto in (("cursos_rh:aula_editar", self.aula.id),
                              ("cursos_rh:aula_excluir", self.aula.id),
+                             ("cursos_rh:slide_editar", [self.aula.id, self.slide.id]),
+                             ("cursos_rh:slide_excluir", [self.aula.id, self.slide.id]),
                              ("cursos_rh:questao_editar", self.questao.id),
                              ("cursos_rh:questao_excluir", self.questao.id)):
             with self.subTest(rota=rota):
-                resposta = self.client.post(reverse(rota, args=[outro_curso.id, objeto]))
+                ids = objeto if isinstance(objeto, list) else [objeto]
+                resposta = self.client.post(reverse(rota, args=[outro_curso.id, *ids]))
                 self.assertEqual(resposta.status_code, 404)
         self.assertTrue(Aula.objects.filter(pk=self.aula.pk).exists())
+        self.assertTrue(SlideAula.objects.filter(pk=self.slide.pk).exists())
         self.assertTrue(Questao.objects.filter(pk=self.questao.pk).exists())
 
 
@@ -260,7 +269,8 @@ class AcoesDestrutivasSoViaPostTest(CenarioSeguranca):
         self.client.force_login(self.rh)
         antes = self.estado()
         for rota in ("core:rh_remover", "core:rh_reciclagem",
-                     "cursos_rh:aula_excluir", "cursos_rh:questao_excluir"):
+                     "cursos_rh:aula_excluir", "cursos_rh:slide_excluir",
+                     "cursos_rh:questao_excluir"):
             with self.subTest(rota=rota):
                 self.assertEqual(self.client.get(self.url(rota)).status_code, 302)
         self.assertEqual(self.estado(), antes)
@@ -278,7 +288,8 @@ class ProtecaoCsrfTest(CenarioSeguranca):
         antes = self.estado()
         for rota in ("contas:cadastrar", "core:rh_remover", "core:rh_reciclagem",
                      "core:rh_conformidade", "cursos_rh:novo", "cursos_rh:editar",
-                     "cursos_rh:aula_excluir", "cursos_rh:questao_excluir"):
+                     "cursos_rh:aula_excluir", "cursos_rh:slide_novo",
+                     "cursos_rh:slide_excluir", "cursos_rh:questao_excluir"):
             with self.subTest(rota=rota):
                 resposta = self.client.post(self.url(rota), {"nome": "Via CSRF"})
                 self.assertEqual(resposta.status_code, 403)
@@ -345,6 +356,14 @@ class EntradasMaliciosasTest(CenarioSeguranca):
         self.assertTrue(resposta.context["form"].errors.get("imagem_capa"))
         self.assertFalse(Curso.objects.filter(nome="Curso com capa falsa").exists())
 
+    def test_parametros_invalidos_na_url_nao_derrubam_a_lista_de_colaboradores(self):
+        self.client.force_login(self.rh)
+        for parametros in ({"departamento": "abc"}, {"departamento": "1 OR 1=1"},
+                           {"departamento": "-1"}, {"pagina": "abc"}, {"pagina": "-1"}):
+            with self.subTest(parametros=parametros):
+                resposta = self.client.get(self.url("core:rh_colaboradores"), parametros)
+                self.assertEqual(resposta.status_code, 200)
+
     def test_busca_com_injecao_sql_e_tratada_como_texto(self):
         self.client.force_login(self.rh)
         for rota in ("core:rh_colaboradores", "cursos_rh:lista", "core:rh_auditoria",
@@ -362,9 +381,8 @@ class EntradasMaliciosasTest(CenarioSeguranca):
                 {"email": "rh@nortex.com.br", "senha": "senha-123"})
         self.assertRedirects(resposta, reverse("contas:verificar_codigo"))
 
-    @expectedFailure
     def test_cadastro_recusa_grupo_inexistente(self):
-        # VULNERÁVEL: o campo grupo não é validado contra Usuario.Grupo.
+        # Corrigido: o grupo é validado contra Usuario.Grupo antes de criar a conta.
         self.client.force_login(self.rh)
         with patch("contas.views.enviar_primeiro_acesso"):
             self.client.post(reverse("contas:cadastrar"), {
@@ -384,9 +402,8 @@ class LimitesDeRequisicaoTest(CenarioSeguranca):
                 HTTP_X_FORWARDED_FOR=f"10.0.0.{i}")
         self.assertContains(resposta, "Muitas tentativas de acesso")
 
-    @expectedFailure
     def test_reenvio_de_codigo_tem_intervalo_minimo(self):
-        # VULNERÁVEL: "Reenviar código" gera e envia um e-mail novo a cada clique.
+        # Corrigido: só sai outro código depois de INTERVALO_REENVIO_CODIGO_MIN minutos.
         with patch("contas.views.enviar_codigo_verificacao"):
             self.client.post(reverse("contas:login"),
                              {"email": "rh@nortex.com.br", "senha": "senha-123"})

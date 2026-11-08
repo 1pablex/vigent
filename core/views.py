@@ -20,6 +20,10 @@ def inicio(request):
         return redirect("core:rh_colaboradores")
     return redirect("treinamentos:inicio")
 
+
+COLABORADORES_POR_PAGINA = 10
+
+
 @login_required
 def rh_colaboradores(request):
     if not request.user.e_rh:
@@ -27,6 +31,8 @@ def rh_colaboradores(request):
 
     busca = (request.GET.get("busca") or "").strip()
     departamento_id = request.GET.get("departamento") or "TODOS"
+    if not departamento_id.isdigit():   # valor inválido na URL vira "todos", sem erro 500
+        departamento_id = "TODOS"
 
     colaboradores = Usuario.objects.select_related("departamento").order_by("matricula")
     if busca:
@@ -36,9 +42,12 @@ def rh_colaboradores(request):
     if departamento_id != "TODOS":
         colaboradores = colaboradores.filter(departamento_id=departamento_id)
 
+    pagina = Paginator(colaboradores, COLABORADORES_POR_PAGINA).get_page(request.GET.get("pagina"))
+
     return render(request, "core/rh_colaboradores.html", {
         "secao": "colaboradores",
-        "colaboradores": colaboradores,
+        "colaboradores": pagina,
+        "pagina": pagina,
         "departamentos": Departamento.objects.all(),
         "departamento_selecionado": departamento_id,
         "busca": busca,

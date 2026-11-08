@@ -1,0 +1,33 @@
+{% extends "core/rh_base.html" %}
+{% block titulo %}{% if slide %}Slide {{ slide.ordem }}{% else %}Novo slide{% endif %}{% endblock %}
+{% block conteudo %}
+
+<div class="head">
+  <div><h1>{% if slide %}Slide {{ slide.ordem }}: {{ slide.titulo }}{% else %}Novo slide{% endif %}</h1>
+    <div class="sub">{{ curso.nome }}, aula {{ aula.ordem }}: {{ aula.titulo }}. O texto aceita HTML simples (parágrafos, listas, negrito e itálico).</div></div>
+  <a class="btn btn-ghost" href="{% url 'cursos_rh:aula_editar' curso.id aula.id %}">← Voltar à aula</a>
+</div>
+
+<div class="card">
+  {% if form.non_field_errors %}<p class="err" style="margin:0 0 14px">{{ form.non_field_errors.0 }}</p>{% endif %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="slide-grid">
+      {% include "treinamentos/rh/_campo.html" with campo=form.ordem %}
+      {% include "treinamentos/rh/_campo.html" with campo=form.titulo %}
+    </div>
+    {% include "treinamentos/rh/_campo.html" with campo=form.corpo %}
+    {% if slide.imagem %}
+      <img src="{{ slide.imagem.url }}" alt="" style="max-width:220px;border-radius:8px;border:1px solid var(--line);margin-bottom:8px">
+    {% endif %}
+    {% include "treinamentos/rh/_campo.html" with campo=form.imagem %}
+
+    <div class="acoes">
+      <a class="btn btn-ghost" href="{% url 'cursos_rh:aula_editar' curso.id aula.id %}">Cancelar</a>
+      <button class="btn btn-ghost" name="outro" value="1">Salvar e cadastrar outro</button>
+      <button class="btn btn-primary">Salvar slide</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

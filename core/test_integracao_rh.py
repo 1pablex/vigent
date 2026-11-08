@@ -62,6 +62,47 @@ class PainelRhIntegracaoTest(TestCase):
         self.assertContains(resposta, "Maria Souza")
         self.assertNotContains(resposta, "João Lima")
 
+    def criar_colaboradores(self, quantidade, departamento=None):
+        for i in range(quantidade):
+            Usuario.objects.create_user(
+                email=f"extra{i}@nortex.com.br", nome=f"Extra {i:02d}", password="senha-123",
+                departamento=departamento or self.departamento,
+                senha_provisoria=False, aceitou_termos=True)
+
+    def test_lista_de_colaboradores_mostra_10_por_pagina(self):
+        # Arrange: 3 do setUp + 9 = 12 usuários
+        self.criar_colaboradores(9)
+
+        # Act
+        primeira = self.client.get(reverse("core:rh_colaboradores"))
+        segunda = self.client.get(reverse("core:rh_colaboradores"), {"pagina": 2})
+
+        # Assert
+        self.assertEqual(len(primeira.context["colaboradores"]), 10)
+        self.assertEqual(len(segunda.context["colaboradores"]), 2)
+        self.assertContains(primeira, "Página 1 de 2")
+        self.assertContains(primeira, "Próxima")
+
+    def test_paginacao_mantem_busca_e_departamento(self):
+        # Arrange
+        self.criar_colaboradores(12)
+
+        # Act
+        resposta = self.client.get(reverse("core:rh_colaboradores"),
+                                   {"busca": "extra", "departamento": self.departamento.id})
+
+        # Assert
+        self.assertContains(
+            resposta, f"?busca=extra&departamento={self.departamento.id}&pagina=2")
+
+    def test_pagina_invalida_mostra_a_primeira(self):
+        # Act
+        resposta = self.client.get(reverse("core:rh_colaboradores"), {"pagina": "abc"})
+
+        # Assert
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.context["pagina"].number, 1)
+
     def test_deve_filtrar_auditoria_por_nivel(self):
         # Arrange
         LogSistema.objects.create(nivel=LogSistema.Nivel.WARN, evento="Evento de alerta")

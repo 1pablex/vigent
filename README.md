@@ -21,8 +21,8 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 
 **Painel do RH:**
 - Cadastro de colaborador, com matrícula automática e envio de credenciais por e-mail
-- Listagem de colaboradores, com busca e filtro por departamento
-- Gestão de cursos: dados do curso, departamentos atendidos, aulas com slides e questões da prova
+- Listagem de colaboradores, com busca, filtro por departamento e paginação de 10 por página
+- Gestão de cursos: dados do curso, departamentos atendidos, aulas, slides e questões da prova. Slides e questões são cadastrados um por vez, cada um na sua tela, a partir de uma lista compacta
 - Remoção de colaborador: desliga a conta e pseudonimiza nome e e-mail (`colab<matrícula>`); os dados originais ficam num cofre de reidentificação por 90 dias e depois são excluídos. Certificados e histórico de treinamento são mantidos
 - Registros e auditoria: logs do sistema, execuções de rotina, e-mails enviados e histórico de acesso, todos com paginação e filtro
 - Painel de conformidade: matriz colaborador × treinamento com busca e filtro por situação, indicadores agregados (em dia, vencendo, vencido, pendente), conformidade por departamento, qualidade percebida, rotinas de notificação de vencimento e de expurgo do cofre disparáveis manualmente e solicitação de reciclagem para treinamentos vencidos
@@ -30,10 +30,11 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 
 **Segurança:**
 - Hash de senha com Argon2 (migração progressiva: contas antigas em PBKDF2 são atualizadas sozinhas no próximo login bem-sucedido)
-- Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail) em todo login com senha já definida
+- Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail) em todo login com senha já definida. Um novo código só pode ser pedido 5 minutos depois do anterior, o que evita inundar o e-mail do colaborador e gastar a cota do Brevo
 - Senha provisória de uso único: deixa de valer assim que o colaborador define a senha definitiva
 - Bloqueio temporário após tentativas de login malsucedidas repetidas
 - Toda verificação de permissão ocorre no back-end, nunca só ocultando elemento na tela; na API, quem não é RH recebe 403 em JSON
+- Entradas validadas no back-end: departamento e grupo do cadastro são conferidos antes de criar a conta (nenhum e-mail sai com dado inválido), e parâmetros inválidos na URL das listagens não geram erro 500
 - Upload de imagens dos cursos (capa e slides, RN-40): só JPG, PNG ou WEBP, identificados pelo conteúdo e não pela extensão, com no máximo 5 MB e 25 megapixels. A imagem aceita é regravada a partir dos pixels, com nome aleatório: conteúdo escondido no arquivo (script anexado) e metadados EXIF/GPS são descartados. Vale para o painel do RH e para o admin
 - Texto dos slides sanitizado com `nh3` ao salvar e de novo na exibição: só parágrafo, lista, negrito, itálico e quebra de linha; scripts e atributos como `onerror` são removidos
 - `DEBUG` e `ALLOWED_HOSTS` controlados por variável de ambiente, nunca fixos no código
@@ -144,7 +145,7 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
 
 ## Testes
 
-São 178 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 194 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
@@ -159,14 +160,14 @@ coverage report
 | `core/tests.py` | 26 | Regras de negócio de `services.py` com banco (RN-02, RN-04 a RN-09, RN-13, RN-14, RN-29, RN-34) |
 | `core/test_services_unitarios.py` | 12 | Unitários sem banco: emissão de certificado, índice de conformidade (RN-38), faixas de vencimento (RN-39) |
 | `core/test_api_indicadores.py` | 19 | API de indicadores: acesso, contrato JSON, reação histórica (RN-30), reciclagem atômica, número de consultas, tela do dashboard |
-| `core/test_seguranca_endpoints.py` | 27 | Autenticação, perfil, IDOR, CSRF, XSS, upload, redirecionamento aberto, cabeçalhos. Toda rota nova precisa ser classificada aqui |
+| `core/test_seguranca_endpoints.py` | 28 | Autenticação, perfil, IDOR, CSRF, XSS, upload, redirecionamento aberto, cabeçalhos, parâmetros inválidos na URL. Toda rota nova precisa ser classificada aqui |
 | `core/test_seed_demonstracao.py` | 7 | Seed de demonstração: volume e mistura de situações, perfis por departamento, repetição sem duplicar, limpeza, bloqueio sem `DEBUG` e e-mail `.invalid` que não sai pelo Brevo |
-| `core/test_integracao_rh.py` | 7 | Painel do RH: conformidade, rotinas, reciclagem |
+| `core/test_integracao_rh.py` | 10 | Painel do RH: conformidade, rotinas, reciclagem, paginação de colaboradores |
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
-| `contas/test_integracao_cadastro.py` | 6 | Cadastro de colaborador |
-| `contas/test_integracao_codigo.py` | 6 | Segundo fator e limite de tentativas (RN-25) |
+| `contas/test_integracao_cadastro.py` | 8 | Cadastro de colaborador, com departamento e grupo validados |
+| `contas/test_integracao_codigo.py` | 9 | Segundo fator, limite de tentativas (RN-25) e intervalo de 5 minutos para reenviar o código |
 | `treinamentos/tests.py` | 5 | Models de curso, aula, slide e progresso |
-| `treinamentos/test_integracao_gestao_cursos.py` | 17 | Gestão de cursos pelo RH |
+| `treinamentos/test_integracao_gestao_cursos.py` | 24 | Gestão de cursos pelo RH: curso, aula, slides um por vez e questões |
 | `treinamentos/test_upload_seguro.py` | 14 | Upload de imagens e texto dos slides (RN-40): formatos, limites, arquivo poliglota, EXIF, nome aleatório, sanitização |
 | `avaliacoes/test_integracao.py` | 10 | Avaliação de reação e prova |
 | `certificacao/tests.py` | 3 | Situação do certificado |

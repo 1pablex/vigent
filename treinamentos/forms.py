@@ -1,8 +1,6 @@
 """Formulários do RH para cadastro de cursos, aulas, slides e questões da prova."""
 from django import forms
 from django.db import transaction
-from django.db.models import F
-from django.forms import inlineformset_factory
 
 from avaliacoes.models import Alternativa, Prova, Questao
 from contas.models import Departamento
@@ -107,63 +105,33 @@ class AulaForm(forms.ModelForm):
 
 
 class SlideForm(forms.ModelForm):
+    """Um slide por vez, como as questões da prova."""
+
     class Meta:
         model = SlideAula
         fields = ["ordem", "titulo", "corpo", "imagem"]
         labels = {"ordem": "Ordem", "titulo": "Título do slide",
                   "corpo": "Texto", "imagem": "Imagem (opcional)"}
-        widgets = {"corpo": forms.Textarea(attrs={"rows": 4})}
+        widgets = {"corpo": forms.Textarea(attrs={"rows": 6})}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, aula, **kwargs):
         super().__init__(*args, **kwargs)
+        self.aula = aula
         _estilizar(self)
+        if not self.instance.pk:
+            ultima = aula.slides.order_by("-ordem").values_list("ordem", flat=True).first()
+            self.initial.setdefault("ordem", 0 if ultima is None else ultima + 1)
 
-    def validate_unique(self):
-        # A ordem é validada no formset inteiro (BaseSlideFormSet.clean); conferir slide
-        # a slide contra o banco impediria trocar a ordem de dois slides.
-        pass
+    def clean_ordem(self):
+        ordem = self.cleaned_data["ordem"]
+        repetida = self.aula.slides.filter(ordem=ordem).exclude(pk=self.instance.pk)
+        if repetida.exists():
+            raise forms.ValidationError("Já existe um slide com essa ordem nesta aula.")
+        return ordem
 
-
-class BaseSlideFormSet(forms.BaseInlineFormSet):
-
-    def mantidos(self):
-        return [f for f in self.forms
-                if f.cleaned_data and not f.cleaned_data.get("DELETE")]
-
-    def validate_unique(self):
-        # Substituída pela checagem de clean(), com mensagem própria.
-        pass
-
-    def clean(self):
-        super().clean()
-        if any(self.errors):
-            return
-        ordens = [f.cleaned_data["ordem"] for f in self.mantidos()]
-        if len(ordens) != len(set(ordens)):
-            raise forms.ValidationError("Dois slides não podem ter a mesma ordem.")
-
-    @transaction.atomic
     def save(self, commit=True):
-        """
-        Salva os slides permitindo trocar a ordem entre eles. As ordens atuais são
-        deslocadas antes, senão a troca de dois slides violaria o unique (aula, ordem).
-        """
-        for form in self.forms:
-            if form.instance.pk and form.cleaned_data.get("DELETE"):
-                form.instance.delete()
-        self.instance.slides.update(ordem=F("ordem") + 10000)
-        salvos = []
-        for form in self.mantidos():
-            slide = form.save(commit=False)
-            slide.aula = self.instance
-            slide.save()
-            salvos.append(slide)
-        return salvos
-
-
-SlideFormSet = inlineformset_factory(
-    Aula, SlideAula, form=SlideForm, formset=BaseSlideFormSet,
-    extra=1, can_delete=True)
+        self.instance.aula = self.aula
+        return super().save(commit)
 
 
 class QuestaoForm(forms.Form):

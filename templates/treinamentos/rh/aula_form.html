@@ -8,50 +8,52 @@
   <a class="btn btn-ghost" href="{% url 'cursos_rh:editar' curso.id %}">← Voltar ao curso</a>
 </div>
 
-<form method="post" enctype="multipart/form-data">
-  {% csrf_token %}
-  <div class="card" style="margin-bottom:18px">
-    {{ form.non_field_errors }}
+<div class="card" style="margin-bottom:18px">
+  {% if form.non_field_errors %}<p class="err" style="margin:0 0 14px">{{ form.non_field_errors.0 }}</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
     <div class="slide-grid">
       {% include "treinamentos/rh/_campo.html" with campo=form.ordem %}
       {% include "treinamentos/rh/_campo.html" with campo=form.titulo %}
     </div>
-  </div>
-
-  <div class="card" style="margin-bottom:18px">
-    <div class="sec-head">
-      <div><h2 class="sec-t">Slides</h2>
-        <div class="sub">O texto aceita HTML simples (parágrafos e listas). Para adicionar mais slides, salve e continue editando: sempre aparece um slide em branco no final.</div></div>
+    <div class="acoes">
+      <a class="btn btn-ghost" href="{% url 'cursos_rh:editar' curso.id %}">Cancelar</a>
+      <button class="btn btn-primary">{% if aula %}Salvar aula{% else %}Salvar e cadastrar slides{% endif %}</button>
     </div>
-    {{ slides.management_form }}
-    {{ slides.non_form_errors }}
-    {% for s in slides %}
-    <div class="item-card">
-      {% for oculto in s.hidden_fields %}{{ oculto }}{% endfor %}
-      <div class="item-top">
-        <div class="item-t">{% if s.instance.pk %}Slide {{ forloop.counter }}{% else %}Novo slide{% endif %}</div>
-        {% if s.instance.pk %}
-          <label class="sub" style="display:flex;gap:6px;align-items:center;cursor:pointer">{{ s.DELETE }} Excluir este slide</label>
-        {% endif %}
-      </div>
-      <div class="slide-grid">
-        {% include "treinamentos/rh/_campo.html" with campo=s.ordem %}
-        {% include "treinamentos/rh/_campo.html" with campo=s.titulo %}
-      </div>
-      {% include "treinamentos/rh/_campo.html" with campo=s.corpo %}
-      {% if s.instance.imagem %}
-        <img src="{{ s.instance.imagem.url }}" alt="" style="max-width:220px;border-radius:8px;border:1px solid var(--line);margin-bottom:8px">
-      {% endif %}
-      {% include "treinamentos/rh/_campo.html" with campo=s.imagem %}
-    </div>
-    {% endfor %}
-  </div>
+  </form>
+</div>
 
-  <div class="acoes">
-    <a class="btn btn-ghost" href="{% url 'cursos_rh:editar' curso.id %}">Cancelar</a>
-    <button class="btn btn-ghost" name="continuar" value="1">Salvar e continuar editando</button>
-    <button class="btn btn-primary">Salvar aula</button>
+{% if aula %}
+<div class="card">
+  <div class="sec-head">
+    <div><h2 class="sec-t">Slides</h2>
+      <div class="sub">O colaborador vê os slides na ordem, um de cada vez.</div></div>
+    <a class="btn btn-primary btn-sm" href="{% url 'cursos_rh:slide_novo' curso.id aula.id %}">+ Novo slide</a>
   </div>
-</form>
+  <table>
+    <thead><tr><th>Ordem</th><th>Imagem</th><th>Título</th><th class="col-acao">Ações</th></tr></thead>
+    <tbody>
+      {% for s in slides %}
+      <tr>
+        <td class="mono">{{ s.ordem }}</td>
+        <td>{% if s.imagem %}<img src="{{ s.imagem.url }}" alt="" class="slide-thumb">{% else %}<span class="sub">Sem imagem</span>{% endif %}</td>
+        <td>{{ s.titulo }}</td>
+        <td class="col-acao">
+          <div class="acoes" style="justify-content:center">
+            <a class="btn btn-ghost btn-sm" href="{% url 'cursos_rh:slide_editar' curso.id aula.id s.id %}">Editar</a>
+            <form class="inline" method="post" action="{% url 'cursos_rh:slide_excluir' curso.id aula.id s.id %}"
+                  onsubmit="return confirm('Excluir o slide {{ s.ordem }}?')">
+              {% csrf_token %}<button class="btn btn-danger btn-sm">Excluir</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="sub" style="text-align:center;padding:24px 0">Nenhum slide cadastrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
 
 {% endblock %}
