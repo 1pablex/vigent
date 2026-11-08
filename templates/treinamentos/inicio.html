@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vigent - Área do colaborador</title>
-<link rel="stylesheet" href="{% static 'css/inicio.css' %}">
+<link rel="stylesheet" href="{% static 'css/inicio.css' %}?v=2">
 <link rel="stylesheet" href="{% static 'css/cabecalho.css' %}">
 </head>
 <body>
@@ -25,6 +25,8 @@
     {% for item in itens %}
     <div class="training-card">
       <div class="training-left">
+        <div class="training-media{% if item.curso.imagem_capa %} com-capa{% endif %}">
+        {% if item.curso.imagem_capa %}<img src="{{ item.curso.imagem_capa.url }}" alt="" class="training-capa">{% endif %}
         {% if item.situacao == "VENCIDO" %}
           <div class="icon red">✕</div>
         {% elif item.situacao == "VENCENDO" %}
@@ -36,6 +38,7 @@
         {% else %}
           <div class="icon gray">-</div>
         {% endif %}
+        </div>
         <div>
           <p class="training-title">{{ item.curso.nome }}</p>
           <p class="training-sub">

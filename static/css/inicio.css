@@ -78,6 +78,27 @@ body {
   flex-shrink: 0;
 }
 
+/* capa do curso no card; o ícone de situação fica pequeno no canto */
+.training-media { position: relative; flex-shrink: 0; }
+.training-capa {
+  width: 120px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+  border: 1px solid #e4e7ee;
+}
+.training-media.com-capa .icon {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 2px solid #ffffff;
+}
+
 .icon.red { background-color: #c0432c; }
 .icon.orange { background-color: #d9922e; }
 .icon.gray { background-color: #e4e7ee; color: #8a94a6; }
