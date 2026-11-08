@@ -301,6 +301,7 @@ form.inline{ display:inline; }
                       margin-bottom:12px; }
 .item-card .item-t{ font-family:'Manrope',sans-serif; font-weight:700; font-size:13.5px; }
 .slide-grid{ display:grid; grid-template-columns:110px 1fr; gap:12px 14px; }
+.slide-thumb{ width:72px; height:44px; object-fit:cover; border-radius:6px; border:1px solid var(--line); display:block; }
 .alt-linha{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }
 .alt-linha .bub{ cursor:pointer; }
 .alt-linha input[type=radio]{ width:17px; height:17px; accent-color:var(--teal); flex-shrink:0; }

@@ -21,14 +21,13 @@ def dados_curso(**extra):
     return dados
 
 
-def dados_aula(ordem=1, titulo="Introdução", slides=(), iniciais=0):
-    """Monta o POST da aula com o formset de slides (prefixo "slides")."""
-    dados = {"ordem": ordem, "titulo": titulo,
-             "slides-TOTAL_FORMS": len(slides), "slides-INITIAL_FORMS": iniciais,
-             "slides-MIN_NUM_FORMS": 0, "slides-MAX_NUM_FORMS": 1000}
-    for i, slide in enumerate(slides):
-        for campo, valor in slide.items():
-            dados[f"slides-{i}-{campo}"] = valor
+def dados_aula(ordem=1, titulo="Introdução"):
+    return {"ordem": ordem, "titulo": titulo}
+
+
+def dados_slide(ordem=0, titulo="Boas-vindas", corpo="", **extra):
+    dados = {"ordem": ordem, "titulo": titulo, "corpo": corpo}
+    dados.update(extra)
     return dados
 
 
@@ -150,19 +149,45 @@ class CadastroAulaTest(GestaoCursosBase):
         super().setUp()
         self.curso = self.criar_curso()
 
-    def test_deve_criar_aula_com_slides(self):
+    def test_deve_criar_aula_e_abrir_a_tela_de_slides(self):
+        # Act
+        resposta = self.client.post(reverse("cursos_rh:aula_nova", args=[self.curso.id]),
+                                    dados_aula())
+
+        # Assert
+        aula = Aula.objects.get(curso=self.curso)
+        self.assertRedirects(resposta, reverse("cursos_rh:aula_editar",
+                                               args=[self.curso.id, aula.id]))
+        self.assertEqual(aula.titulo, "Introdução")
+
+    def test_deve_editar_aula_e_voltar_ao_curso(self):
+        # Arrange
+        aula = Aula.objects.create(curso=self.curso, ordem=1, titulo="Introdução")
+
         # Act
         resposta = self.client.post(
-            reverse("cursos_rh:aula_nova", args=[self.curso.id]),
-            dados_aula(slides=[{"ordem": 0, "titulo": "Boas-vindas", "corpo": "<p>Olá</p>"},
-                               {"ordem": 1, "titulo": "Riscos", "corpo": "Choque elétrico"}]))
+            reverse("cursos_rh:aula_editar", args=[self.curso.id, aula.id]),
+            dados_aula(titulo="Abertura"))
 
         # Assert
         self.assertRedirects(resposta, reverse("cursos_rh:editar", args=[self.curso.id]))
-        aula = Aula.objects.get(curso=self.curso)
-        self.assertEqual(aula.titulo, "Introdução")
-        self.assertEqual(list(aula.slides.values_list("titulo", flat=True)),
-                         ["Boas-vindas", "Riscos"])
+        aula.refresh_from_db()
+        self.assertEqual(aula.titulo, "Abertura")
+
+    def test_tela_da_aula_lista_os_slides_sem_formulario_de_cada_um(self):
+        # Arrange
+        aula = Aula.objects.create(curso=self.curso, ordem=1, titulo="Introdução")
+        SlideAula.objects.create(aula=aula, ordem=0, titulo="Primeiro")
+        SlideAula.objects.create(aula=aula, ordem=1, titulo="Segundo")
+
+        # Act
+        resposta = self.client.get(reverse("cursos_rh:aula_editar", args=[self.curso.id, aula.id]))
+
+        # Assert
+        self.assertContains(resposta, "Primeiro")
+        self.assertContains(resposta, "Segundo")
+        self.assertContains(resposta, reverse("cursos_rh:slide_novo", args=[self.curso.id, aula.id]))
+        self.assertNotContains(resposta, 'name="corpo"')
 
     def test_deve_recusar_aula_com_ordem_repetida(self):
         # Arrange
@@ -175,38 +200,6 @@ class CadastroAulaTest(GestaoCursosBase):
         # Assert
         self.assertContains(resposta, "Já existe uma aula com essa ordem neste curso.")
         self.assertEqual(self.curso.aulas.count(), 1)
-
-    def test_deve_trocar_ordem_e_excluir_slides(self):
-        # Arrange
-        aula = Aula.objects.create(curso=self.curso, ordem=1, titulo="Introdução")
-        primeiro = SlideAula.objects.create(aula=aula, ordem=0, titulo="Primeiro")
-        segundo = SlideAula.objects.create(aula=aula, ordem=1, titulo="Segundo")
-        terceiro = SlideAula.objects.create(aula=aula, ordem=2, titulo="Terceiro")
-
-        # Act: troca a ordem dos dois primeiros e exclui o terceiro
-        resposta = self.client.post(
-            reverse("cursos_rh:aula_editar", args=[self.curso.id, aula.id]),
-            dados_aula(iniciais=3, slides=[
-                {"id": primeiro.id, "aula": aula.id, "ordem": 1, "titulo": "Primeiro"},
-                {"id": segundo.id, "aula": aula.id, "ordem": 0, "titulo": "Segundo"},
-                {"id": terceiro.id, "aula": aula.id, "ordem": 2, "titulo": "Terceiro",
-                 "DELETE": "on"},
-            ]))
-
-        # Assert
-        self.assertRedirects(resposta, reverse("cursos_rh:editar", args=[self.curso.id]))
-        self.assertEqual(list(aula.slides.values_list("titulo", "ordem")),
-                         [("Segundo", 0), ("Primeiro", 1)])
-
-    def test_deve_recusar_slides_com_ordem_repetida(self):
-        # Act
-        resposta = self.client.post(
-            reverse("cursos_rh:aula_nova", args=[self.curso.id]),
-            dados_aula(slides=[{"ordem": 0, "titulo": "A"}, {"ordem": 0, "titulo": "B"}]))
-
-        # Assert
-        self.assertContains(resposta, "Dois slides não podem ter a mesma ordem.")
-        self.assertFalse(Aula.objects.filter(curso=self.curso).exists())
 
     def test_deve_excluir_aula_somente_via_post(self):
         # Arrange
@@ -223,6 +216,93 @@ class CadastroAulaTest(GestaoCursosBase):
         self.assertRedirects(resposta, reverse("cursos_rh:editar", args=[self.curso.id]))
         self.assertFalse(Aula.objects.filter(pk=aula.pk).exists())
         self.assertTrue(LogSistema.objects.filter(evento="Aula excluída").exists())
+
+
+class CadastroSlideTest(GestaoCursosBase):
+
+    def setUp(self):
+        super().setUp()
+        self.curso = self.criar_curso()
+        self.aula = Aula.objects.create(curso=self.curso, ordem=1, titulo="Introdução")
+        self.url_aula = reverse("cursos_rh:aula_editar", args=[self.curso.id, self.aula.id])
+        self.url_novo = reverse("cursos_rh:slide_novo", args=[self.curso.id, self.aula.id])
+
+    def test_deve_criar_slide_e_voltar_para_a_aula(self):
+        # Act
+        resposta = self.client.post(self.url_novo, dados_slide(corpo="<p>Olá</p>"))
+
+        # Assert
+        self.assertRedirects(resposta, self.url_aula)
+        slide = self.aula.slides.get()
+        self.assertEqual((slide.ordem, slide.titulo, slide.corpo), (0, "Boas-vindas", "<p>Olá</p>"))
+        self.assertTrue(LogSistema.objects.filter(evento="Slide salvo").exists())
+
+    def test_salvar_e_cadastrar_outro_abre_slide_em_branco_com_a_proxima_ordem(self):
+        # Act
+        resposta = self.client.post(self.url_novo, dados_slide(outro="1"))
+        nova_tela = self.client.get(self.url_novo)
+
+        # Assert
+        self.assertRedirects(resposta, self.url_novo)
+        self.assertEqual(nova_tela.context["form"].initial["ordem"], 1)
+
+    def test_primeiro_slide_sugere_ordem_zero(self):
+        resposta = self.client.get(self.url_novo)
+        self.assertEqual(resposta.context["form"].initial["ordem"], 0)
+
+    def test_deve_recusar_slide_com_ordem_repetida(self):
+        # Arrange
+        SlideAula.objects.create(aula=self.aula, ordem=0, titulo="Existente")
+
+        # Act
+        resposta = self.client.post(self.url_novo, dados_slide(ordem=0, titulo="Outro"))
+
+        # Assert
+        self.assertContains(resposta, "Já existe um slide com essa ordem nesta aula.")
+        self.assertEqual(self.aula.slides.count(), 1)
+
+    def test_deve_editar_slide_mantendo_a_propria_ordem(self):
+        # Arrange
+        slide = SlideAula.objects.create(aula=self.aula, ordem=0, titulo="Antigo")
+
+        # Act
+        resposta = self.client.post(
+            reverse("cursos_rh:slide_editar", args=[self.curso.id, self.aula.id, slide.id]),
+            dados_slide(ordem=0, titulo="Novo"))
+
+        # Assert
+        self.assertRedirects(resposta, self.url_aula)
+        slide.refresh_from_db()
+        self.assertEqual(slide.titulo, "Novo")
+
+    def test_deve_excluir_slide_somente_via_post(self):
+        # Arrange
+        slide = SlideAula.objects.create(aula=self.aula, ordem=0, titulo="Boas-vindas")
+        url = reverse("cursos_rh:slide_excluir", args=[self.curso.id, self.aula.id, slide.id])
+
+        # Act
+        self.client.get(url)
+        existia_apos_get = SlideAula.objects.filter(pk=slide.pk).exists()
+        resposta = self.client.post(url)
+
+        # Assert
+        self.assertTrue(existia_apos_get)
+        self.assertRedirects(resposta, self.url_aula)
+        self.assertFalse(SlideAula.objects.filter(pk=slide.pk).exists())
+        self.assertTrue(LogSistema.objects.filter(evento="Slide excluído").exists())
+
+    def test_deve_retornar_404_para_slide_de_outra_aula(self):
+        # Arrange
+        outra_aula = Aula.objects.create(curso=self.curso, ordem=2, titulo="Outra")
+        slide = SlideAula.objects.create(aula=outra_aula, ordem=0, titulo="De outra aula")
+
+        # Act
+        resposta = self.client.post(
+            reverse("cursos_rh:slide_excluir", args=[self.curso.id, self.aula.id, slide.id]))
+
+        # Assert
+        self.assertEqual(resposta.status_code, 404)
+        self.assertTrue(SlideAula.objects.filter(pk=slide.pk).exists())
 
 
 class CadastroQuestaoTest(GestaoCursosBase):
@@ -297,8 +377,9 @@ class PublicacaoPelasTelasTest(GestaoCursosBase):
         # Arrange: cria curso, aula e questão só pelas telas do RH
         self.client.post(reverse("cursos_rh:novo"), dados_curso(departamentos=[self.vendas.id]))
         curso = Curso.objects.get(nome="LGPD na Prática")
-        self.client.post(reverse("cursos_rh:aula_nova", args=[curso.id]),
-                         dados_aula(slides=[{"ordem": 0, "titulo": "Boas-vindas"}]))
+        self.client.post(reverse("cursos_rh:aula_nova", args=[curso.id]), dados_aula())
+        aula = curso.aulas.get()
+        self.client.post(reverse("cursos_rh:slide_novo", args=[curso.id, aula.id]), dados_slide())
         self.client.post(reverse("cursos_rh:questao_nova", args=[curso.id]), dados_questao())
 
         # Act

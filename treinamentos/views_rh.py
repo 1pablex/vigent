@@ -9,8 +9,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from auditoria.models import LogSistema
 from avaliacoes.models import Questao
 from core import services
-from treinamentos.forms import AulaForm, CursoForm, QuestaoForm, SlideFormSet
-from treinamentos.models import Aula, Curso
+from treinamentos.forms import AulaForm, CursoForm, QuestaoForm, SlideForm
+from treinamentos.models import Aula, Curso, SlideAula
 
 
 def rh_obrigatorio(view):
@@ -66,20 +66,20 @@ def editar(request, curso_id):
 
 def _salvar_aula(request, curso, aula):
     form = AulaForm(request.POST or None, instance=aula, curso=curso)
-    slides = SlideFormSet(request.POST or None, request.FILES or None,
-                          instance=aula or Aula(curso=curso), prefix="slides")
-    if request.method == "POST" and form.is_valid() and slides.is_valid():
+    if request.method == "POST" and form.is_valid():
+        nova = aula is None
         aula = form.save()
-        slides.instance = aula
-        slides.save()
         services.registrar(LogSistema.Nivel.INFO, "Aula salva",
                            f"{curso.nome} - aula {aula.ordem}: {aula.titulo}", request.user)
-        messages.success(request, f"Aula {aula.ordem} salva.")
-        if "continuar" in request.POST:
+        if nova:
+            messages.success(request, f"Aula {aula.ordem} criada. Agora cadastre os slides.")
             return redirect("cursos_rh:aula_editar", curso_id=curso.id, aula_id=aula.id)
+        messages.success(request, f"Aula {aula.ordem} salva.")
         return redirect("cursos_rh:editar", curso_id=curso.id)
-    return render(request, "treinamentos/rh/aula_form.html",
-                  {"curso": curso, "aula": aula, "form": form, "slides": slides})
+    return render(request, "treinamentos/rh/aula_form.html", {
+        "curso": curso, "aula": aula, "form": form,
+        "slides": aula.slides.all() if aula else [],
+    })
 
 
 @rh_obrigatorio
@@ -102,6 +102,48 @@ def aula_excluir(request, curso_id, aula_id):
                            f"{aula.curso.nome} - aula {aula.ordem}: {aula.titulo}", request.user)
         messages.success(request, f"Aula {aula.ordem} excluída.")
     return redirect("cursos_rh:editar", curso_id=curso_id)
+
+
+def _salvar_slide(request, aula, slide):
+    curso = aula.curso
+    form = SlideForm(request.POST or None, request.FILES or None, instance=slide, aula=aula)
+    if request.method == "POST" and form.is_valid():
+        slide = form.save()
+        services.registrar(LogSistema.Nivel.INFO, "Slide salvo",
+                           f"{curso.nome} - aula {aula.ordem} - slide {slide.ordem}: {slide.titulo}",
+                           request.user)
+        messages.success(request, f"Slide {slide.ordem} salvo.")
+        if "outro" in request.POST:
+            return redirect("cursos_rh:slide_novo", curso_id=curso.id, aula_id=aula.id)
+        return redirect("cursos_rh:aula_editar", curso_id=curso.id, aula_id=aula.id)
+    return render(request, "treinamentos/rh/slide_form.html",
+                  {"curso": curso, "aula": aula, "slide": slide, "form": form})
+
+
+@rh_obrigatorio
+def slide_novo(request, curso_id, aula_id):
+    aula = get_object_or_404(Aula.objects.select_related("curso"), pk=aula_id, curso_id=curso_id)
+    return _salvar_slide(request, aula, None)
+
+
+@rh_obrigatorio
+def slide_editar(request, curso_id, aula_id, slide_id):
+    slide = get_object_or_404(SlideAula.objects.select_related("aula__curso"), pk=slide_id,
+                              aula_id=aula_id, aula__curso_id=curso_id)
+    return _salvar_slide(request, slide.aula, slide)
+
+
+@rh_obrigatorio
+def slide_excluir(request, curso_id, aula_id, slide_id):
+    slide = get_object_or_404(SlideAula.objects.select_related("aula__curso"), pk=slide_id,
+                              aula_id=aula_id, aula__curso_id=curso_id)
+    if request.method == "POST":
+        slide.delete()
+        services.registrar(LogSistema.Nivel.WARN, "Slide excluído",
+                           f"{slide.aula.curso.nome} - aula {slide.aula.ordem} - "
+                           f"slide {slide.ordem}: {slide.titulo}", request.user)
+        messages.success(request, f"Slide {slide.ordem} excluído.")
+    return redirect("cursos_rh:aula_editar", curso_id=curso_id, aula_id=aula_id)
 
 
 def _salvar_questao(request, curso, questao):
