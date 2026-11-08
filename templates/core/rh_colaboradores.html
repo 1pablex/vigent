@@ -62,6 +62,17 @@
     </tbody>
   </table>
   </div>
+  {% if pagina.paginator.num_pages > 1 %}
+  <div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-top:14px">
+    {% if pagina.has_previous %}
+      <a class="btn btn-ghost btn-sm" href="?busca={{ busca|urlencode }}&departamento={{ departamento_selecionado|urlencode }}&pagina={{ pagina.previous_page_number }}">← Anterior</a>
+    {% endif %}
+    <span class="sub">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }} · {{ pagina.paginator.count }} colaborador{{ pagina.paginator.count|pluralize:"es" }}</span>
+    {% if pagina.has_next %}
+      <a class="btn btn-ghost btn-sm" href="?busca={{ busca|urlencode }}&departamento={{ departamento_selecionado|urlencode }}&pagina={{ pagina.next_page_number }}">Próxima →</a>
+    {% endif %}
+  </div>
+  {% endif %}
 </div>
 
 {% endblock %}
