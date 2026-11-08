@@ -4,11 +4,13 @@ Após 5 erros o código é invalidado e o usuário precisa solicitar outro, tant
 segundo fator do login (RN-25) quanto na redefinição de senha. O envio pelo Brevo
 é substituído por mock.
 """
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from auditoria.models import LogSistema
 from contas.models import CodigoVerificacao
@@ -65,9 +67,14 @@ class LimiteTentativasDoisFatoresTest(TestCase):
         self.assertEqual(LogSistema.objects.filter(
             evento="Código de verificação bloqueado", usuario=self.usuario).count(), 1)
 
+    def passar_intervalo_de_reenvio(self):
+        CodigoVerificacao.objects.filter(usuario=self.usuario).update(
+            data_geracao=timezone.now() - timedelta(minutes=5, seconds=1))
+
     def test_novo_codigo_solicitado_libera_o_login(self):
         # Arrange
         self.errar(5)
+        self.passar_intervalo_de_reenvio()
         self.client.post(reverse("contas:verificar_codigo"), {"reenviar": "1"})
         novo = CodigoVerificacao.objects.filter(usuario=self.usuario).latest("data_geracao")
 
@@ -78,6 +85,37 @@ class LimiteTentativasDoisFatoresTest(TestCase):
         self.assertNotEqual(novo.pk, self.codigo.pk)
         self.assertRedirects(resposta, reverse("core:inicio"), fetch_redirect_response=False)
         self.assertEqual(int(self.client.session["_auth_user_id"]), self.usuario.pk)
+
+
+    def test_reenvio_antes_de_5_minutos_e_recusado(self):
+        # Act
+        resposta = self.client.post(reverse("contas:verificar_codigo"), {"reenviar": "1"})
+
+        # Assert
+        self.assertContains(resposta, "Aguarde 5 minutos para pedir um novo código.")
+        self.assertEqual(CodigoVerificacao.objects.filter(usuario=self.usuario).count(), 1)
+
+    def test_reenvio_informa_o_tempo_que_falta(self):
+        # Arrange: código gerado há 3 min e 30 s
+        CodigoVerificacao.objects.filter(usuario=self.usuario).update(
+            data_geracao=timezone.now() - timedelta(minutes=3, seconds=30))
+
+        # Act
+        resposta = self.client.post(reverse("contas:verificar_codigo"), {"reenviar": "1"})
+
+        # Assert
+        self.assertContains(resposta, "Aguarde 2 minutos para pedir um novo código.")
+
+    def test_reenvio_depois_de_5_minutos_gera_novo_codigo(self):
+        # Arrange
+        self.passar_intervalo_de_reenvio()
+
+        # Act
+        resposta = self.client.post(reverse("contas:verificar_codigo"), {"reenviar": "1"})
+
+        # Assert
+        self.assertContains(resposta, "Um novo código foi enviado.")
+        self.assertEqual(CodigoVerificacao.objects.filter(usuario=self.usuario).count(), 2)
 
 
 class LimiteTentativasRedefinicaoSenhaTest(TestCase):

@@ -162,6 +162,7 @@ VIGENT = {
     "JANELA_BLOQUEIO_LOGIN_MIN": 15,
     "VALIDADE_CODIGO_2FA_MIN": 5,
     "MAX_TENTATIVAS_CODIGO": 5,
+    "INTERVALO_REENVIO_CODIGO_MIN": 5,   # tempo mínimo entre dois códigos de 2FA
     "META_CONFORMIDADE": 90,   # RN-38 - meta interna do índice de conformidade (%)
 }
 

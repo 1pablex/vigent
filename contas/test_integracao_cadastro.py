@@ -76,6 +76,33 @@ class CadastroColaboradorIntegracaoTest(TestCase):
         self.enviar_primeiro_acesso.assert_not_called()
 
 
+
+    def test_deve_recusar_departamento_invalido_sem_enviar_email(self):
+        self.client.force_login(self.rh)
+        for valor in ("abc", "99999", "1 OR 1=1"):
+            with self.subTest(departamento=valor):
+                # Act
+                resposta = self.client.post(reverse("contas:cadastrar"),
+                                            {**self.dados, "departamento": valor})
+
+                # Assert
+                self.assertContains(resposta, "Selecione um departamento válido.")
+        self.assertFalse(Usuario.objects.filter(email="carlos@nortex.com.br").exists())
+        self.enviar_primeiro_acesso.assert_not_called()
+
+    def test_deve_recusar_grupo_inexistente(self):
+        # Arrange
+        self.client.force_login(self.rh)
+
+        # Act
+        resposta = self.client.post(reverse("contas:cadastrar"),
+                                    {**self.dados, "grupo": "SUPERADMIN"})
+
+        # Assert
+        self.assertContains(resposta, "Selecione um grupo válido.")
+        self.assertFalse(Usuario.objects.filter(email="carlos@nortex.com.br").exists())
+        self.enviar_primeiro_acesso.assert_not_called()
+
 class AceiteTermoIntegracaoTest(TestCase):
 
     def setUp(self):

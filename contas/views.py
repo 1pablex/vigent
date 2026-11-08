@@ -1,11 +1,14 @@
 """Autenticação, definição de senha e cadastro de colaboradores."""
+import math
 import secrets
 import string
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
@@ -45,6 +48,23 @@ def _bloqueado_por_forca_bruta(email, ip):
     por_email = negados.filter(identificacao=email).count() if email else 0
     por_ip = negados.filter(ip=ip).count() if ip else 0
     return por_email >= limite or por_ip >= limite
+
+
+def _espera_para_reenviar(usuario):
+    """
+    Minutos que faltam para o usuário poder pedir outro código de 2FA (0 = pode pedir).
+
+    Sem esse intervalo, cada clique em "Reenviar código" disparava um e-mail novo
+    (inundação da caixa do colaborador e gasto da cota do Brevo) e liberava mais
+    tentativas de adivinhar o código.
+    """
+    ultimo = (CodigoVerificacao.objects.filter(usuario=usuario)
+              .order_by("-data_geracao").values_list("data_geracao", flat=True).first())
+    if ultimo is None:
+        return 0
+    intervalo = timedelta(minutes=settings.VIGENT["INTERVALO_REENVIO_CODIGO_MIN"])
+    restante = ultimo + intervalo - timezone.now()
+    return math.ceil(restante.total_seconds() / 60) if restante.total_seconds() > 0 else 0
 
 
 def _erro_de_codigo(pendente, usuario, ip, como_pedir_outro):
@@ -186,6 +206,10 @@ def cadastrar_colaborador(request):
             erro = "Já existe conta com este endereço."
         elif not cargo:
             erro = "Informe o cargo."
+        elif dep_id and not (dep_id.isdigit() and Departamento.objects.filter(pk=dep_id).exists()):
+            erro = "Selecione um departamento válido."
+        elif grupo not in Usuario.Grupo.values:
+            erro = "Selecione um grupo válido."
         else:
             senha = gerar_senha_provisoria()
             novo = Usuario.objects.create_user(
@@ -223,9 +247,18 @@ def verificar_codigo(request):
     erro = None
     if request.method == "POST":
         if "reenviar" in request.POST:
-            codigo_obj = gerar_codigo_verificacao(usuario)
-            enviar_codigo_verificacao(usuario, codigo_obj)
-            messages.success(request, "Um novo código foi enviado.")
+            with transaction.atomic():
+                # trava a linha do usuário: dois cliques simultâneos não geram dois códigos
+                Usuario.objects.select_for_update().get(pk=usuario.pk)
+                espera = _espera_para_reenviar(usuario)
+                if not espera:
+                    codigo_obj = gerar_codigo_verificacao(usuario)
+            if espera:
+                erro = (f"Aguarde {espera} minuto{'s' if espera > 1 else ''} "
+                        f"para pedir um novo código.")
+            else:
+                enviar_codigo_verificacao(usuario, codigo_obj)
+                messages.success(request, "Um novo código foi enviado.")
         else:
             digitado = (request.POST.get("codigo") or "").strip()
             pendente = (CodigoVerificacao.objects
