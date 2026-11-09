@@ -128,6 +128,9 @@ def rh_dashboard(request):
                   {"secao": "dashboard", "endpoints": endpoints})
 
 
+CONFORMIDADE_POR_PAGINA = 10
+
+
 @login_required
 def rh_conformidade(request):
     if not request.user.e_rh:
@@ -152,11 +155,14 @@ def rh_conformidade(request):
     if situacao_filtro != "TODOS":
         linhas = [l for l in linhas if l["situacao"] == situacao_filtro]
 
+    pagina = Paginator(linhas, CONFORMIDADE_POR_PAGINA).get_page(request.GET.get("pagina"))
+
     return render(request, "core/rh_conformidade.html", {
         "secao": "conformidade",
         "busca": request.GET.get("busca") or "",
         "situacao_selecionada": situacao_filtro,
-        "linhas": linhas,
+        "linhas": pagina,
+        "pagina": pagina,
         "total_linhas": len(linhas),
         "kpis": services.kpis_conformidade(linhas_completas),
         "departamentos": services.conformidade_por_departamento(linhas_completas),
