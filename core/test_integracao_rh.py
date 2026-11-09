@@ -127,6 +127,41 @@ class PainelRhIntegracaoTest(TestCase):
                          {"em_dia": 0, "vencendo": 0, "vencido": 0, "pendente": 2})
         self.assertContains(resposta, "Maria Souza")
 
+    def test_conformidade_mostra_10_por_pagina(self):
+        # Arrange: 2 do setUp + 10 = 12 linhas (1 curso exigido por colaborador)
+        self.criar_colaboradores(10)
+
+        # Act
+        primeira = self.client.get(reverse("core:rh_conformidade"))
+        segunda = self.client.get(reverse("core:rh_conformidade"), {"pagina": 2})
+
+        # Assert
+        self.assertEqual(len(primeira.context["linhas"]), 10)
+        self.assertEqual(len(segunda.context["linhas"]), 2)
+        self.assertEqual(primeira.context["total_linhas"], 12)
+        self.assertContains(primeira, "Página 1 de 2")
+        # os KPIs continuam considerando todas as linhas, não só a página
+        self.assertEqual(primeira.context["kpis"]["pendente"], 12)
+
+    def test_paginacao_da_conformidade_mantem_busca_e_situacao(self):
+        # Arrange
+        self.criar_colaboradores(12)
+
+        # Act
+        resposta = self.client.get(reverse("core:rh_conformidade"),
+                                   {"busca": "extra", "situacao": "PENDENTE"})
+
+        # Assert
+        self.assertContains(resposta, "?busca=extra&situacao=PENDENTE&pagina=2")
+
+    def test_pagina_invalida_da_conformidade_mostra_a_primeira(self):
+        # Act
+        resposta = self.client.get(reverse("core:rh_conformidade"), {"pagina": "abc"})
+
+        # Assert
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.context["pagina"].number, 1)
+
     def test_deve_executar_rotinas_de_vencimento_e_expurgo(self):
         # Act
         resposta = self.client.post(reverse("core:rh_conformidade"), {"rodar_rotina": "1"})
