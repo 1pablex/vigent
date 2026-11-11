@@ -12,7 +12,7 @@
     <div class="logo">VIGENT<span class="dot">.</span></div>
 
     <h1>Acesso à plataforma</h1>
-    <p class="subtitle">A sua plafatorma de cursos corporativos</p>
+    <p class="subtitle">A sua plataforma de cursos corporativos</p>
 
     <form method="post">
       {% csrf_token %}
@@ -20,6 +20,9 @@
       {% if erro %}
         <div class="erro">{{ erro }}</div>
       {% endif %}
+      {% for m in messages %}
+        <div class="erro"{% if m.tags == "success" %} style="background:#dcf5ec;color:#1a9c76"{% endif %}>{{ m }}</div>
+      {% endfor %}
 
       <div class="field">
         <label for="email">E-mail corporativo</label>

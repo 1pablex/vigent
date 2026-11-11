@@ -33,6 +33,8 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 - Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail) em todo login com senha já definida. Um novo código, de login ou de "Esqueci minha senha", só pode ser pedido 5 minutos depois do anterior, o que evita inundar o e-mail do colaborador e gastar a cota do Brevo. Na redefinição, a resposta é a mesma para qualquer e-mail, sem revelar quem é cadastrado
 - Senha provisória de uso único: deixa de valer assim que o colaborador define a senha definitiva
 - Bloqueio temporário após tentativas de login malsucedidas repetidas
+- Sessão única por conta (RNF-13): um novo login em outro computador encerra a sessão anterior, que volta ao login com um aviso e fica registrada na auditoria. O progresso do curso fica salvo no banco, então o colaborador continua do slide onde parou
+- A sessão expira ao fechar o navegador e após 30 minutos sem uso (RNF-12); cada acesso renova o prazo
 - Toda verificação de permissão ocorre no back-end, nunca só ocultando elemento na tela; na API, quem não é RH recebe 403 em JSON
 - Entradas validadas no back-end: departamento e grupo do cadastro são conferidos antes de criar a conta (nenhum e-mail sai com dado inválido), e parâmetros inválidos na URL das listagens não geram erro 500
 - Upload de imagens dos cursos (capa e slides, RN-40): só JPG, PNG ou WEBP, identificados pelo conteúdo e não pela extensão, com no máximo 5 MB e 25 megapixels. A imagem aceita é regravada a partir dos pixels, com nome aleatório: conteúdo escondido no arquivo (script anexado) e metadados EXIF/GPS são descartados. Vale para o painel do RH e para o admin
@@ -145,7 +147,7 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
 
 ## Testes
 
-São 200 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 210 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
@@ -166,6 +168,7 @@ coverage report
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
 | `contas/test_integracao_cadastro.py` | 8 | Cadastro de colaborador, com departamento e grupo validados |
 | `contas/test_integracao_codigo.py` | 12 | Segundo fator e redefinição de senha: limite de tentativas (RN-25) e intervalo de 5 minutos entre códigos |
+| `contas/test_sessao_unica.py` | 10 | Sessão única por conta (novo login em outro computador encerra a sessão anterior) e expiração após 30 minutos sem uso ou ao fechar o navegador |
 | `treinamentos/tests.py` | 5 | Models de curso, aula, slide e progresso |
 | `treinamentos/test_integracao_gestao_cursos.py` | 24 | Gestão de cursos pelo RH: curso, aula, slides um por vez e questões |
 | `treinamentos/test_upload_seguro.py` | 14 | Upload de imagens e texto dos slides (RN-40): formatos, limites, arquivo poliglota, EXIF, nome aleatório, sanitização |

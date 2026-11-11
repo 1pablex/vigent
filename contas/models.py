@@ -63,6 +63,8 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     data_cadastro = models.DateTimeField(default=timezone.now, editable=False)
     aceitou_termos = models.BooleanField(default=False)
+    # Sessão única: só a sessão do último login vale; as outras são encerradas no próximo acesso.
+    sessao_ativa = models.CharField(max_length=40, blank=True, editable=False)
     data_aceite_termos = models.DateTimeField(null=True, blank=True)
 
     objects = UsuarioManager()

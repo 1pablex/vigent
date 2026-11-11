@@ -20,6 +20,7 @@ from core.services import registrar
 from core.correio import enviar_codigo_verificacao, enviar_primeiro_acesso, enviar_codigo_redefinicao
 from core.services import gerar_codigo_verificacao, registrar
 from contas.models import CodigoVerificacao, Departamento, Usuario
+from contas.sessao import marcar_sessao_ativa
 
 
 def _ip(request):
@@ -178,6 +179,7 @@ def definir_senha(request):
             request.user.senha_provisoria = False
             request.user.save()
             update_session_auth_hash(request, request.user)
+            marcar_sessao_ativa(request, request.user)   # a chave da sessão mudou acima
             registrar(LogSistema.Nivel.INFO, "Senha alterada",
                       "Troca obrigatória concluída", request.user)
             messages.success(request, "Senha definida com sucesso.")
