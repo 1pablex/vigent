@@ -121,7 +121,7 @@ class LimiteTentativasDoisFatoresTest(TestCase):
 class LimiteTentativasRedefinicaoSenhaTest(TestCase):
 
     def setUp(self):
-        patch("contas.views.enviar_codigo_redefinicao").start()
+        self.enviar_codigo_redefinicao = patch("contas.views.enviar_codigo_redefinicao").start()
         self.addCleanup(patch.stopall)
         self.usuario = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-antiga-123",
@@ -152,6 +152,7 @@ class LimiteTentativasRedefinicaoSenhaTest(TestCase):
         # Arrange
         for _ in range(5):
             self.redefinir(codigo_errado(self.codigo.codigo))
+        self.passar_intervalo_de_reenvio()
         self.client.post(reverse("contas:esqueci_senha"), {"email": "ana@nortex.com.br"})
         novo = CodigoVerificacao.objects.filter(usuario=self.usuario).latest("data_geracao")
 
@@ -162,6 +163,52 @@ class LimiteTentativasRedefinicaoSenhaTest(TestCase):
         self.assertRedirects(resposta, reverse("contas:login"))
         self.usuario.refresh_from_db()
         self.assertTrue(self.usuario.check_password("senha-nova-456"))
+
+    def passar_intervalo_de_reenvio(self):
+        CodigoVerificacao.objects.filter(usuario=self.usuario).update(
+            data_geracao=timezone.now() - timedelta(minutes=5, seconds=1))
+
+    def pedir_codigo(self, email="ana@nortex.com.br"):
+        return self.client.post(reverse("contas:esqueci_senha"), {"email": email}, follow=True)
+
+    def test_novo_pedido_antes_de_5_minutos_nao_gera_codigo_nem_envia_email(self):
+        # Arrange
+        self.enviar_codigo_redefinicao.reset_mock()
+
+        # Act
+        for _ in range(5):
+            self.pedir_codigo()
+
+        # Assert
+        self.assertEqual(CodigoVerificacao.objects.filter(usuario=self.usuario).count(), 1)
+        self.enviar_codigo_redefinicao.assert_not_called()
+        self.assertEqual(LogSistema.objects.filter(
+            evento="Código de redefinição não enviado").count(), 5)
+
+    def test_novo_pedido_depois_de_5_minutos_gera_codigo(self):
+        # Arrange
+        self.passar_intervalo_de_reenvio()
+        self.enviar_codigo_redefinicao.reset_mock()
+
+        # Act
+        self.pedir_codigo()
+
+        # Assert
+        self.assertEqual(CodigoVerificacao.objects.filter(usuario=self.usuario).count(), 2)
+        self.enviar_codigo_redefinicao.assert_called_once()
+
+    def test_resposta_nao_revela_se_o_email_existe_nem_o_intervalo(self):
+        # Arrange: consome a mensagem do pedido feito no setUp
+        self.client.get(reverse("contas:redefinir_senha"))
+
+        # Act: e-mail cadastrado dentro do intervalo x e-mail que não existe
+        cadastrado = self.pedir_codigo()
+        inexistente = self.pedir_codigo("ninguem@nortex.com.br")
+
+        # Assert (RN-27)
+        self.assertEqual(cadastrado.redirect_chain, inexistente.redirect_chain)
+        self.assertEqual([str(m) for m in cadastrado.context["messages"]],
+                         [str(m) for m in inexistente.context["messages"]])
 
     def test_senha_invalida_nao_consome_tentativa(self):
         # Act: senhas diferentes são recusadas antes de conferir o código

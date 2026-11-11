@@ -20,6 +20,7 @@ from core.services import registrar
 from core.correio import enviar_codigo_verificacao, enviar_primeiro_acesso, enviar_codigo_redefinicao
 from core.services import gerar_codigo_verificacao, registrar
 from contas.models import CodigoVerificacao, Departamento, Usuario
+from contas.sessao import marcar_sessao_ativa
 
 
 def _ip(request):
@@ -52,9 +53,10 @@ def _bloqueado_por_forca_bruta(email, ip):
 
 def _espera_para_reenviar(usuario):
     """
-    Minutos que faltam para o usuário poder pedir outro código de 2FA (0 = pode pedir).
+    Minutos que faltam para o usuário poder pedir outro código (0 = pode pedir).
+    Vale para o 2FA e para a redefinição de senha, que usam a mesma tabela de códigos.
 
-    Sem esse intervalo, cada clique em "Reenviar código" disparava um e-mail novo
+    Sem esse intervalo, cada pedido disparava um e-mail novo
     (inundação da caixa do colaborador e gasto da cota do Brevo) e liberava mais
     tentativas de adivinhar o código.
     """
@@ -177,6 +179,7 @@ def definir_senha(request):
             request.user.senha_provisoria = False
             request.user.save()
             update_session_auth_hash(request, request.user)
+            marcar_sessao_ativa(request, request.user)   # a chave da sessão mudou acima
             registrar(LogSistema.Nivel.INFO, "Senha alterada",
                       "Troca obrigatória concluída", request.user)
             messages.success(request, "Senha definida com sucesso.")
@@ -295,12 +298,26 @@ def esqueci_senha(request):
         else:
             usuario = Usuario.objects.filter(email=email, is_active=True).first()
             if usuario:
-                codigo_obj = gerar_codigo_verificacao(usuario)
-                enviar_codigo_redefinicao(usuario, codigo_obj)
-                registrar(LogSistema.Nivel.INFO, "Código de redefinição enviado",
-                          f"Solicitação de redefinição para {email}", ip=_ip(request))
+                codigo_obj = None
+                with transaction.atomic():
+                    # trava a linha do usuário: dois envios simultâneos não geram dois códigos
+                    Usuario.objects.select_for_update().get(pk=usuario.pk)
+                    if not _espera_para_reenviar(usuario):
+                        codigo_obj = gerar_codigo_verificacao(usuario)
+                if codigo_obj:
+                    enviar_codigo_redefinicao(usuario, codigo_obj)
+                    registrar(LogSistema.Nivel.INFO, "Código de redefinição enviado",
+                              f"Solicitação de redefinição para {email}", ip=_ip(request))
+                else:
+                    registrar(LogSistema.Nivel.WARN, "Código de redefinição não enviado",
+                              f"Novo pedido para {email} antes do intervalo mínimo", ip=_ip(request))
+            # RN-27: a mesma resposta em todos os casos (cadastrado, não cadastrado ou dentro
+            # do intervalo), para a tela não revelar quais e-mails existem no sistema.
             request.session["reset_email"] = email
-            messages.success(request, "Se o e-mail informado estiver cadastrado, um código foi enviado.")
+            intervalo = settings.VIGENT["INTERVALO_REENVIO_CODIGO_MIN"]
+            messages.success(request, "Se o e-mail informado estiver cadastrado, um código foi "
+                                      f"enviado. Um novo código só pode ser pedido {intervalo} "
+                                      "minutos depois do anterior.")
             return redirect("contas:redefinir_senha")
 
     return render(request, "contas/esqueci_senha.html", {"erro": erro})

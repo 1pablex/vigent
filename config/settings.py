@@ -48,9 +48,16 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'contas.middleware.SessaoUnicaMiddleware',
     'contas.middleware.SenhaProvisoriaMiddleware',
     'contas.middleware.TermoAceiteMiddleware',
 ]
+
+# RNF-12 - sessão expira ao fechar o navegador e após 30 min sem uso. Cada acesso renova
+# o prazo, então quem está fazendo o curso não cai no meio da aula.
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 30 * 60
+SESSION_SAVE_EVERY_REQUEST = True
 
 ROOT_URLCONF = 'config.urls'
 

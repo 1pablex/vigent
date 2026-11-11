@@ -1,5 +1,7 @@
 """RN-18 - enquanto a senha provisória não for substituída, apenas a tela
 de definição de senha permanece acessível."""
+from django.contrib import messages
+from django.contrib.auth import logout
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -44,4 +46,32 @@ class TermoAceiteMiddleware:
                     and not request.path.startswith("/media/")):
                 return _bloquear(request, "contas:aceitar_termo",
                                  "Aceite o termo de uso antes de usar o sistema.")
+        return self.get_response(request)
+
+
+class SessaoUnicaMiddleware:
+    """
+    RNF-13 - sessão única por conta. Se a conta fez login em outro dispositivo, a sessão
+    antiga não vale mais: é encerrada e a pessoa volta ao login com um aviso.
+    """
+
+    MENSAGEM = ("Sua sessão foi encerrada porque sua conta foi acessada "
+                "em outro dispositivo.")
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        usuario = getattr(request, "user", None)
+        if (usuario is not None and usuario.is_authenticated and usuario.sessao_ativa
+                and request.session.session_key != usuario.sessao_ativa):
+            from core.services import registrar
+            from auditoria.models import LogSistema
+            registrar(LogSistema.Nivel.WARN, "Sessão encerrada por novo login",
+                      f"{usuario.email} entrou em outro dispositivo", usuario)
+            logout(request)
+            if request.path.startswith("/api/"):
+                return JsonResponse({"detail": self.MENSAGEM}, status=401)
+            messages.warning(request, self.MENSAGEM)
+            return redirect("contas:login")
         return self.get_response(request)
