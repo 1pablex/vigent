@@ -153,3 +153,24 @@ body {
 .btn-action.light { background-color: #eef0f4; color: #374151; }
 .btn-action.light:hover { background-color: #e4e7ee; }
 .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Celular (RNF-04): o card vira coluna e o botão ocupa a largura toda */
+@media (max-width: 640px) {
+  .container { padding: 24px 16px 60px; }
+
+  .section-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .section-header h2 { font-size: 24px; }
+
+  .training-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 18px 16px;
+  }
+
+  .training-left { align-items: flex-start; }
+  .training-capa { width: 88px; height: 56px; }
+
+  .training-right { justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  .training-right .btn-action { flex: 1 1 auto; text-align: center; }
+}

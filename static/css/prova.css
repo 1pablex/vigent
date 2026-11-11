@@ -229,3 +229,23 @@ body {
 }
 
 .result-actions { margin-top: 28px; }
+
+/* Celular (RNF-04): etapas compactas e cards com menos margem */
+@media (max-width: 640px) {
+  .container { padding: 16px 16px 48px; }
+  .header { flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+  .header-left { flex-wrap: wrap; gap: 8px; min-width: 0; }
+
+  .stepper { flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+  .step-arrow { display: none; }
+  .step { gap: 5px; padding: 4px 9px 4px 4px; font-size: 12px; }
+  .step-circle { width: 22px; height: 22px; font-size: 11px; }
+
+  .page-header { flex-wrap: wrap; gap: 10px; }
+  .page-header h1 { font-size: 21px; }
+  .question-card { padding: 20px 16px; }
+  .option { gap: 12px; padding: 14px; font-size: 14px; }
+  .btn-dark { width: 100%; text-align: center; }
+  .result-card { padding: 32px 20px; }
+  .result-score { font-size: 34px; }
+}

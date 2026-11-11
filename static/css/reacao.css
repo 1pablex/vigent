@@ -184,3 +184,21 @@ textarea:focus { border-color: #14213d; box-shadow: 0 0 0 3px rgba(20, 33, 61, 0
 }
 
 .btn-dark:hover { background-color: #1c2b52; }
+
+/* Celular (RNF-04): etapas compactas e card com menos margem */
+@media (max-width: 640px) {
+  .container { padding: 16px 16px 48px; }
+  .header { flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+  .header-left { flex-wrap: wrap; gap: 8px; min-width: 0; }
+
+  .stepper { flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+  .step-arrow { display: none; }
+  .step { gap: 5px; padding: 4px 9px 4px 4px; font-size: 12px; }
+  .step-circle { width: 22px; height: 22px; font-size: 11px; }
+
+  .page-header h1 { font-size: 21px; }
+  .card { padding: 24px 16px; }
+  .scale-row { gap: 8px; }
+  .scale-option { width: 44px; }
+  .btn-dark { width: 100%; }
+}
