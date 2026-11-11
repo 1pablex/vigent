@@ -122,3 +122,9 @@ button:hover {
 .link-out:hover {
   color: #14213d;
 }
+
+/* Celular (RNF-04): o card acompanha a largura da tela */
+@media (max-width: 640px) {
+  body { padding: 16px; }
+  .card { width: 100%; padding: 32px 20px 40px; }
+}
