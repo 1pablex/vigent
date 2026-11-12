@@ -409,7 +409,7 @@ class LimitesDeRequisicaoTest(CenarioSeguranca):
                     reverse("contas:login"), {"email": f"x{i}@nortex.com.br", "senha": "errada"},
                     HTTP_X_FORWARDED_FOR=f"10.0.0.{i}, 198.51.100.7", REMOTE_ADDR="10.9.9.9")
         self.assertContains(resposta, "Muitas tentativas de acesso")
-        self.assertTrue(RegistroAcesso.objects.filter(ip="198.51.100.8").exists())
+        self.assertTrue(RegistroAcesso.objects.filter(ip="198.51.100.7").exists())
         self.assertFalse(RegistroAcesso.objects.filter(ip="10.0.0.1").exists())
 
     def test_reenvio_de_codigo_tem_intervalo_minimo(self):
