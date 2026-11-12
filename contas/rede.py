@@ -7,6 +7,7 @@ falou com ele; com N proxies, o IP do cliente é o N-ésimo a partir da direita.
 O que vier antes dele foi escrito pelo cliente e é ignorado.
 """
 import ipaddress
+import os
 
 from django.conf import settings
 
