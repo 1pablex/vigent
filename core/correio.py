@@ -1,13 +1,12 @@
-from django.conf import settings
 from brevo import Brevo
+from brevo.core.api_error import ApiError
 from brevo.transactional_emails import (
     SendTransacEmailRequestSender,
     SendTransacEmailRequestToItem,
 )
+from django.conf import settings
 
 from auditoria.models import EmailEnviado, LogSistema
-from brevo.core.api_error import ApiError
-
 
 DOMINIO_SEM_ENTREGA = ".invalid"   # RFC 2606: reservado, nunca existe na internet
 

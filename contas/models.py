@@ -140,6 +140,10 @@ class CodigoVerificacao(models.Model):
         verbose_name = "código de verificação"
         verbose_name_plural = "códigos de verificação"
 
+    def __str__(self):
+        # O código em si não aparece: é o segundo fator do login.
+        return f"Código de verificação de {self.usuario}"
+
     @property
     def bloqueado(self):
         return self.tentativas_erradas >= settings.VIGENT["MAX_TENTATIVAS_CODIGO"]

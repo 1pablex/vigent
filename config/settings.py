@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+
 import dotenv
 
 dotenv.load_dotenv()
@@ -84,7 +85,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 if DATABASE_URL:
-    from urllib.parse import urlparse, unquote
+    from urllib.parse import unquote, urlparse
 
     u = urlparse(DATABASE_URL)
     DATABASES = {

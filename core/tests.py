@@ -8,7 +8,7 @@ from avaliacoes.models import Alternativa, AvaliacaoReacao, Prova, Questao, Resp
 from certificacao.models import Certificado
 from contas.models import Departamento
 from core import services
-from treinamentos.models import Aula, AtribuicaoManual, Curso, CursoDepartamento, ProgressoAula
+from treinamentos.models import AtribuicaoManual, Aula, Curso, CursoDepartamento, ProgressoAula
 
 Usuario = get_user_model()
 
@@ -300,7 +300,9 @@ class ExpurgoReidentificacaoTestCase(TestCase):
 
     def test_comando_registra_execucao_da_rotina(self):
         from io import StringIO
+
         from django.core.management import call_command
+
         from auditoria.models import ExecucaoRotina
 
         call_command("expurgar_reidentificacoes", stdout=StringIO())
