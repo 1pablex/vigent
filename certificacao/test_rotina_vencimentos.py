@@ -7,7 +7,7 @@ from io import StringIO
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, tag
 
 from auditoria.models import LogSistema
 from core.management.commands.verificar_vencimentos import Command
@@ -23,6 +23,7 @@ def certificado(dias):
     )
 
 
+@tag("unitario")
 @patch(f"{MODULO}.registrar")
 @patch(f"{MODULO}.ExecucaoRotina")
 @patch(f"{MODULO}.enviar_alerta_vencimento")

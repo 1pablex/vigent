@@ -37,14 +37,14 @@ class Curso(models.Model):
     @property
     def publicado(self):
         """RN-04 - exige ao menos uma aula e uma questão cadastradas."""
-        return self.aulas.exists() and Questao_existe(self)
+        return self.aulas.exists() and questao_existe(self)
 
     @property
     def total_slides(self):
         return SlideAula.objects.filter(aula__curso=self).count()
 
 
-def Questao_existe(curso):
+def questao_existe(curso):
     from avaliacoes.models import Questao
     return Questao.objects.filter(prova__curso=curso).exists()
 
@@ -156,6 +156,9 @@ class ProgressoAula(models.Model):
         verbose_name = "progresso de aula"
         verbose_name_plural = "progressos de aula"
 
+    def __str__(self):
+        return f"{self.usuario} - {self.aula}"
+
     def registrar_slide(self, ordem):
         vistos = set(self.slides_vistos or [])
         vistos.add(int(ordem))
@@ -165,6 +168,3 @@ class ProgressoAula(models.Model):
             self.concluida = True
             self.data_conclusao = timezone.now()
         self.save()
-
-    def __str__(self):
-        return f"{self.usuario} - {self.aula}"

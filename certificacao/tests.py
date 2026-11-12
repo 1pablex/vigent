@@ -6,7 +6,7 @@ A data de "hoje" é fixada com mock para o resultado não depender do relógio.
 from datetime import date, timedelta
 from unittest.mock import patch
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, tag
 
 from certificacao.models import Certificado
 
@@ -18,6 +18,7 @@ def certificado_vencendo_em(dias):
                        data_validade=HOJE + timedelta(days=dias))
 
 
+@tag("unitario")
 @patch("certificacao.models.timezone.localdate", return_value=HOJE)
 class SituacaoCertificadoTest(SimpleTestCase):
 

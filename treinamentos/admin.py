@@ -1,7 +1,6 @@
 from django.contrib import admin
 
-from .models import (Aula, Curso, CursoDepartamento,
-                     Presenca, ProgressoAula, SlideAula)
+from .models import Aula, Curso, CursoDepartamento, Presenca, ProgressoAula, SlideAula
 
 
 class SlideInline(admin.TabularInline):

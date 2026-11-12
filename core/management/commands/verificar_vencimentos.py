@@ -3,6 +3,7 @@ RF-11, RF-12, RN-11 (idempotencia), RN-12 (vencido não notifica de novo)."""
 import time
 
 from django.core.management.base import BaseCommand
+
 from auditoria.models import ExecucaoRotina, LogSistema
 from certificacao.models import Certificado, NotificacaoEnviada
 from core.correio import enviar_alerta_vencimento

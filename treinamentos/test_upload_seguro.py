@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings, tag
 from PIL import Image
 
 from treinamentos import seguranca
@@ -24,7 +24,8 @@ def imagem(formato="PNG", tamanho=(20, 20), nome=None, exif=None, sufixo=b""):
                               content_type=f"image/{formato.lower()}")
 
 
-class ValidacaoDeImagemTest(TestCase):
+@tag("unitario")
+class ValidacaoDeImagemTest(SimpleTestCase):
 
     def test_aceita_jpg_png_e_webp(self):
         for formato in ("JPEG", "PNG", "WEBP"):
@@ -110,7 +111,8 @@ class RegravacaoDeImagemTest(TestCase):
         self.assertRegex(slide.imagem.name, r"^slides/[0-9a-f]{32}\.png$")
 
 
-class SanitizacaoDoTextoDoSlideTest(TestCase):
+@tag("unitario")
+class SanitizacaoDoHtmlTest(SimpleTestCase):
 
     def test_remove_script_e_atributos_perigosos(self):
         sujo = ('<p onclick="roubar()">Oi</p><script>alert(1)</script>'
@@ -123,6 +125,9 @@ class SanitizacaoDoTextoDoSlideTest(TestCase):
     def test_mantem_a_formatacao_simples(self):
         texto = "<p>Use <strong>EPI</strong> e <em>cinto</em>:</p><ul><li>Item</li></ul><br>"
         self.assertEqual(seguranca.sanitizar_html(texto), texto)
+
+
+class SanitizacaoDoTextoDoSlideTest(TestCase):
 
     def test_texto_e_sanitizado_ao_salvar_o_slide(self):
         curso = Curso.objects.create(nome="NR-35", categoria="Segurança")

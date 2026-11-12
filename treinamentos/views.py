@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from core import services
-from treinamentos.models import Aula, Curso
+from treinamentos.models import Curso
 
 
 @login_required

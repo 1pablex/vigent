@@ -151,6 +151,11 @@ São 222 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar
 ```
 python manage.py test
 ```
+Separados, como no CI:
+```
+python manage.py test --tag unitario          # 38 unitários: SimpleTestCase, sem banco
+python manage.py test --exclude-tag unitario  # 184 de integração: views, API e banco de teste
+```
 Com cobertura:
 ```
 coverage run manage.py test

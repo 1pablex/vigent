@@ -13,15 +13,11 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from auditoria.models import LogSistema, RegistroAcesso
-from contas.models import Departamento, Usuario
-from core.correio import enviar_primeiro_acesso
-from core.services import registrar
-
-from core.correio import enviar_codigo_verificacao, enviar_primeiro_acesso, enviar_codigo_redefinicao
-from core.services import gerar_codigo_verificacao, registrar
 from contas.models import CodigoVerificacao, Departamento, Usuario
 from contas.rede import ip_do_cliente
 from contas.sessao import marcar_sessao_ativa
+from core.correio import enviar_codigo_redefinicao, enviar_codigo_verificacao, enviar_primeiro_acesso
+from core.services import gerar_codigo_verificacao, registrar
 
 
 def _ip(request):
