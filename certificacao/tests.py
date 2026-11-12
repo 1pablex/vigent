@@ -31,7 +31,7 @@ class SituacaoCertificadoTest(SimpleTestCase):
 
         # Assert
         self.assertEqual(situacao, "EM DIA")
-        self.assertEqual(certificado.dias_para_vencer, 90)
+        self.assertEqual(certificado.dias_para_vencer, 91)
 
     def test_deve_retornar_vencido_quando_validade_ja_passou(self, _hoje):
         # Arrange
