@@ -8,7 +8,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, tag
 
 from core import services
 from treinamentos.models import Curso
@@ -16,6 +16,7 @@ from treinamentos.models import Curso
 HOJE = date(2026, 10, 9)
 
 
+@tag("unitario")
 @patch("core.services.registrar")
 @patch("core.services.timezone.localdate", return_value=HOJE)
 @patch("core.services.Certificado")
@@ -86,6 +87,7 @@ def linhas_do_departamento(nome, total, em_dia):
             for i in range(total)]
 
 
+@tag("unitario")
 class ConformidadePorDepartamentoTest(SimpleTestCase):
     """RF-14/RN-38: índice (em dia + vencendo) por departamento, com faixa de cor do painel."""
 
@@ -153,6 +155,7 @@ def linha(situacao, departamento="Vendas", curso="LGPD", dias=None):
             "curso": SimpleNamespace(nome=curso), "situacao": situacao, "certificado": cert}
 
 
+@tag("unitario")
 @patch("core.services.settings", VIGENT={"META_CONFORMIDADE": 90})
 class IndiceConformidadeTest(SimpleTestCase):
     """RN-38: um par está conforme quando o certificado está em dia ou vencendo."""
@@ -179,6 +182,7 @@ class IndiceConformidadeTest(SimpleTestCase):
                          [("NR-35", 50), ("LGPD", 100)])
 
 
+@tag("unitario")
 class VencimentosPorFaixaTest(SimpleTestCase):
     """RN-39: faixas fechadas de 0-30, 31-60 e 61-90 dias; vencidos e pendentes ficam fora."""
 

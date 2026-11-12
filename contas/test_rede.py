@@ -1,6 +1,6 @@
 """Testes unitários do IP de origem (contas/rede.py). Não usam banco."""
 from django.conf import settings
-from django.test import RequestFactory, SimpleTestCase, override_settings
+from django.test import RequestFactory, SimpleTestCase, override_settings, tag
 
 from contas.rede import ip_do_cliente
 
@@ -9,6 +9,7 @@ def com_proxies(quantidade):
     return override_settings(VIGENT={**settings.VIGENT, "PROXIES_CONFIAVEIS": quantidade})
 
 
+@tag("unitario")
 class IpDoClienteTest(SimpleTestCase):
 
     def setUp(self):
