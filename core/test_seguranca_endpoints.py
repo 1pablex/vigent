@@ -4,19 +4,18 @@ Cobrem autenticação, controle de acesso por perfil (RH x colaborador), acesso 
 objetos de terceiros (IDOR), CSRF, ações destrutivas via GET, XSS, upload,
 redirecionamento aberto, busca com injeção e cabeçalhos de segurança.
 
-Os testes marcados com @expectedFailure documentam vulnerabilidades conhecidas e
-ainda não corrigidas. Quando a correção entrar, o teste passa a dar "unexpected
-success" e o decorator deve ser removido.
+Os testes comentados com "Corrigido:" nasceram como @expectedFailure, documentando
+uma vulnerabilidade conhecida, e passaram a valer quando a correção entrou.
 """
-from unittest import expectedFailure
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import URLPattern, URLResolver, get_resolver, reverse
 
-from auditoria.models import LogSistema
+from auditoria.models import LogSistema, RegistroAcesso
 from avaliacoes.models import Alternativa, AvaliacaoReacao, Prova, Questao
 from certificacao.models import Certificado
 from contas.models import CodigoVerificacao, Departamento
@@ -393,14 +392,25 @@ class EntradasMaliciosasTest(CenarioSeguranca):
 
 class LimitesDeRequisicaoTest(CenarioSeguranca):
 
-    @expectedFailure
     def test_cabecalho_x_forwarded_for_nao_burla_bloqueio_por_ip(self):
-        # VULNERÁVEL: _ip() confia no X-Forwarded-For enviado pelo próprio cliente.
+        # Corrigido: sem proxy confiável configurado, o X-Forwarded-For é ignorado.
         for i in range(6):
             resposta = self.client.post(
                 reverse("contas:login"), {"email": f"x{i}@nortex.com.br", "senha": "errada"},
                 HTTP_X_FORWARDED_FOR=f"10.0.0.{i}")
         self.assertContains(resposta, "Muitas tentativas de acesso")
+
+    def test_atras_de_proxy_confiavel_o_ip_forjado_pelo_cliente_nao_burla_o_bloqueio(self):
+        # O cliente troca o IP à esquerda; o proxy sempre acrescenta o IP real no fim.
+        vigent = {**settings.VIGENT, "PROXIES_CONFIAVEIS": 1}
+        with override_settings(VIGENT=vigent):
+            for i in range(6):
+                resposta = self.client.post(
+                    reverse("contas:login"), {"email": f"x{i}@nortex.com.br", "senha": "errada"},
+                    HTTP_X_FORWARDED_FOR=f"10.0.0.{i}, 198.51.100.7", REMOTE_ADDR="10.9.9.9")
+        self.assertContains(resposta, "Muitas tentativas de acesso")
+        self.assertTrue(RegistroAcesso.objects.filter(ip="198.51.100.7").exists())
+        self.assertFalse(RegistroAcesso.objects.filter(ip="10.0.0.1").exists())
 
     def test_reenvio_de_codigo_tem_intervalo_minimo(self):
         # Corrigido: só sai outro código depois de INTERVALO_REENVIO_CODIGO_MIN minutos.

@@ -171,6 +171,9 @@ VIGENT = {
     "MAX_TENTATIVAS_CODIGO": 5,
     "INTERVALO_REENVIO_CODIGO_MIN": 5,   # tempo mínimo entre dois códigos de 2FA
     "META_CONFORMIDADE": 90,   # RN-38 - meta interna do índice de conformidade (%)
+    # Quantos proxies confiáveis ficam na frente da aplicação (ex.: 1 atrás do proxy da
+    # hospedagem). Com 0, o X-Forwarded-For é ignorado e vale o IP da conexão.
+    "PROXIES_CONFIAVEIS": int(os.getenv("PROXIES_CONFIAVEIS", "0")),
 }
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"

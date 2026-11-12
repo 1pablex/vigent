@@ -32,7 +32,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 - Hash de senha com Argon2 (migração progressiva: contas antigas em PBKDF2 são atualizadas sozinhas no próximo login bem-sucedido)
 - Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail) em todo login com senha já definida. Um novo código, de login ou de "Esqueci minha senha", só pode ser pedido 5 minutos depois do anterior, o que evita inundar o e-mail do colaborador e gastar a cota do Brevo. Na redefinição, a resposta é a mesma para qualquer e-mail, sem revelar quem é cadastrado
 - Senha provisória de uso único: deixa de valer assim que o colaborador define a senha definitiva
-- Bloqueio temporário após tentativas de login malsucedidas repetidas
+- Bloqueio temporário após tentativas de login malsucedidas repetidas, por e-mail e por IP. O IP vem da conexão; o cabeçalho `X-Forwarded-For` só é lido quando há proxy confiável na frente da aplicação (`PROXIES_CONFIAVEIS`), e mesmo assim só o trecho escrito pelo proxy. Assim o cliente não consegue trocar de IP a cada tentativa para escapar do bloqueio
 - Sessão única por conta (RNF-13): um novo login em outro computador encerra a sessão anterior, que volta ao login com um aviso e fica registrada na auditoria. O progresso do curso fica salvo no banco, então o colaborador continua do slide onde parou
 - A sessão expira ao fechar o navegador e após 30 minutos sem uso (RNF-12); cada acesso renova o prazo
 - Toda verificação de permissão ocorre no back-end, nunca só ocultando elemento na tela; na API, quem não é RH recebe 403 em JSON
@@ -147,7 +147,7 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
 
 ## Testes
 
-São 210 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 222 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
@@ -162,13 +162,14 @@ coverage report
 | `core/tests.py` | 26 | Regras de negócio de `services.py` com banco (RN-02, RN-04 a RN-09, RN-13, RN-14, RN-29, RN-34) |
 | `core/test_services_unitarios.py` | 12 | Unitários sem banco: emissão de certificado, índice de conformidade (RN-38), faixas de vencimento (RN-39) |
 | `core/test_api_indicadores.py` | 19 | API de indicadores: acesso, contrato JSON, reação histórica (RN-30), reciclagem atômica, número de consultas, tela do dashboard |
-| `core/test_seguranca_endpoints.py` | 28 | Autenticação, perfil, IDOR, CSRF, XSS, upload, redirecionamento aberto, cabeçalhos, parâmetros inválidos na URL. Toda rota nova precisa ser classificada aqui |
+| `core/test_seguranca_endpoints.py` | 29 | Autenticação, perfil, IDOR, CSRF, XSS, upload, redirecionamento aberto, cabeçalhos, parâmetros inválidos na URL. Toda rota nova precisa ser classificada aqui |
 | `core/test_seed_demonstracao.py` | 7 | Seed de demonstração: volume e mistura de situações, perfis por departamento, repetição sem duplicar, limpeza, bloqueio sem `DEBUG` e e-mail `.invalid` que não sai pelo Brevo |
 | `core/test_integracao_rh.py` | 13 | Painel do RH: conformidade, rotinas, reciclagem, paginação de colaboradores e do painel de conformidade |
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
 | `contas/test_integracao_cadastro.py` | 8 | Cadastro de colaborador, com departamento e grupo validados |
 | `contas/test_integracao_codigo.py` | 12 | Segundo fator e redefinição de senha: limite de tentativas (RN-25) e intervalo de 5 minutos entre códigos |
 | `contas/test_sessao_unica.py` | 10 | Sessão única por conta (novo login em outro computador encerra a sessão anterior) e expiração após 30 minutos sem uso ou ao fechar o navegador |
+| `contas/test_rede.py` | 11 | IP de origem: `X-Forwarded-For` ignorado sem proxy confiável, leitura do trecho escrito pelo proxy, IP inválido descartado |
 | `treinamentos/tests.py` | 5 | Models de curso, aula, slide e progresso |
 | `treinamentos/test_integracao_gestao_cursos.py` | 24 | Gestão de cursos pelo RH: curso, aula, slides um por vez e questões |
 | `treinamentos/test_upload_seguro.py` | 14 | Upload de imagens e texto dos slides (RN-40): formatos, limites, arquivo poliglota, EXIF, nome aleatório, sanitização |
@@ -177,7 +178,7 @@ coverage report
 | `certificacao/test_integracao.py` | 4 | Meus certificados e acesso ao certificado |
 | `certificacao/test_rotina_vencimentos.py` | 4 | Rotina de notificação de vencimento (RN-11, RN-12) |
 
-Os testes marcados com `@expectedFailure` em `test_seguranca_endpoints.py` documentam vulnerabilidades conhecidas e ainda não corrigidas.
+Os testes comentados com "Corrigido:" em `test_seguranca_endpoints.py` nasceram documentando uma vulnerabilidade conhecida e passaram a valer quando a correção entrou. Hoje não há vulnerabilidade conhecida em aberto.
 
 ## Contas de demonstração
 

@@ -20,13 +20,12 @@ from core.services import registrar
 from core.correio import enviar_codigo_verificacao, enviar_primeiro_acesso, enviar_codigo_redefinicao
 from core.services import gerar_codigo_verificacao, registrar
 from contas.models import CodigoVerificacao, Departamento, Usuario
+from contas.rede import ip_do_cliente
 from contas.sessao import marcar_sessao_ativa
 
 
 def _ip(request):
-    encaminhado = request.META.get("HTTP_X_FORWARDED_FOR")
-    return (encaminhado.split(",")[0].strip() if encaminhado
-            else request.META.get("REMOTE_ADDR"))
+    return ip_do_cliente(request)
 
 
 def gerar_senha_provisoria(tamanho=10):
