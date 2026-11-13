@@ -27,11 +27,11 @@ def certificado(dias):
 @patch(f"{MODULO}.ExecucaoRotina")
 @patch(f"{MODULO}.enviar_alerta_vencimento")
 @patch(f"{MODULO}.NotificacaoEnviada")
-@patch(f"{MODULO}.Certificado")
+@patch(f"{MODULO}.certificados_monitorados")
 class VerificarVencimentosTest(SimpleTestCase):
 
     def _rodar(self, certificado_mock, notificacao_mock, certificados, ja_notificado=False):
-        certificado_mock.objects.select_related.return_value = certificados
+        certificado_mock.return_value = certificados
         notificacao_mock.objects.filter.return_value.exists.return_value = ja_notificado
         Command(stdout=StringIO()).handle()
 

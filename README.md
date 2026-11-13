@@ -147,7 +147,7 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
 
 ## Testes
 
-São 226 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 242 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
@@ -168,6 +168,7 @@ coverage report
 | `core/test_integracao_rh.py` | 13 | Painel do RH: conformidade, rotinas, reciclagem, paginação de colaboradores e do painel de conformidade |
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
 | `contas/test_integracao_cadastro.py` | 8 | Cadastro de colaborador, com departamento e grupo validados |
+| `contas/test_integracao_edicao.py` | 16 | Edição de colaborador pelo RH: dados e e-mail, troca de departamento (RN-02), perfil em destaque na auditoria, RH não muda o próprio perfil, conta desligada bloqueada e avisos de vencimento só do departamento atual e de contas ativas |
 | `contas/test_integracao_codigo.py` | 12 | Segundo fator e redefinição de senha: limite de tentativas (RN-25) e intervalo de 5 minutos entre códigos |
 | `contas/test_sessao_unica.py` | 10 | Sessão única por conta (novo login em outro computador encerra a sessão anterior) e expiração após 30 minutos sem uso ou ao fechar o navegador |
 | `contas/test_rede.py` | 11 | IP de origem: `X-Forwarded-For` ignorado sem proxy confiável, leitura do trecho escrito pelo proxy, IP inválido descartado |

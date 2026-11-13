@@ -1,10 +1,15 @@
 {% extends "core/rh_base.html" %}
-{% block titulo %}Cadastrar colaborador{% endblock %}
+{% block titulo %}{% if colaborador %}Editar colaborador{% else %}Cadastrar colaborador{% endif %}{% endblock %}
 {% block conteudo %}
 
 <div class="head">
+  {% if colaborador %}
+  <div><h1>Editar colaborador</h1>
+    <div class="sub">Matrícula <span class="mono">{{ colaborador.matricula }}</span>. A matrícula não pode ser alterada.</div></div>
+  {% else %}
   <div><h1>Cadastrar colaborador</h1>
     <div class="sub">A matrícula é atribuída automaticamente, por ordem de cadastro, e não pode ser alterada depois.</div></div>
+  {% endif %}
     <a class="btn btn-ghost" href="{% url 'core:rh_colaboradores' %}">← Voltar</a>
 </div>
 
@@ -31,19 +36,34 @@
     </div>
     <div class="field">
       <div class="q-lbl">Perfil de acesso</div>
+      {% if propria_conta %}
+        {# o próprio RH não troca o seu perfil: o valor atual segue no POST e a view confere #}
+        <input type="hidden" name="grupo" value="{{ colaborador.grupo }}">
+        <select class="search" style="width:100%;max-width:280px" disabled>
+          <option>{{ colaborador.get_grupo_display }}</option>
+        </select>
+        <div class="sub" style="margin-top:6px">Você não pode alterar o seu próprio perfil de acesso.</div>
+      {% else %}
       <select class="search" name="grupo" style="width:100%;max-width:280px">
         {% for valor, rotulo in grupos %}
           <option value="{{ valor }}" {% if valores.grupo == valor %}selected{% endif %}>{{ rotulo }}</option>
         {% endfor %}
       </select>
+      {% endif %}
     </div>
+    {% if colaborador %}
+    <p class="sub" style="margin:0 0 16px">
+      Ao mudar o departamento, os treinamentos exigidos passam a ser os do novo departamento.
+      Os certificados já emitidos continuam válidos. Toda alteração fica registrada na auditoria.</p>
+    {% else %}
     <p class="sub" style="margin:0 0 16px">
       O sistema gera uma senha provisória e a envia por e-mail ao próprio colaborador,
       que deverá substituí-la no primeiro acesso. Os treinamentos do departamento escolhido
       passam a valer imediatamente.</p>
+    {% endif %}
     <div style="display:flex;justify-content:flex-end;align-items:center;gap:14px">
       <a class="btn btn-ghost" href="{% url 'core:rh_colaboradores' %}">Cancelar</a>
-      <button class="btn btn-primary">Cadastrar</button>
+      <button class="btn btn-primary">{% if colaborador %}Salvar alterações{% else %}Cadastrar{% endif %}</button>
     </div>
   </form>
 </div>

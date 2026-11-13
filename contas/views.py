@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from auditoria.models import LogSistema, RegistroAcesso
@@ -194,31 +194,12 @@ def cadastrar_colaborador(request):
 
     erro = None
     if request.method == "POST":
-        nome = (request.POST.get("nome") or "").strip()
-        email = (request.POST.get("email") or "").strip().lower()
-        cargo = (request.POST.get("cargo") or "").strip()
-        dep_id = request.POST.get("departamento")
-        grupo = request.POST.get("grupo") or Usuario.Grupo.COLABORADOR
-
-        if len(nome) < 3:
-            erro = "Informe o nome completo."
-        elif "@" not in email or "." not in email.split("@")[-1]:
-            erro = "Endereço de correio eletrônico inválido."
-        elif Usuario.objects.filter(email=email).exists():
-            erro = "Já existe conta com este endereço."
-        elif not cargo:
-            erro = "Informe o cargo."
-        elif dep_id and not (dep_id.isdigit() and Departamento.objects.filter(pk=dep_id).exists()):
-            erro = "Selecione um departamento válido."
-        elif grupo not in Usuario.Grupo.values:
-            erro = "Selecione um grupo válido."
-        else:
+        erro, dados = _validar_colaborador(request.POST)
+        if not erro:
+            nome, email, grupo = dados["nome"], dados["email"], dados["grupo"]
             senha = gerar_senha_provisoria()
             novo = Usuario.objects.create_user(
-                email=email, nome=nome, password=senha, cargo=cargo,
-                departamento_id=dep_id or None, grupo=grupo,
-                senha_provisoria=True,
-            )
+                password=senha, senha_provisoria=True, **dados)
             enviar_primeiro_acesso(novo, senha)     # RN-19
             registrar(LogSistema.Nivel.INFO, "Colaborador cadastrado",
                       f"Matrícula {novo.matricula} - {nome} · {email} · grupo {grupo} · "
@@ -234,6 +215,112 @@ def cadastrar_colaborador(request):
         "departamentos": Departamento.objects.all(),
         "grupos": Usuario.Grupo.choices,
         "valores": request.POST,
+    })
+
+
+def _validar_colaborador(post, editando=None):
+    """RN-17, RN-20 - regras comuns ao cadastro e à edição.
+
+    Devolve (erro, dados). Na edição, o e-mail do próprio colaborador não conta como
+    duplicado. Sem erro, dados traz os campos prontos para gravar no Usuario.
+    """
+    nome = (post.get("nome") or "").strip()
+    email = (post.get("email") or "").strip().lower()
+    cargo = (post.get("cargo") or "").strip()
+    dep_id = post.get("departamento") or ""
+    grupo = post.get("grupo") or Usuario.Grupo.COLABORADOR
+
+    outras_contas = Usuario.objects.exclude(pk=editando.pk) if editando else Usuario.objects.all()
+    if len(nome) < 3:
+        return "Informe o nome completo.", None
+    if "@" not in email or "." not in email.split("@")[-1]:
+        return "Endereço de correio eletrônico inválido.", None
+    if outras_contas.filter(email=email).exists():
+        return "Já existe conta com este endereço.", None
+    if not cargo:
+        return "Informe o cargo.", None
+    if dep_id and not (dep_id.isdigit() and Departamento.objects.filter(pk=dep_id).exists()):
+        return "Selecione um departamento válido.", None
+    if grupo not in Usuario.Grupo.values:
+        return "Selecione um grupo válido.", None
+    return None, {"nome": nome, "email": email, "cargo": cargo,
+                  "departamento_id": int(dep_id) if dep_id else None, "grupo": grupo}
+
+
+# campo do Usuario -> rótulo usado na trilha de auditoria
+CAMPOS_EDITAVEIS = {"nome": "Nome", "email": "E-mail", "cargo": "Cargo",
+                    "departamento_id": "Departamento", "grupo": "Perfil"}
+
+
+def _valor_legivel(usuario, campo):
+    if campo == "departamento_id":
+        return usuario.departamento.nome if usuario.departamento else "Nenhum"
+    if campo == "grupo":
+        return usuario.get_grupo_display()
+    return getattr(usuario, campo) or "-"
+
+
+@login_required
+def editar_colaborador(request, usuario_id):
+    """RF-14, RN-02 - o RH corrige o cadastro ou muda o colaborador de departamento.
+
+    Os treinamentos exigidos passam a ser os do novo departamento na hora (RN-02);
+    certificados já emitidos continuam valendo. Conta desligada não é editada: os
+    dados pseudonimizados não podem voltar a identificar o titular (RN-34).
+    """
+    if not request.user.e_rh:
+        return redirect("core:inicio")
+
+    colaborador = get_object_or_404(Usuario.objects.select_related("departamento"), pk=usuario_id)
+    if not colaborador.is_active or colaborador.pseudonimizado:
+        messages.error(request, "Conta desligada não pode ser editada.")
+        return redirect("core:rh_colaboradores")
+    propria_conta = colaborador.pk == request.user.pk
+
+    erro = None
+    if request.method == "POST":
+        erro, dados = _validar_colaborador(request.POST, editando=colaborador)
+        if not erro and propria_conta and dados["grupo"] != colaborador.grupo:
+            erro = "Você não pode alterar o seu próprio perfil de acesso."
+        if not erro:
+            alterados = [campo for campo in CAMPOS_EDITAVEIS
+                         if dados[campo] != getattr(colaborador, campo)]
+            if not alterados:
+                messages.info(request, "Nenhuma alteração para salvar.")
+                return redirect("core:rh_colaboradores")
+
+            antes = {campo: _valor_legivel(colaborador, campo) for campo in alterados}
+            for campo in alterados:
+                setattr(colaborador, campo, dados[campo])
+            colaborador.save(update_fields=[c.removesuffix("_id") for c in alterados])
+            colaborador.refresh_from_db(fields=["departamento"])
+
+            mudancas = " · ".join(
+                f"{CAMPOS_EDITAVEIS[c]}: {antes[c]} → {_valor_legivel(colaborador, c)}"
+                for c in alterados)
+            # mudar o perfil altera permissões: fica em destaque na auditoria
+            nivel = LogSistema.Nivel.WARN if "grupo" in alterados else LogSistema.Nivel.INFO
+            registrar(nivel, "Colaborador alterado",
+                      f"Matrícula {colaborador.matricula} · {mudancas}", request.user)
+
+            aviso = f"Dados da matrícula {colaborador.matricula} atualizados."
+            if "departamento_id" in alterados:
+                aviso += (" Os treinamentos exigidos passam a ser os do departamento "
+                          f"{_valor_legivel(colaborador, 'departamento_id')}.")
+            messages.success(request, aviso)
+            return redirect("core:rh_colaboradores")
+        valores = request.POST
+    else:
+        valores = {"nome": colaborador.nome, "email": colaborador.email, "cargo": colaborador.cargo,
+                   "departamento": str(colaborador.departamento_id or ""), "grupo": colaborador.grupo}
+
+    return render(request, "contas/cadastrar.html", {
+        "erro": erro,
+        "colaborador": colaborador,
+        "propria_conta": propria_conta,
+        "departamentos": Departamento.objects.all(),
+        "grupos": Usuario.Grupo.choices,
+        "valores": valores,
     })
 
 def verificar_codigo(request):

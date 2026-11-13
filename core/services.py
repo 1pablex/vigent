@@ -119,11 +119,7 @@ def tentativas(usuario, curso):
 @transaction.atomic
 def reciclar(usuario, curso):
     """RN-29/RN-30 - reinicia o ciclo do curso para o colaborador.
-
-    Zera progresso e tentativas. A avaliação de reação NÃO é apagada: é arquivada,
-    para que o colaborador responda de novo no novo ciclo sem perder o histórico
-    usado nos indicadores de qualidade percebida. Certificados ficam intactos.
-    Roda numa transação: se qualquer etapa falhar, nada é gravado (sem reciclagem pela metade).
+    Remove progresso e respostas de prova, mas mantém a reação arquivada
     """
     ProgressoAula.objects.filter(usuario=usuario, aula__curso=curso).delete()
     AvaliacaoReacao.objects.filter(usuario=usuario, curso=curso,
@@ -173,6 +169,17 @@ def corrigir_prova(usuario, curso, marcadas):
         registrar(LogSistema.Nivel.WARN, "Tentativas esgotadas",
                   f"{curso.nome} - curso reiniciado para reciclagem", usuario)
     return nota, aprovado, reciclou
+
+def certificados_monitorados():
+    """RF-11, RN-02 - certificados que a rotina de vencimento acompanha.
+        Só de contas ativas e de cursos exigidos pelo departamento atual do colaborador.
+    """
+    exigidos = set(CursoDepartamento.objects.values_list("departamento_id", "curso_id"))
+    certificados = (Certificado.objects
+                    .filter(usuario__is_active=True)
+                    .select_related("usuario", "curso"))
+    return [c for c in certificados if (c.usuario.departamento_id, c.curso_id) in exigidos]
+
 
 def matriz_conformidade():
     """RF-13 - todos os pares colaborador ativo × curso publicado exigido, com a situação.
@@ -311,8 +318,7 @@ def vencimentos_por_faixa(linhas):
 def reacao_por_curso():
     """RF-29 - médias de didática e de entendimento por curso, com todo o histórico.
 
-    Inclui as reações arquivadas em reciclagens (RN-30) e as de colaboradores já
-    desligados, porque o indicador mede a qualidade percebida do curso ao longo do tempo.
+    Inclui as reações arquivadas em reciclagens (RN-30) e as de colaboradores ja desligados.
     """
     dados = (AvaliacaoReacao.objects
              .values("curso_id", "curso__nome")
