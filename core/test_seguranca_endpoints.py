@@ -34,7 +34,7 @@ PROTEGIDAS = {
     "core:rh_auditoria": 0, "core:rh_conformidade": 0, "core:rh_reciclagem": 2,
     "core:rh_dashboard": 0,
     "contas:definir_senha": 0, "contas:cadastrar": 0, "contas:aceitar_termo": 0,
-    "contas:meus_dados": 0,
+    "contas:meus_dados": 0, "contas:editar": 1,
     "treinamentos:inicio": 0, "treinamentos:abrir": 1, "treinamentos:curso": 1,
     "avaliacoes:reacao": 1, "avaliacoes:prova": 1,
     "certificacao:meus": 0, "certificacao:ver": 1,
@@ -47,7 +47,7 @@ PROTEGIDAS = {
 
 SOMENTE_RH = [
     "core:rh_colaboradores", "core:rh_remover", "core:rh_auditoria", "core:rh_conformidade",
-    "core:rh_reciclagem", "core:rh_dashboard", "contas:cadastrar",
+    "core:rh_reciclagem", "core:rh_dashboard", "contas:cadastrar", "contas:editar",
     "cursos_rh:lista", "cursos_rh:novo", "cursos_rh:editar", "cursos_rh:aula_nova",
     "cursos_rh:aula_editar", "cursos_rh:aula_excluir", "cursos_rh:slide_novo",
     "cursos_rh:slide_editar", "cursos_rh:slide_excluir", "cursos_rh:questao_nova",
@@ -109,7 +109,7 @@ class CenarioSeguranca(TestCase):
     def argumentos(self, rota):
         """Ids reais para as rotas que recebem parâmetros."""
         return {
-            "core:rh_remover": [self.outro.id],
+            "core:rh_remover": [self.outro.id], "contas:editar": [self.outro.id],
             "core:rh_reciclagem": [self.outro.id, self.curso.id],
             "treinamentos:abrir": [self.curso.id], "treinamentos:curso": [self.curso.id],
             "avaliacoes:reacao": [self.curso.id], "avaliacoes:prova": [self.curso.id],
@@ -134,6 +134,8 @@ class CenarioSeguranca(TestCase):
         return {
             "usuarios": Usuario.objects.count(),
             "outro_ativo": self.outro.is_active,
+            "outro_cadastro": (self.outro.nome, self.outro.email, self.outro.departamento_id,
+                               self.outro.grupo),
             "cursos": Curso.objects.count(),
             "aulas": Aula.objects.count(),
             "slides": SlideAula.objects.count(),
@@ -285,7 +287,7 @@ class ProtecaoCsrfTest(CenarioSeguranca):
     def test_post_sem_token_csrf_e_recusado(self):
         self.client.force_login(self.rh)
         antes = self.estado()
-        for rota in ("contas:cadastrar", "core:rh_remover", "core:rh_reciclagem",
+        for rota in ("contas:cadastrar", "contas:editar", "core:rh_remover", "core:rh_reciclagem",
                      "core:rh_conformidade", "cursos_rh:novo", "cursos_rh:editar",
                      "cursos_rh:aula_excluir", "cursos_rh:slide_novo",
                      "cursos_rh:slide_excluir", "cursos_rh:questao_excluir"):
