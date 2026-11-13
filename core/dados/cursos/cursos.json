@@ -1,0 +1,792 @@
+{
+  "cursos": [
+    {
+      "nome": "Abertura de chamados",
+      "categoria": "Tecnologia",
+      "carga_horaria": "4 horas",
+      "validade_meses": 12,
+      "nota_minima": "7.0",
+      "max_tentativas": 3,
+      "capa": "imagens/abertura-de-chamados/capa.png",
+      "departamentos": [
+        "Financeiro",
+        "Gerência",
+        "Operações",
+        "Recursos Humanos",
+        "Sala Limpa",
+        "TI",
+        "Vendas"
+      ],
+      "aulas": [
+        {
+          "ordem": 1,
+          "titulo": "Quando e como abrir um chamado?",
+          "slides": [
+            {
+              "ordem": 0,
+              "titulo": "O que é Service Desk?",
+              "corpo": "",
+              "imagem": "imagens/abertura-de-chamados/aula-1-slide-0.png"
+            },
+            {
+              "ordem": 1,
+              "titulo": "Incidente ou requisição?",
+              "corpo": "",
+              "imagem": "imagens/abertura-de-chamados/aula-1-slide-1.png"
+            },
+            {
+              "ordem": 2,
+              "titulo": "Canais oficiais",
+              "corpo": "",
+              "imagem": "imagens/abertura-de-chamados/aula-1-slide-2.png"
+            }
+          ]
+        },
+        {
+          "ordem": 2,
+          "titulo": "Como registrar um chamado?",
+          "slides": [
+            {
+              "ordem": 0,
+              "titulo": "Um titulo claro",
+              "corpo": "",
+              "imagem": "imagens/abertura-de-chamados/aula-2-slide-0.png"
+            },
+            {
+              "ordem": 1,
+              "titulo": "O que colocar na descrição",
+              "corpo": "",
+              "imagem": "imagens/abertura-de-chamados/aula-2-slide-1.png"
+            },
+            {
+              "ordem": 2,
+              "titulo": "Prioridade, acompanhamento e encerramento do chamado",
+              "corpo": "",
+              "imagem": "imagens/abertura-de-chamados/aula-2-slide-2.png"
+            }
+          ]
+        }
+      ],
+      "questoes": [
+        {
+          "ordem": 1,
+          "enunciado": "Um sistema que funcionava normalmente parou de abrir. Como esse chamado deve ser classificado?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Sugestão de melhoria",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Mudança planejada",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Requisição de serviço",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Incidente",
+              "correta": true
+            }
+          ]
+        },
+        {
+          "ordem": 2,
+          "enunciado": "Qual dos títulos abaixo é o mais adequado para um chamado?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Erro ao emitir nota fiscal no ERP desde as 9h",
+              "correta": true
+            },
+            {
+              "letra": "B",
+              "texto": "Ajuda, por favor",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Problema no computador",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Urgente!!!",
+              "correta": false
+            }
+          ]
+        },
+        {
+          "ordem": 3,
+          "enunciado": "Qual informação NÃO deve ser incluída na descrição de um chamado?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "A senha de acesso do colaborador",
+              "correta": true
+            },
+            {
+              "letra": "B",
+              "texto": "A mensagem de erro exibida na tela",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "O print da tela com o erro",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "O número de patrimônio do equipamento",
+              "correta": false
+            }
+          ]
+        },
+        {
+          "ordem": 4,
+          "enunciado": "Como é definida a prioridade de um chamado?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Pela quantidade de vezes que o colaborador ligou para a TI",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Pelo cargo de quem abriu o chamado",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Pela combinação de impacto e urgência",
+              "correta": true
+            },
+            {
+              "letra": "D",
+              "texto": "Apenas pela ordem de chegada",
+              "correta": false
+            }
+          ]
+        },
+        {
+          "ordem": 5,
+          "enunciado": "O técnico informa que o problema foi resolvido. O que o colaborador deve fazer?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Abrir um novo chamado para agradecer",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Pedir ao técnico, por mensagem pessoal, que mantenha o chamado aberto",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Ignorar a mensagem, pois o chamado fecha sozinho",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Confirmar se a solução funcionou antes do encerramento e avaliar o atendimento",
+              "correta": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "Compliance e codigo de conduta",
+      "categoria": "Geral",
+      "carga_horaria": "4 horas",
+      "validade_meses": 12,
+      "nota_minima": "7.0",
+      "max_tentativas": 3,
+      "capa": "imagens/compliance-e-codigo-de-conduta/capa.png",
+      "departamentos": [
+        "Financeiro",
+        "Gerência",
+        "Operações",
+        "Recursos Humanos",
+        "Sala Limpa",
+        "TI",
+        "Vendas"
+      ],
+      "aulas": [
+        {
+          "ordem": 1,
+          "titulo": "Integridade e lei anticorrupção",
+          "slides": [
+            {
+              "ordem": 1,
+              "titulo": "O que é compliance?",
+              "corpo": "",
+              "imagem": "imagens/compliance-e-codigo-de-conduta/aula-1-slide-1.png"
+            },
+            {
+              "ordem": 2,
+              "titulo": "Lei Anticorrupção",
+              "corpo": "",
+              "imagem": "imagens/compliance-e-codigo-de-conduta/aula-1-slide-2.png"
+            },
+            {
+              "ordem": 3,
+              "titulo": "Conflito de interesses",
+              "corpo": "",
+              "imagem": "imagens/compliance-e-codigo-de-conduta/aula-1-slide-3.png"
+            }
+          ]
+        },
+        {
+          "ordem": 2,
+          "titulo": "Conduta no dia a dia",
+          "slides": [
+            {
+              "ordem": 1,
+              "titulo": "Brindes, presentes e hospitalidade",
+              "corpo": "",
+              "imagem": "imagens/compliance-e-codigo-de-conduta/aula-2-slide-1.png"
+            },
+            {
+              "ordem": 2,
+              "titulo": "Canal de denúncia",
+              "corpo": "",
+              "imagem": "imagens/compliance-e-codigo-de-conduta/aula-2-slide-2.png"
+            },
+            {
+              "ordem": 3,
+              "titulo": "Na dúvida pergunte",
+              "corpo": "",
+              "imagem": "imagens/compliance-e-codigo-de-conduta/aula-2-slide-3.png"
+            }
+          ]
+        }
+      ],
+      "questoes": [
+        {
+          "ordem": 1,
+          "enunciado": "1. A Lei nº 12.846/2013 (Lei Anticorrupção) responsabiliza a empresa por:",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Atos lesivos contra a administração pública, nacional ou estrangeira",
+              "correta": true
+            },
+            {
+              "letra": "B",
+              "texto": "Atrasos no pagamento de fornecedore",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Erros de digitação em notas fiscais",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "onflitos entre colaboradores",
+              "correta": false
+            }
+          ]
+        },
+        {
+          "ordem": 2,
+          "enunciado": "Seu irmão é dono de uma empresa que participa de uma cotação conduzida por você. O que fazer?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Conduzir normalmente, desde que o preço dele seja o menor",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Declarar o conflito de interesses e não participar da decisão",
+              "correta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Pedir ao irmão que reduza o preço",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Excluir a empresa do irmão sem informar ninguém",
+              "correta": false
+            }
+          ]
+        },
+        {
+          "ordem": 3,
+          "enunciado": "Um fornecedor oferece a você um celular novo depois de fechar um contrato. Qual é a conduta correta?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Aceitar, pois o contrato já foi fechado",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Aceitar, desde que ninguém saiba",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Aceitar e dividir com a equipe",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Recusar e, na dúvida, comunicar o compliance",
+              "correta": true
+            }
+          ]
+        },
+        {
+          "ordem": 4,
+          "enunciado": "Sobre o canal de denúncia, é correto afirmar:",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Serve apenas para reclamações sobre salário",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Só pode ser usado por gestores",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Quem relata de boa-fé está protegido contra retaliação",
+              "correta": true
+            },
+            {
+              "letra": "D",
+              "texto": "O relato precisa ser identificado",
+              "correta": false
+            }
+          ]
+        },
+        {
+          "ordem": 5,
+          "enunciado": "Diante de uma situação em que você não sabe se uma conduta é adequada, o que fazer?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Seguir o que os colegas costumam fazer",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Consultar o gestor ou o compliance antes de agir",
+              "correta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Agir e explicar depois, se alguém perguntar",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Ignorar, pois não é sua responsabilidade",
+              "correta": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "Prevenção a fraude",
+      "categoria": "Segurança/Financeiro",
+      "carga_horaria": "4 horas",
+      "validade_meses": 12,
+      "nota_minima": "7.0",
+      "max_tentativas": 3,
+      "capa": "imagens/prevencao-a-fraude/capa.png",
+      "departamentos": [
+        "Financeiro"
+      ],
+      "aulas": [
+        {
+          "ordem": 1,
+          "titulo": "Golpes mais comuns",
+          "slides": [
+            {
+              "ordem": 0,
+              "titulo": "Por que o financeiro é o alvo",
+              "corpo": "",
+              "imagem": "imagens/prevencao-a-fraude/aula-1-slide-0.png"
+            },
+            {
+              "ordem": 1,
+              "titulo": "Boleto adulterado",
+              "corpo": "",
+              "imagem": "imagens/prevencao-a-fraude/aula-1-slide-1.png"
+            },
+            {
+              "ordem": 2,
+              "titulo": "Falso pedido da diretoria",
+              "corpo": "",
+              "imagem": "imagens/prevencao-a-fraude/aula-1-slide-2.png"
+            }
+          ]
+        },
+        {
+          "ordem": 2,
+          "titulo": "Controles que evitam fraude",
+          "slides": [
+            {
+              "ordem": 0,
+              "titulo": "Confirme por outro canal",
+              "corpo": "",
+              "imagem": "imagens/prevencao-a-fraude/aula-2-slide-0.png"
+            },
+            {
+              "ordem": 1,
+              "titulo": "Confira antes de pagar",
+              "corpo": "",
+              "imagem": "imagens/prevencao-a-fraude/aula-2-slide-1.png"
+            },
+            {
+              "ordem": 2,
+              "titulo": "Segregação de funções e reporte",
+              "corpo": "",
+              "imagem": "imagens/prevencao-a-fraude/aula-2-slide-2.png"
+            }
+          ]
+        }
+      ],
+      "questoes": [
+        {
+          "ordem": 1,
+          "enunciado": "Um fornecedor envia e-mail informando uma nova conta bancária para os próximos pagamentos. Qual é a conduta correta?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Responder ao próprio e-mail pedindo confirmação",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Atualizar o cadastro imediatamente para não atrasar o pagamento",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Confirmar a alteração pelo telefone já cadastrado do fornecedor antes de qualquer mudança",
+              "correta": true
+            },
+            {
+              "letra": "D",
+              "texto": "Ligar para o número informado na assinatura do e-mail",
+              "correta": false
+            }
+          ]
+        },
+        {
+          "ordem": 2,
+          "enunciado": "O que deve ser conferido em um boleto antes do pagamento?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Se o arquivo está em PDF",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Apenas a data de vencimento",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Se o beneficiário e o CNPJ exibidos pelo banco correspondem ao fornecedor",
+              "correta": true
+            },
+            {
+              "letra": "D",
+              "texto": "Se o boleto tem o logotipo do fornecedor",
+              "correta": false
+            }
+          ]
+        },
+        {
+          "ordem": 3,
+          "enunciado": "Uma mensagem em nome de um diretor pede uma transferência urgente e sigilosa, sem passar pelo fluxo de aprovação. Qual é o principal sinal de golpe?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "A pressão para ignorar o processo de aprovação",
+              "correta": true
+            },
+            {
+              "letra": "B",
+              "texto": "O diretor estar em viagem",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "A mensagem ter chegado por e-mail",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "O valor ser alto",
+              "correta": false
+            }
+          ]
+        },
+        {
+          "ordem": 4,
+          "enunciado": "O que significa segregação de funções no processo de pagamento?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Cada pagamento é feito por um banco diferente",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Quem cadastra o fornecedor não é a mesma pessoa que aprova o pagamento",
+              "correta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Os pagamentos são separados por mês",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Apenas o diretor financeiro pode ver os pagamentos",
+              "correta": false
+            }
+          ]
+        },
+        {
+          "ordem": 5,
+          "enunciado": "Você percebe que um pagamento já realizado foi para uma conta fraudulenta. O que fazer primeiro?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Pagar de novo na conta correta e não comentar com ninguém",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Aguardar o fornecedor reclamar",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Avisar imediatamente o banco e o gestor, pois a rapidez aumenta a chance de bloqueio",
+              "correta": true
+            },
+            {
+              "letra": "D",
+              "texto": "Excluir os e-mails relacionados ao pagamento",
+              "correta": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "Recrutamento e seleção sem discriminação",
+      "categoria": "Recursos Humanos",
+      "carga_horaria": "4 horas",
+      "validade_meses": 12,
+      "nota_minima": "7.0",
+      "max_tentativas": 3,
+      "capa": "imagens/recrutamento-e-selecao-sem-discriminacao/capa.png",
+      "departamentos": [
+        "Recursos Humanos"
+      ],
+      "aulas": [
+        {
+          "ordem": 1,
+          "titulo": "O que a lei proíbe?",
+          "slides": [
+            {
+              "ordem": 0,
+              "titulo": "Igualdade no acesso ao emprego",
+              "corpo": "",
+              "imagem": "imagens/recrutamento-e-selecao-sem-discriminacao/aula-1-slide-0.png"
+            },
+            {
+              "ordem": 1,
+              "titulo": "Exigências que são crime",
+              "corpo": "",
+              "imagem": "imagens/recrutamento-e-selecao-sem-discriminacao/aula-1-slide-1.png"
+            },
+            {
+              "ordem": 2,
+              "titulo": "Perguntas que não devem ser feitas",
+              "corpo": "",
+              "imagem": "imagens/recrutamento-e-selecao-sem-discriminacao/aula-1-slide-2.png"
+            }
+          ]
+        },
+        {
+          "ordem": 2,
+          "titulo": "Boas práticas da seleção",
+          "slides": [
+            {
+              "ordem": 0,
+              "titulo": "Critérios objetivos",
+              "corpo": "",
+              "imagem": "imagens/recrutamento-e-selecao-sem-discriminacao/aula-2-slide-0.png"
+            },
+            {
+              "ordem": 1,
+              "titulo": "Anúncio de vaga",
+              "corpo": "",
+              "imagem": "imagens/recrutamento-e-selecao-sem-discriminacao/aula-2-slide-1.png"
+            },
+            {
+              "ordem": 2,
+              "titulo": "Dados dos candidatos e devolutiva",
+              "corpo": "",
+              "imagem": "imagens/recrutamento-e-selecao-sem-discriminacao/aula-2-slide-2.png"
+            }
+          ]
+        }
+      ],
+      "questoes": [
+        {
+          "ordem": 1,
+          "enunciado": "Segundo a Lei nº 9.029/1995, exigir atestado de gravidez de uma candidata é:",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Obrigatório no exame admissional",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Crime",
+              "correta": true
+            },
+            {
+              "letra": "C",
+              "texto": "Permitido, se o cargo exigir esforço físico",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Permitido, com autorização do gestor",
+              "correta": false
+            }
+          ]
+        },
+        {
+          "ordem": 2,
+          "enunciado": "Qual das perguntas abaixo é adequada em uma entrevista para analista financeiro?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "\"Você é casado?\"",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "\"Você pretende ter filhos nos próximos anos?\"",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "\"Conte uma situação em que você identificou um erro em uma conciliação bancária.\"",
+              "correta": true
+            },
+            {
+              "letra": "D",
+              "texto": "\"Qual é a sua religião?\"",
+              "correta": false
+            }
+          ]
+        },
+        {
+          "ordem": 3,
+          "enunciado": "Qual anúncio de vaga está adequado?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Qual anúncio de vaga está adequado?",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "\"Vaga para analista, preferência por solteiras\"",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "\"Contrata-se recepcionista do sexo feminino, até 25 anos\"",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "\"Analista de RH (todos os gêneros): experiência com folha de pagamento\"",
+              "correta": true
+            }
+          ]
+        },
+        {
+          "ordem": 4,
+          "enunciado": "Como tratar os currículos recebidos em um processo seletivo?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Publicar os aprovados com os dados completos no mural",
+              "correta": false
+            },
+            {
+              "letra": "B",
+              "texto": "Guardar para sempre, pois podem ser úteis um dia",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Compartilhar com todos os gestores da empresa",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Restringir o acesso à equipe da seleção e manter no banco de talentos só com consentimento e por prazo definido",
+              "correta": true
+            }
+          ]
+        },
+        {
+          "ordem": 5,
+          "enunciado": "Por que usar o mesmo roteiro de perguntas para todos os candidatos da vaga?",
+          "alternativas": [
+            {
+              "letra": "A",
+              "texto": "Para comparar os candidatos pelos mesmos critérios e reduzir vieses",
+              "correta": true
+            },
+            {
+              "letra": "B",
+              "texto": "Para não precisar registrar a avaliação",
+              "correta": false
+            },
+            {
+              "letra": "C",
+              "texto": "Para a entrevista terminar mais rápido",
+              "correta": false
+            },
+            {
+              "letra": "D",
+              "texto": "Porque a lei proíbe perguntas diferentes",
+              "correta": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

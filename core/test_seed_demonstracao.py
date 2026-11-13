@@ -1,4 +1,6 @@
 """Comando carregar_dados_demonstracao: base grande de colaboradores para o dashboard."""
+import shutil
+import tempfile
 from io import StringIO
 from unittest.mock import patch
 
@@ -19,13 +21,21 @@ def rodar(*args):
     call_command("carregar_dados_demonstracao", *args, stdout=StringIO())
 
 
-@override_settings(DEBUG=True)
 class SeedDemonstracaoTest(TestCase):
 
     @classmethod
+    def setUpClass(cls):
+        # A carga de cursos grava capas e slides: ficam numa pasta temporária, não em media/.
+        media = tempfile.mkdtemp()
+        cls.addClassCleanup(shutil.rmtree, media, ignore_errors=True)
+        configuracao = override_settings(DEBUG=True, MEDIA_ROOT=media)
+        configuracao.enable()
+        cls.addClassCleanup(configuracao.disable)
+        super().setUpClass()
+
+    @classmethod
     def setUpTestData(cls):
-        with override_settings(DEBUG=True):
-            rodar()
+        rodar()
 
     def test_cria_60_colaboradores_com_as_quatro_situacoes(self):
         self.assertEqual(Usuario.objects.filter(**SEED).count(), 60)
@@ -54,8 +64,9 @@ class SeedDemonstracaoTest(TestCase):
         rodar("--limpar")
         self.assertFalse(Usuario.objects.filter(**SEED).exists())
         self.assertTrue(Usuario.objects.filter(email="ricardo.lima@nortex.com.br").exists())
-        self.assertFalse(Departamento.objects.filter(nome__in=["Financeiro", "TI"]).exists())
-        self.assertTrue(Curso.objects.filter(nome="LGPD - Proteção de Dados").exists())
+        # Departamentos e cursos são da carga de cursos, não da base de colaboradores.
+        self.assertTrue(Departamento.objects.filter(nome__in=["Financeiro", "TI"]).exists())
+        self.assertTrue(Curso.objects.filter(nome="Abertura de chamados").exists())
 
 
 class ProtecoesDaSeedTest(TestCase):

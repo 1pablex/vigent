@@ -147,7 +147,7 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
 
 ## Testes
 
-São 222 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 226 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
@@ -163,6 +163,7 @@ coverage report
 | `core/test_services_unitarios.py` | 12 | Unitários sem banco: emissão de certificado, índice de conformidade (RN-38), faixas de vencimento (RN-39) |
 | `core/test_api_indicadores.py` | 19 | API de indicadores: acesso, contrato JSON, reação histórica (RN-30), reciclagem atômica, número de consultas, tela do dashboard |
 | `core/test_seguranca_endpoints.py` | 29 | Autenticação, perfil, IDOR, CSRF, XSS, upload, redirecionamento aberto, cabeçalhos, parâmetros inválidos na URL. Toda rota nova precisa ser classificada aqui |
+| `core/test_seed_cursos.py` | 4 | Carga de cursos: mesmo conteúdo e departamentos do arquivo versionado, uma alternativa correta por questão, imagens regravadas (RN-40) e repetição sem duplicar |
 | `core/test_seed_demonstracao.py` | 7 | Seed de demonstração: volume e mistura de situações, perfis por departamento, repetição sem duplicar, limpeza, bloqueio sem `DEBUG` e e-mail `.invalid` que não sai pelo Brevo |
 | `core/test_integracao_rh.py` | 13 | Painel do RH: conformidade, rotinas, reciclagem, paginação de colaboradores e do painel de conformidade |
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
@@ -186,11 +187,25 @@ Criadas pelo comando `carregar_dados_colaboradores`:
 
 | Papel | E-mail | Senha |
 |---|---|---|
-| RH | ricardo.lima@nortex.com.br | 123456 |
+| RH (Recursos Humanos) | ricardo.lima@nortex.com.br | 123456 |
 | Colaboradora (Vendas) | fernanda.lima@nortex.com.br | 123456 |
 | Primeiro acesso (Sala Limpa) | bruno.tavares@nortex.com.br | Nortex@2026 |
 
-O comando `carregar_dados_cursos` cria três treinamentos: **LGPD (Proteção de Dados)** e **Código de Conduta Ética** (todos os departamentos), e **Parametrização de Sala Limpa** (restrito ao departamento Sala Limpa), cada um já com aulas, slides, prova e questões prontas para teste.
+O comando `carregar_dados_cursos` cria quatro treinamentos, cada um com capa, aulas, slides com imagem, prova e questões:
+
+| Curso | Departamentos |
+|---|---|
+| Abertura de chamados | Todos |
+| Compliance e codigo de conduta | Todos |
+| Prevenção a fraude | Financeiro |
+| Recrutamento e seleção sem discriminação | Recursos Humanos |
+
+O conteúdo fica versionado em `core/dados/cursos/` (`cursos.json` e a pasta `imagens/`). As imagens passam pela mesma validação e regravação do upload pelo RH (RN-40) e são salvas pelo storage do Django, então em produção vão para o storage configurado. Rodar o comando de novo não duplica: curso que já existe é pulado.
+
+Para transformar cursos cadastrados pela tela do RH em carga de dados, exporte-os pelos ids (sem ids, exporta todos). O comando reescreve `core/dados/cursos/`:
+```
+python manage.py exportar_cursos 5 6 7 8
+```
 
 O comando `carregar_dados_demonstracao` cria uma base grande para o dashboard de indicadores (ele já roda os dois comandos acima):
 
