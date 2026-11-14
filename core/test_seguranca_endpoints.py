@@ -333,7 +333,7 @@ class XssTest(CenarioSeguranca):
         self.assertNotContains(resposta, XSS)
 
     def test_texto_do_slide_nao_executa_script(self):
-        # Corrigido (RN-40): o texto é sanitizado ao salvar e de novo na exibição. O update
+        # Corrigido (RN-41): o texto é sanitizado ao salvar e de novo na exibição. O update
         # em massa abaixo não passa pelo save(), então quem barra aqui é o filtro html_seguro.
         self.aula.slides.update(corpo=XSS)
         self.client.force_login(self.colaborador)

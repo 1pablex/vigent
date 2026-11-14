@@ -91,7 +91,7 @@ def enviar_codigo_redefinicao(usuario, codigo_obj):
     return _enviar(usuario.email, assunto, corpo, "Redefinição de senha")
 
 def enviar_alerta_vencimento(usuario, certificado, dias):
-    """RF-12 - alerta nos marcos de 30, 15 e 7 dias antes do vencimento."""
+    """RF-13 - alerta nos marcos de 30, 15 e 7 dias antes do vencimento."""
     assunto = f"Seu certificado vence em {dias} dias - Vigent"
     corpo = (
         f"Olá, {usuario.get_short_name()}.\n\n"

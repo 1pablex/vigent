@@ -1,4 +1,4 @@
-"""Testes de integração da edição de colaborador pelo RH (RF-14, RN-02).
+"""Testes de integração da edição de colaborador pelo RH (RF-04, RN-02, RN-42).
 
 Views, middleware e banco de teste são reais. O envio de e-mail pelo Brevo é mock.
 """
@@ -185,7 +185,7 @@ class ValidacaoDaEdicaoTest(CenarioEdicao):
 
 @patch("core.management.commands.verificar_vencimentos.enviar_alerta_vencimento")
 class AvisosDeVencimentoAposEdicaoTest(CenarioEdicao):
-    """RF-11, RN-02 - o aviso de reciclagem segue o departamento atual e só vai para contas ativas."""
+    """RF-12, RN-02 - o aviso de reciclagem segue o departamento atual e só vai para contas ativas."""
 
     def setUp(self):
         super().setUp()

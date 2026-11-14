@@ -153,7 +153,7 @@ def sair(request):
 
 
 def ver_politica_privacidade(request):
-    """RF-23 - política de privacidade disponível ao colaborador."""
+    """RF-24 - política de privacidade disponível ao colaborador."""
     return render(request, "contas/politica_privacidade.html")
 
 #obrigatorio apos o login, para que o usuario troque a senha provisoria
@@ -188,7 +188,7 @@ def definir_senha(request):
 
 @login_required
 def cadastrar_colaborador(request):
-    """RF-16, RF-17, RN-15, RN-19, RN-20."""
+    """RF-17, RF-18, RN-15, RN-19, RN-20."""
     if not request.user.e_rh:
         return redirect("core:inicio")
 
@@ -219,7 +219,7 @@ def cadastrar_colaborador(request):
 
 
 def _validar_colaborador(post, editando=None):
-    """RN-17, RN-20 - regras comuns ao cadastro e à edição.
+    """RN-17, RN-42 - regras comuns ao cadastro e à edição.
 
     Devolve (erro, dados). Na edição, o e-mail do próprio colaborador não conta como
     duplicado. Sem erro, dados traz os campos prontos para gravar no Usuario.
@@ -262,7 +262,7 @@ def _valor_legivel(usuario, campo):
 
 @login_required
 def editar_colaborador(request, usuario_id):
-    """RF-14, RN-02 - o RH corrige o cadastro ou muda o colaborador de departamento.
+    """RF-04, RN-02, RN-42 - o RH corrige o cadastro ou muda o colaborador de departamento.
 
     Os treinamentos exigidos passam a ser os do novo departamento na hora (RN-02);
     certificados já emitidos continuam valendo. Conta desligada não é editada: os
@@ -324,7 +324,7 @@ def editar_colaborador(request, usuario_id):
     })
 
 def verificar_codigo(request):
-    """RF-20, RN-25 - segundo fator por código enviado por e-mail."""
+    """RF-21, RN-25 - segundo fator por código enviado por e-mail."""
     usuario_id = request.session.get("pre_2fa_usuario_id")
     if not usuario_id:
         return redirect("contas:login")
@@ -375,7 +375,7 @@ def verificar_codigo(request):
     return render(request, "contas/verificar_codigo.html", {"erro": erro, "email": usuario.email})
 
 def esqueci_senha(request):
-    """RF-22, RN-27 - a resposta não revela se o e-mail está cadastrado."""
+    """RF-23, RN-27 - a resposta não revela se o e-mail está cadastrado."""
     erro = None
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
@@ -410,7 +410,7 @@ def esqueci_senha(request):
 
 
 def redefinir_senha(request):
-    """RF-22, RN-25, RN-28 - redefinição por código, senha com no mínimo 6 caracteres."""
+    """RF-23, RN-25, RN-28 - redefinição por código, senha com no mínimo 6 caracteres."""
     email = request.session.get("reset_email")
     if not email:
         return redirect("contas:esqueci_senha")
@@ -450,7 +450,7 @@ def redefinir_senha(request):
     return render(request, "contas/redefinir_senha.html", {"erro": erro, "email": email})
 @login_required
 def aceitar_termo(request):
-    """RF-23, RN-33 - aceite obrigatório do termo de uso."""
+    """RF-24, RN-33 - aceite obrigatório do termo de uso."""
     if request.user.aceitou_termos:
         return redirect("core:inicio")
 
@@ -470,7 +470,7 @@ def aceitar_termo(request):
 
 @login_required
 def meus_dados(request):
-    """Dados cadastrais do próprio usuário, somente leitura (RF-24, RN-37, LGPD, art. 18, II - acesso aos dados)."""
+    """Dados cadastrais do próprio usuário, somente leitura (RF-25, RN-37, LGPD, art. 18, II - acesso aos dados)."""
     usuario = (Usuario.objects
                .select_related("departamento")
                .only("nome", "matricula", "cargo", "data_cadastro", "departamento__nome")

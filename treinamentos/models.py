@@ -7,7 +7,7 @@ from treinamentos.seguranca import regravar_imagem, sanitizar_html, validar_imag
 
 
 def _regravar_se_nova(campo):
-    """RN-40 - só a imagem recém-enviada é regravada; a já salva fica como está."""
+    """RN-41 - só a imagem recém-enviada é regravada; a já salva fica como está."""
     if campo and not campo._committed:
         return regravar_imagem(campo)
     return campo

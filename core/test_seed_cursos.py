@@ -53,7 +53,7 @@ class CargaDeCursosTest(TestCase):
                     self.assertEqual(sum(a["correta"] for a in questao["alternativas"]), 1)
 
     def test_imagens_passam_pela_regravacao_do_upload(self):
-        # RN-40: mesma regra do upload pelo RH, com nome aleatório no storage.
+        # RN-41: mesma regra do upload pelo RH, com nome aleatório no storage.
         curso = Curso.objects.exclude(imagem_capa="").first()
         self.assertIsNotNone(curso)
         for campo in [curso.imagem_capa] + [s.imagem for s in SlideAula.objects.exclude(imagem="")]:

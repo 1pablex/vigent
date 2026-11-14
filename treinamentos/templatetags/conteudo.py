@@ -9,6 +9,6 @@ register = template.Library()
 
 @register.filter
 def html_seguro(texto):
-    """RN-40 - sanitiza na exibição também, cobrindo textos gravados antes da regra
+    """RN-41 - sanitiza na exibição também, cobrindo textos gravados antes da regra
     ou alterados sem passar pelo save() (ex.: update em massa)."""
     return mark_safe(sanitizar_html(texto or ""))

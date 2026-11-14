@@ -171,7 +171,7 @@ def corrigir_prova(usuario, curso, marcadas):
     return nota, aprovado, reciclou
 
 def certificados_monitorados():
-    """RF-11, RN-02 - certificados que a rotina de vencimento acompanha.
+    """RF-12, RN-02 - certificados que a rotina de vencimento acompanha.
         Só de contas ativas e de cursos exigidos pelo departamento atual do colaborador.
     """
     exigidos = set(CursoDepartamento.objects.values_list("departamento_id", "curso_id"))
@@ -182,7 +182,7 @@ def certificados_monitorados():
 
 
 def matriz_conformidade():
-    """RF-13 - todos os pares colaborador ativo × curso publicado exigido, com a situação.
+    """RF-14 - todos os pares colaborador ativo × curso publicado exigido, com a situação.
 
     Monta a matriz com um número fixo de consultas (colaboradores, cursos publicados,
     vínculos por departamento e certificados), em vez de consultar o banco a cada par.
@@ -221,7 +221,7 @@ def matriz_conformidade():
     return linhas
 
 def kpis_conformidade(linhas):
-    """RF-14 - indicadores consolidados da organização."""
+    """RF-15 - indicadores consolidados da organização."""
     return {
         "em_dia": sum(1 for l in linhas if l["situacao"] == "EM DIA"),
         "vencendo": sum(1 for l in linhas if l["situacao"] == "VENCENDO"),
@@ -251,7 +251,7 @@ def cor_do_percentual(pct):
 
 
 def indice_conformidade(linhas):
-    """RF-29 - índice geral comparado com a meta interna, mais a contagem por situação."""
+    """RF-30 - índice geral comparado com a meta interna, mais a contagem por situação."""
     return {
         **kpis_conformidade(linhas),
         "total": len(linhas),
@@ -277,7 +277,7 @@ def _agrupar_conformidade(linhas, chave, rotulo):
 
 
 def conformidade_por_departamento(linhas):
-    """RF-14/RN-38 - índice por setor, do pior para o melhor."""
+    """RF-15/RN-38 - índice por setor, do pior para o melhor."""
     return _agrupar_conformidade(
         linhas,
         lambda l: l["usuario"].departamento.nome if l["usuario"].departamento
@@ -286,7 +286,7 @@ def conformidade_por_departamento(linhas):
 
 
 def conformidade_por_curso(linhas):
-    """RF-29/RN-38 - índice por treinamento, do pior para o melhor (gargalo primeiro)."""
+    """RF-30/RN-38 - índice por treinamento, do pior para o melhor (gargalo primeiro)."""
     return _agrupar_conformidade(linhas, lambda l: l["curso"].nome, "curso")
 
 
@@ -295,7 +295,7 @@ FAIXAS_VENCIMENTO = ((0, 30), (31, 60), (61, 90))
 
 
 def vencimentos_por_faixa(linhas):
-    """RF-29/RN-39 - certificados vigentes que vencem em 0-30, 31-60 e 61-90 dias.
+    """RF-30/RN-39 - certificados vigentes que vencem em 0-30, 31-60 e 61-90 dias.
 
     Usa só o certificado mais recente de cada par da matriz (colaborador ativo e
     curso ainda exigido pelo setor). Certificados já vencidos não entram.
@@ -316,7 +316,7 @@ def vencimentos_por_faixa(linhas):
 
 
 def reacao_por_curso():
-    """RF-29 - médias de didática e de entendimento por curso, com todo o histórico.
+    """RF-30 - médias de didática e de entendimento por curso, com todo o histórico.
 
     Inclui as reações arquivadas em reciclagens (RN-30) e as de colaboradores ja desligados.
     """
@@ -334,7 +334,7 @@ def reacao_por_curso():
 
 
 def qualidade_percebida(linhas):
-    """RF-15 - MEDIA, SITUACAO, CONCLUSAO."""
+    """RF-16 - MEDIA, SITUACAO, CONCLUSAO."""
     total = len(linhas)
     pendentes = sum(1 for l in linhas if l["situacao"] == "PENDENTE")
     taxa_conclusao = round((total - pendentes) / total * 100) if total else 0
