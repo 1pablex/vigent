@@ -133,7 +133,7 @@
     if (!itens.length) return vazio(alvo, "Nenhum dado de conformidade ainda.");
     alvo.replaceChildren(...itens.map(function (i) {
       const dica = i[chave] + ": " + i.conformes + " de " + i.total +
-                   " pares conformes (" + i.percentual + "%)";
+                   " treinamentos em conformidade (" + i.percentual + "%)";
       return linhaBarra(i[chave], i.percentual, i.percentual + "%", dica,
                         corDoPercentual(i.percentual), true);
     }));
@@ -187,7 +187,7 @@
                          : acima ? "✓ Dentro da meta" : "! Abaixo da meta";
       status.classList.add(acima ? "ok" : "abaixo");
       document.getElementById("ind-detalhe").textContent = indice.total
-        ? (indice.em_dia + indice.vencendo) + " de " + indice.total + " pares conformes"
+        ? (indice.em_dia + indice.vencendo) + " de " + indice.total + " treinamentos em conformidade"
         : "";
 
       desenharConformidade(document.getElementById("graf-departamentos"), deps, "departamento");
