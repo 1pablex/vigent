@@ -1,4 +1,4 @@
-"""Endpoints de leitura dos indicadores do dashboard do RH (RF-29, RF-30).
+"""Endpoints de leitura dos indicadores do dashboard do RH (RF-30, RF-31).
 
 Todos são GET, somente leitura e restritos ao RH (permissão padrão da API).
 As coleções são pequenas e limitadas por natureza (um item por departamento,

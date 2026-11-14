@@ -70,7 +70,7 @@ class Command(BaseCommand):
 
     @staticmethod
     def _imagem(caminho):
-        """Lê a imagem versionada e a valida como um upload do RH (RN-40).
+        """Lê a imagem versionada e a valida como um upload do RH (RN-41).
         Ao salvar, o model a regrava com nome aleatório e sem metadados."""
         if not caminho:
             return None

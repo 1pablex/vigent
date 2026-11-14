@@ -37,7 +37,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 - A sessão expira ao fechar o navegador e após 30 minutos sem uso (RNF-12); cada acesso renova o prazo
 - Toda verificação de permissão ocorre no back-end, nunca só ocultando elemento na tela; na API, quem não é RH recebe 403 em JSON
 - Entradas validadas no back-end: departamento e grupo do cadastro são conferidos antes de criar a conta (nenhum e-mail sai com dado inválido), e parâmetros inválidos na URL das listagens não geram erro 500
-- Upload de imagens dos cursos (capa e slides, RN-40): só JPG, PNG ou WEBP, identificados pelo conteúdo e não pela extensão, com no máximo 5 MB e 25 megapixels. A imagem aceita é regravada a partir dos pixels, com nome aleatório: conteúdo escondido no arquivo (script anexado) e metadados EXIF/GPS são descartados. Vale para o painel do RH e para o admin
+- Upload de imagens dos cursos (capa e slides, RN-41): só JPG, PNG ou WEBP, identificados pelo conteúdo e não pela extensão, com no máximo 5 MB e 25 megapixels. A imagem aceita é regravada a partir dos pixels, com nome aleatório: conteúdo escondido no arquivo (script anexado) e metadados EXIF/GPS são descartados. Vale para o painel do RH e para o admin
 - Texto dos slides sanitizado com `nh3` ao salvar e de novo na exibição: só parágrafo, lista, negrito, itálico e quebra de linha; scripts e atributos como `onerror` são removidos
 - `DEBUG` e `ALLOWED_HOSTS` controlados por variável de ambiente, nunca fixos no código
 - LGPD: pseudonimização no desligamento, expurgo dos dados originais após 90 dias (comando `expurgar_reidentificacoes`) e registros de remoção e expurgo na auditoria sem o nome real do colaborador
@@ -163,7 +163,7 @@ coverage report
 | `core/test_services_unitarios.py` | 12 | Unitários sem banco: emissão de certificado, índice de conformidade (RN-38), faixas de vencimento (RN-39) |
 | `core/test_api_indicadores.py` | 19 | API de indicadores: acesso, contrato JSON, reação histórica (RN-30), reciclagem atômica, número de consultas, tela do dashboard |
 | `core/test_seguranca_endpoints.py` | 29 | Autenticação, perfil, IDOR, CSRF, XSS, upload, redirecionamento aberto, cabeçalhos, parâmetros inválidos na URL. Toda rota nova precisa ser classificada aqui |
-| `core/test_seed_cursos.py` | 4 | Carga de cursos: mesmo conteúdo e departamentos do arquivo versionado, uma alternativa correta por questão, imagens regravadas (RN-40) e repetição sem duplicar |
+| `core/test_seed_cursos.py` | 4 | Carga de cursos: mesmo conteúdo e departamentos do arquivo versionado, uma alternativa correta por questão, imagens regravadas (RN-41) e repetição sem duplicar |
 | `core/test_seed_demonstracao.py` | 7 | Seed de demonstração: volume e mistura de situações, perfis por departamento, repetição sem duplicar, limpeza, bloqueio sem `DEBUG` e e-mail `.invalid` que não sai pelo Brevo |
 | `core/test_integracao_rh.py` | 13 | Painel do RH: conformidade, rotinas, reciclagem, paginação de colaboradores e do painel de conformidade |
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
@@ -174,7 +174,7 @@ coverage report
 | `contas/test_rede.py` | 11 | IP de origem: `X-Forwarded-For` ignorado sem proxy confiável, leitura do trecho escrito pelo proxy, IP inválido descartado |
 | `treinamentos/tests.py` | 5 | Models de curso, aula, slide e progresso |
 | `treinamentos/test_integracao_gestao_cursos.py` | 24 | Gestão de cursos pelo RH: curso, aula, slides um por vez e questões |
-| `treinamentos/test_upload_seguro.py` | 14 | Upload de imagens e texto dos slides (RN-40): formatos, limites, arquivo poliglota, EXIF, nome aleatório, sanitização |
+| `treinamentos/test_upload_seguro.py` | 14 | Upload de imagens e texto dos slides (RN-41): formatos, limites, arquivo poliglota, EXIF, nome aleatório, sanitização |
 | `avaliacoes/test_integracao.py` | 10 | Avaliação de reação e prova |
 | `certificacao/tests.py` | 3 | Situação do certificado |
 | `certificacao/test_integracao.py` | 4 | Meus certificados e acesso ao certificado |
@@ -201,7 +201,7 @@ O comando `carregar_dados_cursos` cria quatro treinamentos, cada um com capa, au
 | Prevenção a fraude | Financeiro |
 | Recrutamento e seleção sem discriminação | Recursos Humanos |
 
-O conteúdo fica versionado em `core/dados/cursos/` (`cursos.json` e a pasta `imagens/`). As imagens passam pela mesma validação e regravação do upload pelo RH (RN-40) e são salvas pelo storage do Django, então em produção vão para o storage configurado. Rodar o comando de novo não duplica: curso que já existe é pulado.
+O conteúdo fica versionado em `core/dados/cursos/` (`cursos.json` e a pasta `imagens/`). As imagens passam pela mesma validação e regravação do upload pelo RH (RN-41) e são salvas pelo storage do Django, então em produção vão para o storage configurado. Rodar o comando de novo não duplica: curso que já existe é pulado.
 
 Para transformar cursos cadastrados pela tela do RH em carga de dados, exporte-os pelos ids (sem ids, exporta todos). O comando reescreve `core/dados/cursos/`:
 ```

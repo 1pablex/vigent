@@ -181,7 +181,7 @@ class ProvaIntegracaoTest(CenarioCursoMixin, TestCase):
         # Assert (RN-29: progresso, reação e tentativas zerados)
         self.assertTrue(resposta.context["reciclou"])
         self.assertFalse(ProgressoAula.objects.filter(usuario=self.colaborador).exists())
-        # RN-30: a reação não some, fica arquivada no histórico e deixa de liberar a prova
+        # RN-29/RN-30: a reação não some; fica arquivada, deixa de liberar a prova e segue no indicador
         self.assertFalse(AvaliacaoReacao.objects.filter(
             usuario=self.colaborador, arquivada=False).exists())
         self.assertTrue(AvaliacaoReacao.objects.filter(

@@ -1,4 +1,4 @@
-"""RN-40 - Segurança do conteúdo enviado para os cursos (imagens e texto dos slides).
+"""RN-41 - Segurança do conteúdo enviado para os cursos (imagens e texto dos slides).
 
 Imagens: só JPG, PNG e WEBP, identificados pelo conteúdo e não pela extensão, com limite
 de tamanho e de pixels. Depois de aceita, a imagem é regravada a partir dos pixels: o que

@@ -19,7 +19,7 @@ class CursoForm(forms.ModelForm):
     departamentos = forms.ModelMultipleChoiceField(
         queryset=Departamento.objects.all(), required=False,
         widget=forms.CheckboxSelectMultiple,
-        help_text="Os colaboradores desses departamentos passam a ter o curso como obrigatório (RN-02).",
+        help_text="Os colaboradores desses departamentos passam a ter o curso como obrigatório.",
     )
 
     class Meta:
