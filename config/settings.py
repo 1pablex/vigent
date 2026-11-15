@@ -19,6 +19,23 @@ BREVO_API_KEY = os.getenv('BREVO_API_KEY')
 DEBUG = os.getenv("DEBUG", "False").strip().lower() in ("1", "true", "yes")
 
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+
+# O Render informa o domínio público do serviço; ele passa a valer sozinho.
+RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
+
+# Produção atrás do HTTPS da hospedagem (RNF-03). Fica numa variável própria, e não no
+# DEBUG, porque o Django roda os testes com DEBUG=False e eles não usam HTTPS.
+HTTPS = os.getenv("HTTPS", "False").strip().lower() in ("1", "true", "yes")
+if HTTPS:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 3600
 
 
 # Application definition
@@ -42,6 +59,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',   # serve o CSS/JS em produção
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -84,9 +102,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 if DATABASE_URL:
-    from urllib.parse import urlparse, unquote
+    from urllib.parse import parse_qs, unquote, urlparse
 
     u = urlparse(DATABASE_URL)
+    # Parâmetros da URL viram opções da conexão (ex.: ?sslmode=require no Supabase).
+    opcoes_banco = {chave: valores[-1] for chave, valores in parse_qs(u.query).items()}
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -96,6 +116,8 @@ if DATABASE_URL:
             "HOST": u.hostname or "",
             "PORT": str(u.port or ""),
             "CONN_MAX_AGE": 600,
+            "CONN_HEALTH_CHECKS": True,
+            "OPTIONS": opcoes_banco,
         }
     }
 else:
@@ -151,6 +173,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"   # destino do collectstatic, servido pelo WhiteNoise
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -186,6 +209,16 @@ DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "")
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Imagens dos cursos: no Cloudinary quando CLOUDINARY_URL existir (produção), porque o disco
+# do Render é apagado a cada nova publicação; senão, na pasta media/ (desenvolvimento e testes).
+STORAGES = {
+    "default": {
+        "BACKEND": ("cloudinary_storage.storage.MediaCloudinaryStorage" if os.getenv("CLOUDINARY_URL")
+                    else "django.core.files.storage.FileSystemStorage"),
+    },
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 
 # API REST (Django REST Framework) - só endpoints de dados em JSON, em /api/v1/.
 # As telas continuam renderizadas pelo Django (arquitetura híbrida, ver README).

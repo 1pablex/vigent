@@ -5,7 +5,8 @@ cada treinamento distribuída entre em dia, vencendo, vencido e pendente. Cada
 departamento tem um perfil diferente (acima da meta, na média, crítico), para que os
 gráficos de conformidade contem uma história.
 
-- Só roda com DEBUG=True: nunca popula o banco de produção com dados fictícios.
+- Só roda com DEBUG=True, para nunca popular o banco de produção por engano. A base de
+  apresentação em produção exige pedir explicitamente: --permitir-producao.
 - Os e-mails usam o domínio reservado .invalid: nenhuma mensagem sai pelo Brevo.
 - O sorteio usa semente fixa: os números do dashboard são os mesmos a cada execução.
 - Rodar de novo recria a base; --limpar só remove. Os demais usuários não são tocados.
@@ -72,18 +73,25 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--limpar", action="store_true",
                             help="Só remove os colaboradores criados por este comando.")
+        parser.add_argument("--permitir-producao", action="store_true",
+                            help="Roda mesmo com DEBUG=False, para a base de apresentação. "
+                                 "Os e-mails .invalid continuam sem envio real.")
 
     def handle(self, *args, **options):
-        if not settings.DEBUG:
+        if not settings.DEBUG and not options["permitir_producao"]:
             raise CommandError("Seed de demonstração bloqueada: só roda com DEBUG=True, "
-                               "para não popular o banco de produção com dados fictícios.")
+                               "para não popular o banco de produção com dados fictícios. "
+                               "Para a base de apresentação, use --permitir-producao.")
 
         removidos = self._limpar()
         if options["limpar"]:
             self.stdout.write(self.style.SUCCESS(f"Removidos {removidos} colaboradores de demonstração."))
             return
 
-        call_command("carregar_dados_colaboradores", stdout=self._silencio())
+        # Em produção não cria as contas @nortex.com.br: as senhas estão no repositório público
+        # e o domínio é real, então o Brevo mandaria códigos para a caixa de terceiros.
+        if not options["permitir_producao"]:
+            call_command("carregar_dados_colaboradores", stdout=self._silencio())
         call_command("carregar_dados_cursos", stdout=self._silencio())
         resumo = self._popular(random.Random(SEMENTE))
 
