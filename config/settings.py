@@ -27,6 +27,10 @@ if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
 
+# Endereço público usado nos links dos e-mails: sempre o endereço oficial de produção, mesmo
+# quando o e-mail sai de outro ambiente. SITE_URL permite trocar (ex.: domínio próprio).
+SITE_URL = os.getenv("SITE_URL", "https://vigent.onrender.com")
+
 # Produção atrás do HTTPS da hospedagem (RNF-03). Fica numa variável própria, e não no
 # DEBUG, porque o Django roda os testes com DEBUG=False e eles não usam HTTPS.
 HTTPS = os.getenv("HTTPS", "False").strip().lower() in ("1", "true", "yes")
@@ -189,6 +193,7 @@ LOGOUT_REDIRECT_URL = "contas:login"
 
 VIGENT = {
     "MAX_TENTATIVAS_LOGIN": 5,
+    "SENHA_MINIMA": 8,   # RN-28 - tamanho mínimo da senha definida pelo colaborador
     "JANELA_BLOQUEIO_LOGIN_MIN": 15,
     "VALIDADE_CODIGO_2FA_MIN": 5,
     "MAX_TENTATIVAS_CODIGO": 5,

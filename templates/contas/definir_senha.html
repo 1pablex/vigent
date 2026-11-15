@@ -23,12 +23,12 @@
 
       <div class="field">
         <label for="new-password">Nova senha</label>
-        <input type="password" id="new-password" name="nova1" placeholder="mínimo de 6 caracteres" required minlength="6">
+        <input type="password" id="new-password" name="nova1" placeholder="mínimo de {{ senha_minima }} caracteres" required minlength="{{ senha_minima }}">
       </div>
 
       <div class="field">
         <label for="confirm-password">Repita a nova senha</label>
-        <input type="password" id="confirm-password" name="nova2" required minlength="6">
+        <input type="password" id="confirm-password" name="nova2" required minlength="{{ senha_minima }}">
       </div>
 
       <button type="submit">Salvar e entrar</button>

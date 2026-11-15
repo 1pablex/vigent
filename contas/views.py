@@ -28,6 +28,11 @@ def _ip(request):
     return ip_do_cliente(request)
 
 
+def senha_minima():
+    """RN-28 - tamanho mínimo da senha, configurável em VIGENT["SENHA_MINIMA"] (RNF-10)."""
+    return settings.VIGENT["SENHA_MINIMA"]
+
+
 def gerar_senha_provisoria(tamanho=10):
     alfabeto = string.ascii_letters + string.digits
     return "".join(secrets.choice(alfabeto) for _ in range(tamanho))
@@ -167,8 +172,8 @@ def definir_senha(request):
     if request.method == "POST":
         nova = request.POST.get("nova1") or ""
         repetida = request.POST.get("nova2") or ""
-        if len(nova) < 6:
-            erro = "A senha deve ter ao menos 6 caracteres."
+        if len(nova) < senha_minima():
+            erro = f"A senha deve ter ao menos {senha_minima()} caracteres."
         elif nova != repetida:
             erro = "As senhas não coincidem."
         elif request.user.check_password(nova):
@@ -184,7 +189,7 @@ def definir_senha(request):
             messages.success(request, "Senha definida com sucesso.")
             return redirect("core:inicio")
 
-    return render(request, "contas/definir_senha.html", {"erro": erro})
+    return render(request, "contas/definir_senha.html", {"erro": erro, "senha_minima": senha_minima()})
 
 @login_required
 def cadastrar_colaborador(request):
@@ -410,7 +415,7 @@ def esqueci_senha(request):
 
 
 def redefinir_senha(request):
-    """RF-23, RN-25, RN-28 - redefinição por código, senha com no mínimo 6 caracteres."""
+    """RF-23, RN-25, RN-28 - redefinição por código, senha com o tamanho mínimo configurado."""
     email = request.session.get("reset_email")
     if not email:
         return redirect("contas:esqueci_senha")
@@ -428,8 +433,8 @@ def redefinir_senha(request):
                         .filter(usuario=usuario, utilizado=False)
                         .order_by("-data_geracao").first())
 
-        if len(nova) < 6:
-            erro = "A senha deve ter ao menos 6 caracteres."
+        if len(nova) < senha_minima():
+            erro = f"A senha deve ter ao menos {senha_minima()} caracteres."
         elif nova != repetida:
             erro = "As senhas não coincidem."
         elif not usuario or not pendente or not pendente.valido or not pendente.confere(codigo_digitado):
@@ -447,7 +452,8 @@ def redefinir_senha(request):
             messages.success(request, "Senha redefinida com sucesso. Faça login com a nova senha.")
             return redirect("contas:login")
 
-    return render(request, "contas/redefinir_senha.html", {"erro": erro, "email": email})
+    return render(request, "contas/redefinir_senha.html",
+                  {"erro": erro, "email": email, "senha_minima": senha_minima()})
 @login_required
 def aceitar_termo(request):
     """RF-24, RN-33 - aceite obrigatório do termo de uso."""
