@@ -77,6 +77,16 @@ class ProtecoesDaSeedTest(TestCase):
             rodar()
         self.assertFalse(Usuario.objects.exists())
 
+    @override_settings(DEBUG=False)
+    def test_producao_so_roda_quando_pedido_explicitamente(self):
+        media = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media, ignore_errors=True)
+        with override_settings(MEDIA_ROOT=media):
+            rodar("--permitir-producao")
+        self.assertEqual(Usuario.objects.filter(**SEED).count(), 60)
+        # sem as contas @nortex.com.br, que têm senha pública e domínio real
+        self.assertFalse(Usuario.objects.filter(email__endswith="@nortex.com.br").exists())
+
     def test_email_para_dominio_invalid_nao_sai_pelo_brevo(self):
         usuario = Usuario.objects.create_user(email="teste@exemplo.invalid", nome="Teste")
         curso = Curso.objects.create(nome="LGPD", categoria="X")

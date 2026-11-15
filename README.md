@@ -147,7 +147,7 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
 
 ## Testes
 
-São 242 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 243 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
@@ -164,7 +164,7 @@ coverage report
 | `core/test_api_indicadores.py` | 19 | API de indicadores: acesso, contrato JSON, reação histórica (RN-30), reciclagem atômica, número de consultas, tela do dashboard |
 | `core/test_seguranca_endpoints.py` | 29 | Autenticação, perfil, IDOR, CSRF, XSS, upload, redirecionamento aberto, cabeçalhos, parâmetros inválidos na URL. Toda rota nova precisa ser classificada aqui |
 | `core/test_seed_cursos.py` | 4 | Carga de cursos: mesmo conteúdo e departamentos do arquivo versionado, uma alternativa correta por questão, imagens regravadas (RN-41) e repetição sem duplicar |
-| `core/test_seed_demonstracao.py` | 7 | Seed de demonstração: volume e mistura de situações, perfis por departamento, repetição sem duplicar, limpeza, bloqueio sem `DEBUG` e e-mail `.invalid` que não sai pelo Brevo |
+| `core/test_seed_demonstracao.py` | 8 | Seed de demonstração: volume e mistura de situações, perfis por departamento, repetição sem duplicar, limpeza, bloqueio sem `DEBUG` (liberado só com `--permitir-producao`) e e-mail `.invalid` que não sai pelo Brevo |
 | `core/test_integracao_rh.py` | 13 | Painel do RH: conformidade, rotinas, reciclagem, paginação de colaboradores e do painel de conformidade |
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
 | `contas/test_integracao_cadastro.py` | 8 | Cadastro de colaborador, com departamento e grupo validados |
@@ -186,11 +186,13 @@ Os testes comentados com "Corrigido:" em `test_seguranca_endpoints.py` nasceram 
 
 Criadas pelo comando `carregar_dados_colaboradores`:
 
-| Papel | E-mail | Senha |
-|---|---|---|
-| RH (Recursos Humanos) | ricardo.lima@nortex.com.br | 123456 |
-| Colaboradora (Vendas) | fernanda.lima@nortex.com.br | 123456 |
-| Primeiro acesso (Sala Limpa) | bruno.tavares@nortex.com.br | Nortex@2026 |
+| Papel | E-mail |
+|---|---|
+| RH (Recursos Humanos) | ricardo.lima@nortex.com.br |
+| Colaboradora (Vendas) | fernanda.lima@nortex.com.br |
+| Primeiro acesso (Sala Limpa) | bruno.tavares@nortex.com.br |
+
+As senhas iniciais dessas contas são definidas no próprio comando de carga e servem apenas para o ambiente de desenvolvimento; não as reutilize em produção. A conta de primeiro acesso recebe uma senha provisória e precisa trocá-la no primeiro login.
 
 O comando `carregar_dados_cursos` cria quatro treinamentos, cada um com capa, aulas, slides com imagem, prova e questões:
 
@@ -214,8 +216,36 @@ O comando `carregar_dados_demonstracao` cria uma base grande para o dashboard de
 - Cada departamento tem um perfil: Vendas fica acima da meta de 90% e Sala Limpa fica crítico, para os gráficos terem contraste
 - Quem tem certificado também tem progresso nas aulas, avaliação de reação e tentativas de prova, então todos os indicadores são preenchidos
 - O sorteio usa semente fixa: os números são os mesmos a cada execução. Rodar de novo recria a base, e `--limpar` remove só esses colaboradores
-- Login de qualquer um deles: `nome.sobrenome@exemplo.invalid` (sem acento), senha `123456`
-- Proteções: o comando só roda com `DEBUG=True`, para nunca popular o banco de produção, e e-mails para o domínio reservado `.invalid` ficam registrados na auditoria mas não são enviados pelo Brevo
+- Login de qualquer um deles: `nome.sobrenome@exemplo.invalid` (sem acento), com a senha definida no comando (constante `SENHA`)
+- Proteções: o comando só roda com `DEBUG=True`, para nunca popular o banco de produção por engano (a base de apresentação em produção exige `--permitir-producao`), e e-mails para o domínio reservado `.invalid` ficam registrados na auditoria mas não são enviados pelo Brevo
+
+## Implantação (Render)
+
+O arquivo `render.yaml` descreve os dois serviços, criados juntos pelo Blueprint do Render:
+
+| Serviço | Tipo | O que faz |
+|---|---|---|
+| `vigent` | Web (plano gratuito) | Instala as dependências e roda o `collectstatic` no build; aplica as migrações e sobe o Gunicorn a cada início |
+| `vigent-rotinas` | Cron Job, diário às 06:00 de Brasília | Roda `verificar_vencimentos` e `expurgar_reidentificacoes` |
+
+Infraestrutura usada:
+
+- **Banco:** PostgreSQL no Supabase, pela conexão *Session pooler* (IPv4), com `?sslmode=require` no fim da `DATABASE_URL`
+- **Imagens dos cursos:** Cloudinary, ativado pela variável `CLOUDINARY_URL`; sem ela, as imagens vão para a pasta `media/`
+- **Arquivos estáticos:** WhiteNoise, servidos pelo próprio Gunicorn
+- **HTTPS:** `HTTPS=True` liga o redirecionamento para HTTPS, os cookies seguros e o HSTS
+
+Variáveis informadas no painel do Render (nunca vão para o Git): `DATABASE_URL`, `CLOUDINARY_URL`, `BREVO_API_KEY` e `DEFAULT_FROM_EMAIL` (remetente verificado no Brevo, só o endereço). A `SECRET_KEY` é gerada pelo próprio Render.
+
+Primeira carga, rodada uma vez a partir de uma máquina com a `DATABASE_URL` e a `CLOUDINARY_URL` de produção no ambiente:
+
+```
+python manage.py migrate
+python manage.py carregar_dados_demonstracao --permitir-producao
+python manage.py createsuperuser
+```
+
+Com `--permitir-producao`, a carga cria só os cursos e os 60 colaboradores fictícios `@exemplo.invalid`, que nunca recebem e-mail. As contas `@nortex.com.br` do ambiente de desenvolvimento ficam de fora, porque as senhas delas estão no repositório e o domínio é real. A conta de RH de produção é criada pelo `createsuperuser`, com um e-mail que recebe o código de verificação.
 
 ## Estrutura dos apps
 
