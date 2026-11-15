@@ -1,4 +1,8 @@
+import re
+from html import escape
+
 from django.conf import settings
+from django.urls import reverse
 from brevo import Brevo
 from brevo.transactional_emails import (
     SendTransacEmailRequestSender,
@@ -10,6 +14,19 @@ from brevo.core.api_error import ApiError
 
 
 DOMINIO_SEM_ENTREGA = ".invalid"   # RFC 2606: reservado, nunca existe na internet
+
+
+def _html(corpo_texto):
+    """Corpo em HTML: o texto é escapado (um nome com tags não vira HTML) e cada
+    endereço http(s) vira um link clicável."""
+    seguro = escape(corpo_texto)
+    com_links = re.sub(r"(https?://[^\s<]+)", r'<a href="\1">\1</a>', seguro)
+    return f"<pre style='font-family:inherit;white-space:pre-wrap'>{com_links}</pre>"
+
+
+def _link(nome_rota):
+    """Endereço completo de uma tela do Vigent, para colocar no e-mail."""
+    return settings.SITE_URL.rstrip("/") + reverse(nome_rota)
 
 
 def _enviar(destinatario, assunto, corpo_texto, tipo):
@@ -26,10 +43,7 @@ def _enviar(destinatario, assunto, corpo_texto, tipo):
         cliente = Brevo(api_key=settings.BREVO_API_KEY)
         cliente.transactional_emails.send_transac_email(
             subject=assunto,
-            html_content=(
-                f"<pre style='font-family:inherit;white-space:pre-wrap'>"
-                f"{corpo_texto}</pre>"
-            ),
+            html_content=_html(corpo_texto),
             sender=SendTransacEmailRequestSender(
                 name="Vigent", email=settings.DEFAULT_FROM_EMAIL),
             to=[SendTransacEmailRequestToItem(email=destinatario)],
@@ -61,6 +75,7 @@ def enviar_primeiro_acesso(usuario, senha_provisoria):
         f"Matrícula: {usuario.matricula}\n"
         f"E-mail: {usuario.email}\n"
         f"Senha provisória: {senha_provisoria}\n\n"
+        f"Acesse o Vigent em: {_link('contas:login')}\n\n"
         f"Essa senha é de uso único - o sistema vai pedir que você defina "
         f"uma senha pessoal ao entrar."
     )

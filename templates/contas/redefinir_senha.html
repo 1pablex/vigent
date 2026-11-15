@@ -26,11 +26,11 @@
       </div>
       <div class="field">
         <label for="nova1">Nova senha</label>
-        <input type="password" id="nova1" name="nova1" placeholder="mínimo de 6 caracteres" required minlength="6">
+        <input type="password" id="nova1" name="nova1" placeholder="mínimo de {{ senha_minima }} caracteres" required minlength="{{ senha_minima }}">
       </div>
       <div class="field">
         <label for="nova2">Repita a nova senha</label>
-        <input type="password" id="nova2" name="nova2" required minlength="6">
+        <input type="password" id="nova2" name="nova2" required minlength="{{ senha_minima }}">
       </div>
       <button type="submit">Redefinir senha</button>
     </form>
