@@ -32,6 +32,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 - Hash de senha com Argon2 (migração progressiva: contas antigas em PBKDF2 são atualizadas sozinhas no próximo login bem-sucedido)
 - Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail) em todo login com senha já definida. Um novo código, de login ou de "Esqueci minha senha", só pode ser pedido 5 minutos depois do anterior, o que evita inundar o e-mail do colaborador e gastar a cota do Brevo. Na redefinição, a resposta é a mesma para qualquer e-mail, sem revelar quem é cadastrado
 - Senha provisória de uso único: deixa de valer assim que o colaborador define a senha definitiva
+- Senha definida pelo colaborador com no mínimo 8 caracteres (RN-28), valor configurável em `VIGENT["SENHA_MINIMA"]`
 - Bloqueio temporário após tentativas de login malsucedidas repetidas, por e-mail e por IP. O IP vem da conexão; o cabeçalho `X-Forwarded-For` só é lido quando há proxy confiável na frente da aplicação (`PROXIES_CONFIAVEIS`), e mesmo assim só o trecho escrito pelo proxy. Assim o cliente não consegue trocar de IP a cada tentativa para escapar do bloqueio
 - Sessão única por conta (RNF-13): um novo login em outro computador encerra a sessão anterior, que volta ao login com um aviso e fica registrada na auditoria. O progresso do curso fica salvo no banco, então o colaborador continua do slide onde parou
 - A sessão expira ao fechar o navegador e após 30 minutos sem uso (RNF-12); cada acesso renova o prazo
@@ -42,7 +43,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 - `DEBUG` e `ALLOWED_HOSTS` controlados por variável de ambiente, nunca fixos no código
 - LGPD: pseudonimização no desligamento, expurgo dos dados originais após 90 dias (comando `expurgar_reidentificacoes`) e registros de remoção e expurgo na auditoria sem o nome real do colaborador
 
-**Pendente:** agendamento automático (cron) das rotinas `verificar_vencimentos` e `expurgar_reidentificacoes`; hoje elas rodam pelo botão do painel de conformidade ou pelo terminal.
+**Em produção:** https://vigent.onrender.com (Render, com banco no Supabase e imagens no Cloudinary). As rotinas `verificar_vencimentos` e `expurgar_reidentificacoes` rodam todo dia às 06:00 pelo Cron Job do Render e também pelo botão do painel de conformidade. Detalhes em [Implantação (Render)](#implantação-render).
 
 **Evoluções previstas:**
 - Atribuição individual de curso como exceção à regra do departamento (onboarding, reciclagem pontual, curso de outro setor). A estrutura de dados (`AtribuicaoManual`) foi mantida no banco, desativada, como base para essa feature
@@ -125,7 +126,7 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
    ```
    pip install -r requirements.txt
    ```
-4. Copie `.env.example` para `.env` e preencha `SECRET_KEY`, `DATABASE_URL`, `BREVO_API_KEY`, `BREVO_SMTP_USER`, `BREVO_SMTP_PASSWORD` e `DEFAULT_FROM_EMAIL`. Em desenvolvimento local mantenha `DEBUG=True`; em produção defina `DEBUG=False` e liste os domínios liberados em `ALLOWED_HOSTS`
+4. Copie `.env.example` para `.env` e preencha as variáveis da seção [Variáveis de ambiente](#variáveis-de-ambiente). Para rodar localmente bastam `SECRET_KEY`, `DATABASE_URL` e `DEBUG=True`; sem a chave do Brevo, os e-mails ficam registrados na auditoria em vez de enviados
 5. Rode as migrações:
    ```
    python manage.py migrate
@@ -144,6 +145,26 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
    python manage.py runserver
    ```
 8. Acesse `http://127.0.0.1:8000/`. Com o RH logado, a documentação da API fica em `http://127.0.0.1:8000/api/v1/docs/`
+
+## Variáveis de ambiente
+
+Nenhum valor real vai para o repositório: localmente eles ficam no `.env` (fora do Git) e em produção no painel do Render.
+
+| Variável | Local | Produção | Para que serve | Onde obter |
+|---|---|---|---|---|
+| `SECRET_KEY` | Obrigatória | Gerada pelo Render | Assinatura de sessões e tokens do Django | Qualquer texto longo e aleatório, ex.: `python -c "import secrets; print(secrets.token_urlsafe(50))"` |
+| `DATABASE_URL` | Obrigatória | Obrigatória | Conexão com o PostgreSQL | Local: o seu PostgreSQL. Produção: Supabase > Connect > Session pooler (porta 5432), com `?sslmode=require` no fim |
+| `DEBUG` | `True` | `False` | Modo de desenvolvimento | - |
+| `BREVO_API_KEY` | Opcional | Obrigatória | Envio de e-mails (2FA, primeiro acesso, redefinição, avisos) | Brevo > SMTP & API > API Keys |
+| `DEFAULT_FROM_EMAIL` | Opcional | Obrigatória | Remetente dos e-mails (só o endereço, sem nome) | Um remetente verificado no Brevo (Senders) |
+| `CLOUDINARY_URL` | Opcional | Obrigatória | Imagens dos cursos; vazia, elas vão para a pasta `media/` | Cloudinary > Settings > API Keys, no formato `cloudinary://API_KEY:API_SECRET@CLOUD_NAME` |
+| `HTTPS` | `False` | `True` | Redirecionamento para HTTPS, cookies seguros e HSTS | - |
+| `ALLOWED_HOSTS` | `localhost,127.0.0.1` | Opcional | Domínios aceitos; o domínio do Render entra sozinho | - |
+| `CSRF_TRUSTED_ORIGINS` | Opcional | Opcional | Domínios extras aceitos em formulários | - |
+| `PROXIES_CONFIAVEIS` | `0` | `1` | Quantos proxies confiáveis ficam na frente da aplicação (IP de origem, RNF-14) | - |
+| `SITE_URL` | Opcional | Opcional | Endereço usado no link do e-mail de primeiro acesso; padrão `https://vigent.onrender.com` | - |
+
+`BREVO_SMTP_USER` e `BREVO_SMTP_PASSWORD` aparecem no `.env.example`, mas não são necessárias: o envio usa a API do Brevo, e não SMTP.
 
 ## Testes
 
