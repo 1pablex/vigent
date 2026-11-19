@@ -26,6 +26,7 @@ Usuario = get_user_model()
 PUBLICAS = {
     "contas:login", "contas:logout", "contas:esqueci_senha", "contas:redefinir_senha",
     "contas:verificar_codigo", "contas:politica_privacidade",
+    "admin_login",   # só redireciona para o login do Vigent (com 2FA)
 }
 
 # rota -> quantidade de argumentos inteiros
@@ -183,7 +184,11 @@ class AutenticacaoObrigatoriaTest(CenarioSeguranca):
     def test_admin_recusa_colaborador(self):
         self.client.force_login(self.colaborador)
         resposta = self.client.get("/admin/")
-        self.assertRedirects(resposta, "/admin/login/?next=/admin/")
+        self.assertRedirects(resposta, "/admin/login/?next=/admin/", fetch_redirect_response=False)
+        # o login do Admin leva ao login do Vigent; quem já está logado e não é staff
+        # vai para a própria área, nunca para o Admin
+        final = self.client.get("/admin/", follow=True)
+        self.assertNotIn("/admin/", final.request["PATH_INFO"])
 
 
 class ControleDeAcessoPorPerfilTest(CenarioSeguranca):

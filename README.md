@@ -30,7 +30,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 
 **Segurança:**
 - Hash de senha com Argon2 (migração progressiva: contas antigas em PBKDF2 são atualizadas sozinhas no próximo login bem-sucedido)
-- Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail) em todo login com senha já definida. Um novo código, de login ou de "Esqueci minha senha", só pode ser pedido 5 minutos depois do anterior, o que evita inundar o e-mail do colaborador e gastar a cota do Brevo. Na redefinição, a resposta é a mesma para qualquer e-mail, sem revelar quem é cadastrado
+- Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail) em todo login com senha já definida. Um novo código, de login ou de "Esqueci minha senha", só pode ser pedido 5 minutos depois do anterior, o que evita inundar o e-mail do colaborador e gastar a cota do Brevo. Na redefinição, a resposta é a mesma para qualquer e-mail, sem revelar quem é cadastrado. O Django Admin também exige o código: `/admin/login/` leva ao login do Vigent e, depois do código, volta para a página do Admin pedida (só destinos internos são aceitos)
 - Código de verificação guardado só como HMAC-SHA256 (chave derivada da `SECRET_KEY`), nunca em texto. Como são só 1 milhão de códigos possíveis, um hash comum seria revertido por tentativa e erro; com HMAC, quem lê o banco sem a `SECRET_KEY` não consegue testar nenhum código. A auditoria de e-mails registra o código e a senha provisória mascarados (`******`), e os registros antigos foram mascarados pela migração `auditoria/0002`
 - Senha provisória de uso único: deixa de valer assim que o colaborador define a senha definitiva
 - Senha definida pelo colaborador com no mínimo 8 caracteres (RN-28), valor configurável em `VIGENT["SENHA_MINIMA"]`
@@ -173,14 +173,14 @@ Nenhum valor real vai para o repositório: localmente eles ficam no `.env` (fora
 
 ## Testes
 
-São 313 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 320 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
 Separados, como no CI:
 ```
 python manage.py test --tag unitario          # 46 unitários: SimpleTestCase, sem banco
-python manage.py test --exclude-tag unitario  # 267 de integração: views, API e banco de teste
+python manage.py test --exclude-tag unitario  # 274 de integração: views, API e banco de teste
 ```
 
 **Integração contínua:** o GitHub Actions (`.github/workflows/ci.yml`) roda três checagens em paralelo, em ambiente limpo, a cada Pull Request para a `main` e a cada push na `main`: **Testes unitários**, **Testes de integração** e **Linter** (`ruff check .`, regras em `pyproject.toml`). Não usa nenhum segredo real: a `SECRET_KEY` é gerada na hora e descartada, e o envio de e-mail é simulado nos próprios testes.
@@ -203,6 +203,7 @@ coverage report
 | `core/test_integracao_rh.py` | 13 | Painel do RH: conformidade, rotinas, reciclagem, paginação de colaboradores e do painel de conformidade |
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
 | `contas/test_integracao_cadastro.py` | 8 | Cadastro de colaborador, com departamento e grupo validados |
+| `contas/test_login_admin.py` | 7 | Login do Django Admin com 2FA: redireciona ao login do Vigent, POST direto não autentica, senha sem código não entra, volta ao Admin depois do código, destino externo ignorado |
 | `contas/test_termo_versionado.py` | 23 | Termo versionado (RN-33): versão 1.0 vinda do texto anterior, versão 1.1 sem a promessa de e-mail, nova versão bloqueia até aceitar (telas, API e RH), aviso com o resumo das mudanças, aceite com versão, data e IP, aceite de texto desatualizado recusado, versão publicada imutável, publicação pelo Admin, HTML limpo na exibição e migração dos aceites antigos |
 | `contas/test_integracao_edicao.py` | 16 | Edição de colaborador pelo RH: dados e e-mail, troca de departamento (RN-02), perfil em destaque na auditoria, RH não muda o próprio perfil, conta desligada bloqueada e avisos de vencimento só do departamento atual e de contas ativas |
 | `contas/test_integracao_codigo.py` | 12 | Segundo fator e redefinição de senha: limite de tentativas (RN-25) e intervalo de 5 minutos entre códigos |

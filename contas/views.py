@@ -10,7 +10,9 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme, urlencode
 from django.utils.safestring import mark_safe
 
 from auditoria.models import LogSistema, RegistroAcesso
@@ -24,6 +26,26 @@ from core.services import gerar_codigo_verificacao, registrar
 
 def _ip(request):
     return ip_do_cliente(request)
+
+
+def _destino_seguro(request, destino):
+    """Endereço para onde voltar depois do login, só se for deste mesmo site (evita o
+    redirecionamento aberto: ?next=https://site-malicioso não é seguido)."""
+    if destino and destino.startswith("/") and url_has_allowed_host_and_scheme(
+            destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return destino
+    return None
+
+
+def login_admin(request):
+    """O login do Django Admin passa pelo login do Vigent, com a verificação em duas etapas.
+
+    O formulário padrão do Admin aceitaria só e-mail e senha; com isto, a única porta de
+    entrada é a do Vigent. Depois do código, a pessoa volta para a página do Admin pedida.
+    GET e POST são redirecionados: um POST direto com e-mail e senha não autentica ninguém.
+    """
+    destino = _destino_seguro(request, request.GET.get("next")) or reverse("admin:index")
+    return redirect(f"{reverse('contas:login')}?{urlencode({'next': destino})}")
 
 
 def senha_minima():
@@ -144,6 +166,12 @@ def tela_login(request):
             _, codigo = gerar_codigo_verificacao(usuario)
             enviar_codigo_verificacao(usuario, codigo)
             request.session["pre_2fa_usuario_id"] = usuario.id
+            # para onde voltar depois do código (ex.: o Django Admin); só destino interno
+            destino = _destino_seguro(request, request.GET.get("next"))
+            if destino:
+                request.session["destino_pos_login"] = destino
+            else:
+                request.session.pop("destino_pos_login", None)
             registrar(LogSistema.Nivel.INFO, "Código de verificação enviado",
                       f"Senha correta para {usuario.email}; aguardando segundo fator", ip=ip)
             return redirect("contas:verificar_codigo")
@@ -364,6 +392,7 @@ def verificar_codigo(request):
                 pendente.utilizado = True
                 pendente.save()
                 del request.session["pre_2fa_usuario_id"]
+                destino = request.session.pop("destino_pos_login", None)
                 login(request, usuario)
                 ip = _ip(request)
                 RegistroAcesso.objects.create(
@@ -374,7 +403,7 @@ def verificar_codigo(request):
                           usuario, ip)
                 if usuario.senha_provisoria:
                     return redirect("contas:definir_senha")
-                return redirect("core:inicio")
+                return redirect(destino or "core:inicio")
             else:
                 erro = _erro_de_codigo(pendente, usuario, _ip(request),
                                        'Clique em "Reenviar código" para receber outro.')
