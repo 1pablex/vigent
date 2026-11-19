@@ -10,7 +10,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 
 **Fluxo de treinamento**, completo de ponta a ponta:
 - Login com autenticação em duas etapas (segundo fator por e-mail); no primeiro acesso com senha provisória, o 2FA é dispensado (o código chegaria pelo mesmo e-mail que já entregou a credencial) e o colaborador vai direto para a troca obrigatória de senha
-- Aceite obrigatório do termo de uso após a primeira troca de senha, com política de privacidade acessível a partir da tela de login. O termo é versionado (RN-33): cada versão fica registrada com o texto completo, e cada aceite guarda a versão, a data e o IP. Quando o superusuário publica uma versão nova no Django Admin, todos (inclusive o RH) veem o aviso de atualização com o resumo das mudanças no próximo acesso e só voltam a usar o sistema depois de aceitar. Versão publicada não é editada nem apagada; "Meus dados" mostra a versão aceita. A versão 1.0 é o texto que estava no sistema; a 1.1 corrige o parágrafo final, que prometia aviso por e-mail antes de uma nova versão entrar em vigor (o aviso é feito no próximo acesso). O texto pode ser digitado no Admin em texto puro: linha em branco separa parágrafos, "1. Título" vira título de seção, "- " vira lista e linhas com "|" viram tabela (`contas/termos.py`); HTML simples também é aceito. A página de cada versão no Admin mostra como ela aparece para o colaborador
+- Aceite obrigatório do termo de uso após a primeira troca de senha, com política de privacidade acessível a partir da tela de login. O termo é versionado (RN-33): cada versão fica registrada com o texto completo, e cada aceite guarda a versão, a data e o IP. Quando o RH publica uma versão nova, todos veem o aviso de atualização com o resumo das mudanças no próximo acesso e só voltam a usar o sistema depois de aceitar. Versão publicada não é editada nem apagada; "Meus dados" mostra a versão aceita. A versão 1.0 é o texto que estava no sistema; a 1.1 corrige o parágrafo final, que prometia aviso por e-mail antes de uma nova versão entrar em vigor (o aviso é feito no próximo acesso). O texto pode ser digitado em texto puro: linha em branco separa parágrafos, "1. Título" vira título de seção, "- " vira lista e linhas com "|" viram tabela (`contas/termos.py`); HTML simples também é aceito
 - Cursos vinculados ao colaborador pelo departamento: ao mudar de setor, ele passa a ver automaticamente os cursos do novo departamento, sem ação manual do RH
 - Conteúdo do curso, com trava de avanço sequencial pelos slides
 - Avaliação de reação, obrigatória antes da prova
@@ -25,6 +25,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 - Gestão de cursos: dados do curso, departamentos atendidos, aulas, slides e questões da prova. Slides e questões são cadastrados um por vez, cada um na sua tela, a partir de uma lista compacta
 - Remoção de colaborador: desliga a conta e pseudonimiza nome e e-mail (`colab<matrícula>`); os dados originais ficam num cofre de reidentificação por 90 dias e depois são excluídos. Certificados e histórico de treinamento são mantidos
 - Registros e auditoria: logs do sistema, execuções de rotina, e-mails enviados e histórico de acesso, todos com paginação e filtro
+- Termo de uso (RN-33): histórico de versões com quem publicou e quantos aceitaram, adesão à versão vigente ("52 de 74 contas ativas já aceitaram") e lançamento de nova versão a partir do texto vigente. O RH pré-visualiza o texto exatamente como o colaborador vai ver e só então publica, com confirmação. O número precisa ser maior que o da vigente, o texto não pode ser igual, quem publica já fica com o aceite registrado e a publicação vai para a auditoria. O Django Admin mostra as versões e os aceites só para consulta
 - Painel de conformidade: matriz colaborador × treinamento com busca e filtro por situação, indicadores agregados (em dia, vencendo, vencido, pendente), conformidade por departamento, qualidade percebida, rotinas de notificação de vencimento e de expurgo do cofre disparáveis manualmente e solicitação de reciclagem para treinamentos vencidos
 - **Dashboard de indicadores** (aba que substituiu "Atribuições"): índice de conformidade geral comparado com a meta de 90%, conformidade por departamento e por curso, vencimentos previstos em faixas de 0 a 30, 31 a 60 e 61 a 90 dias, qualidade percebida e avaliação de reação por curso (didática e entendimento, com todo o histórico). Os números vêm da API REST descrita abaixo
 
@@ -173,14 +174,14 @@ Nenhum valor real vai para o repositório: localmente eles ficam no `.env` (fora
 
 ## Testes
 
-São 332 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 353 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
 Separados, como no CI:
 ```
-python manage.py test --tag unitario          # 54 unitários: SimpleTestCase, sem banco
-python manage.py test --exclude-tag unitario  # 278 de integração: views, API e banco de teste
+python manage.py test --tag unitario          # 56 unitários: SimpleTestCase, sem banco
+python manage.py test --exclude-tag unitario  # 297 de integração: views, API e banco de teste
 ```
 
 **Integração contínua:** o GitHub Actions (`.github/workflows/ci.yml`) roda três checagens em paralelo, em ambiente limpo, a cada Pull Request para a `main` e a cada push na `main`: **Testes unitários**, **Testes de integração** e **Linter** (`ruff check .`, regras em `pyproject.toml`). Não usa nenhum segredo real: a `SECRET_KEY` é gerada na hora e descartada, e o envio de e-mail é simulado nos próprios testes.
@@ -204,7 +205,8 @@ coverage report
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
 | `contas/test_integracao_cadastro.py` | 8 | Cadastro de colaborador, com departamento e grupo validados |
 | `contas/test_login_admin.py` | 7 | Login do Django Admin com 2FA: redireciona ao login do Vigent, POST direto não autentica, senha sem código não entra, volta ao Admin depois do código, destino externo ignorado |
-| `contas/test_termo_texto_puro.py` | 12 | Termo em texto puro: títulos, parágrafos, listas e tabela com "\|", texto digitado escapado (nunca vira código), conteúdo em HTML inalterado, versões 1.0 e 1.1 iguais na tela, pré-visualização e ajuda no Admin |
+| `contas/test_termo_texto_puro.py` | 12 | Termo em texto puro: títulos, parágrafos, listas e tabela com "\|", texto digitado escapado (nunca vira código), conteúdo em HTML inalterado, versões 1.0 e 1.1 iguais na tela, pré-visualização no Admin e ajuda do formato na tela do RH |
+| `contas/test_termo_rh.py` | 21 | Aba "Termo de uso" do RH: numeração (comparação e sugestão), histórico e adesão, formulário com o texto vigente, pré-visualizar sem salvar, publicar com auditoria e aceite do autor, outros obrigados a aceitar, versão anterior intacta, versão repetida, menor ou inválida recusada, texto igual recusado, colaborador sem acesso |
 | `contas/test_termo_versionado.py` | 23 | Termo versionado (RN-33): versão 1.0 vinda do texto anterior, versão 1.1 sem a promessa de e-mail, nova versão bloqueia até aceitar (telas, API e RH), aviso com o resumo das mudanças, aceite com versão, data e IP, aceite de texto desatualizado recusado, versão publicada imutável, publicação pelo Admin, HTML limpo na exibição e migração dos aceites antigos |
 | `contas/test_integracao_edicao.py` | 16 | Edição de colaborador pelo RH: dados e e-mail, troca de departamento (RN-02), perfil em destaque na auditoria, RH não muda o próprio perfil, conta desligada bloqueada e avisos de vencimento só do departamento atual e de contas ativas |
 | `contas/test_integracao_codigo.py` | 12 | Segundo fator e redefinição de senha: limite de tentativas (RN-25) e intervalo de 5 minutos entre códigos |

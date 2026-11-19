@@ -176,16 +176,13 @@ class PublicacaoPeloAdminTest(TestCase):
             aceite_termo_vigente=True)
         self.client.force_login(self.admin)
 
-    def test_superusuario_publica_versao_nova(self):
+    def test_admin_nao_publica_versao(self):
+        # A publicação é feita pelo RH na aba "Termo de uso" (contas/test_termo_rh.py).
+        self.assertEqual(self.client.get(reverse("admin:contas_termouso_add")).status_code, 403)
         resposta = self.client.post(reverse("admin:contas_termouso_add"), {
-            "versao": "2.0", "resumo_alteracoes": "Ajuste no prazo.",
-            "conteudo": "<h3>1. Quem somos</h3><p>Texto novo.</p>"})
-
-        self.assertEqual(resposta.status_code, 302)
-        termo = TermoUso.vigente()
-        self.assertEqual((termo.versao, termo.publicado_por), ("2.0", self.admin))
-        self.assertTrue(LogSistema.objects.filter(
-            evento="Nova versão do termo de uso publicada", nivel=LogSistema.Nivel.WARN).exists())
+            "versao": "2.0", "conteudo": "<p>Texto novo.</p>"})
+        self.assertEqual(resposta.status_code, 403)
+        self.assertEqual(TermoUso.vigente().versao, "1.1")
 
     def test_versao_publicada_aparece_so_para_leitura_e_sem_excluir(self):
         termo = TermoUso.vigente()
@@ -205,11 +202,10 @@ class PublicacaoPeloAdminTest(TestCase):
         self.assertEqual(self.client.get(
             reverse("admin:contas_aceitetermo_delete", args=[aceite.pk])).status_code, 403)
 
-    def test_versao_repetida_e_recusada(self):
-        resposta = self.client.post(reverse("admin:contas_termouso_add"),
-                                    {"versao": "1.0", "conteudo": "<p>x</p>"})
-        self.assertEqual(resposta.status_code, 200)
-        self.assertEqual(TermoUso.objects.count(), 2)
+    def test_admin_mostra_as_versoes_para_consulta(self):
+        resposta = self.client.get(reverse("admin:contas_termouso_changelist"))
+        self.assertContains(resposta, "1.1")
+        self.assertNotContains(resposta, reverse("admin:contas_termouso_add"))
 
 
 class ConteudoSeguroTest(TestCase):

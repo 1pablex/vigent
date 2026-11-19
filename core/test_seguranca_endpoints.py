@@ -18,7 +18,7 @@ from django.urls import URLPattern, URLResolver, get_resolver, reverse
 from auditoria.models import LogSistema, RegistroAcesso
 from avaliacoes.models import Alternativa, AvaliacaoReacao, Prova, Questao
 from certificacao.models import Certificado
-from contas.models import CodigoVerificacao, Departamento
+from contas.models import CodigoVerificacao, Departamento, TermoUso
 from treinamentos.models import Aula, Curso, CursoDepartamento, Presenca, ProgressoAula, SlideAula
 
 Usuario = get_user_model()
@@ -44,6 +44,7 @@ PROTEGIDAS = {
     "cursos_rh:slide_novo": 2, "cursos_rh:slide_editar": 3, "cursos_rh:slide_excluir": 3,
     "cursos_rh:questao_nova": 1, "cursos_rh:questao_editar": 2,
     "cursos_rh:questao_excluir": 2,
+    "termo_rh:lista": 0, "termo_rh:nova": 0, "termo_rh:ver": 1,
 }
 
 SOMENTE_RH = [
@@ -53,6 +54,7 @@ SOMENTE_RH = [
     "cursos_rh:aula_editar", "cursos_rh:aula_excluir", "cursos_rh:slide_novo",
     "cursos_rh:slide_editar", "cursos_rh:slide_excluir", "cursos_rh:questao_nova",
     "cursos_rh:questao_editar", "cursos_rh:questao_excluir",
+    "termo_rh:lista", "termo_rh:nova", "termo_rh:ver",
 ]
 
 # API REST (/api/v1/): não redireciona, responde 403 em JSON para anônimo e não RH.
@@ -124,6 +126,7 @@ class CenarioSeguranca(TestCase):
             "cursos_rh:questao_nova": [self.curso.id],
             "cursos_rh:questao_editar": [self.curso.id, self.questao.id],
             "cursos_rh:questao_excluir": [self.curso.id, self.questao.id],
+            "termo_rh:ver": [TermoUso.vigente().id],
         }.get(rota, [])
 
     def url(self, rota):
@@ -143,6 +146,7 @@ class CenarioSeguranca(TestCase):
             "questoes": Questao.objects.count(),
             "progressos": ProgressoAula.objects.count(),
             "nome_curso": Curso.objects.get(pk=self.curso.pk).nome,
+            "versoes_termo": TermoUso.objects.count(),
         }
 
 

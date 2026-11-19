@@ -124,9 +124,10 @@ class TermoTextoPuroNaTelaTest(TestCase):
         self.assertContains(resposta, "Como aparece para o colaborador")
         self.assertContains(resposta, "<th>Base legal</th>", html=True)
 
-    def test_formulario_do_admin_explica_o_formato(self):
-        admin = Usuario.objects.create_superuser(
-            email="admin@exemplo.invalid", nome="Admin", password="x", aceite_termo_vigente=True)
-        self.client.force_login(admin)
-        resposta = self.client.get(reverse("admin:contas_termouso_add"))
-        self.assertContains(resposta, "Pode ser digitado em texto puro, sem HTML")
+    def test_formulario_do_rh_explica_o_formato(self):
+        rh = Usuario.objects.create_user(
+            email="rh@exemplo.invalid", nome="RH", password="x", grupo=Usuario.Grupo.RH,
+            senha_provisoria=False, aceite_termo_vigente=True)
+        self.client.force_login(rh)
+        resposta = self.client.get(reverse("termo_rh:nova"))
+        self.assertContains(resposta, "Linha em branco separa parágrafos")

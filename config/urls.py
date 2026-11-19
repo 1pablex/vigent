@@ -13,6 +13,7 @@ urlpatterns = [
     path('treinamentos/', include('treinamentos.urls')),
     path('avaliacoes/', include('avaliacoes.urls')),
     path('rh/cursos/', include('treinamentos.urls_rh')),
+    path('rh/termo/', include('contas.urls_rh')),
     path('', include('core.urls')),
     path("certificados/", include("certificacao.urls")),
     path("api/v1/", include("core.api.urls")),
