@@ -88,10 +88,10 @@ class SessaoUnicaTest(TestCase):
         self.pc_fabrica.force_login(self.usuario)
 
         # Act: login real no notebook, com senha e código
-        with patch("contas.views.enviar_codigo_verificacao"):
+        with patch("contas.views.enviar_codigo_verificacao") as enviar:
             self.notebook.post(reverse("contas:login"),
                                {"email": "ana@nortex.com.br", "senha": "senha-123"})
-        codigo = self.usuario.codigos.latest("data_geracao").codigo
+        codigo = enviar.call_args.args[1]
         self.notebook.post(reverse("contas:verificar_codigo"), {"codigo": codigo})
 
         # Assert

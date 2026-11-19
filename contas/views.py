@@ -143,8 +143,8 @@ def tela_login(request):
                       f"2FA dispensado no primeiro acesso", usuario, ip)
             return redirect("contas:definir_senha")
         else:
-            codigo_obj = gerar_codigo_verificacao(usuario)
-            enviar_codigo_verificacao(usuario, codigo_obj)
+            _, codigo = gerar_codigo_verificacao(usuario)
+            enviar_codigo_verificacao(usuario, codigo)
             request.session["pre_2fa_usuario_id"] = usuario.id
             registrar(LogSistema.Nivel.INFO, "Código de verificação enviado",
                       f"Senha correta para {usuario.email}; aguardando segundo fator", ip=ip)
@@ -346,12 +346,12 @@ def verificar_codigo(request):
                 Usuario.objects.select_for_update().get(pk=usuario.pk)
                 espera = _espera_para_reenviar(usuario)
                 if not espera:
-                    codigo_obj = gerar_codigo_verificacao(usuario)
+                    _, codigo = gerar_codigo_verificacao(usuario)
             if espera:
                 erro = (f"Aguarde {espera} minuto{'s' if espera > 1 else ''} "
                         f"para pedir um novo código.")
             else:
-                enviar_codigo_verificacao(usuario, codigo_obj)
+                enviar_codigo_verificacao(usuario, codigo)
                 messages.success(request, "Um novo código foi enviado.")
         else:
             digitado = (request.POST.get("codigo") or "").strip()
@@ -389,14 +389,14 @@ def esqueci_senha(request):
         else:
             usuario = Usuario.objects.filter(email=email, is_active=True).first()
             if usuario:
-                codigo_obj = None
+                codigo = None
                 with transaction.atomic():
                     # trava a linha do usuário: dois envios simultâneos não geram dois códigos
                     Usuario.objects.select_for_update().get(pk=usuario.pk)
                     if not _espera_para_reenviar(usuario):
-                        codigo_obj = gerar_codigo_verificacao(usuario)
-                if codigo_obj:
-                    enviar_codigo_redefinicao(usuario, codigo_obj)
+                        _, codigo = gerar_codigo_verificacao(usuario)
+                if codigo:
+                    enviar_codigo_redefinicao(usuario, codigo)
                     registrar(LogSistema.Nivel.INFO, "Código de redefinição enviado",
                               f"Solicitação de redefinição para {email}", ip=_ip(request))
                 else:

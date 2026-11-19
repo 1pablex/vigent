@@ -31,6 +31,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 **Segurança:**
 - Hash de senha com Argon2 (migração progressiva: contas antigas em PBKDF2 são atualizadas sozinhas no próximo login bem-sucedido)
 - Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail) em todo login com senha já definida. Um novo código, de login ou de "Esqueci minha senha", só pode ser pedido 5 minutos depois do anterior, o que evita inundar o e-mail do colaborador e gastar a cota do Brevo. Na redefinição, a resposta é a mesma para qualquer e-mail, sem revelar quem é cadastrado
+- Código de verificação guardado só como HMAC-SHA256 (chave derivada da `SECRET_KEY`), nunca em texto. Como são só 1 milhão de códigos possíveis, um hash comum seria revertido por tentativa e erro; com HMAC, quem lê o banco sem a `SECRET_KEY` não consegue testar nenhum código. A auditoria de e-mails registra o código e a senha provisória mascarados (`******`), e os registros antigos foram mascarados pela migração `auditoria/0002`
 - Senha provisória de uso único: deixa de valer assim que o colaborador define a senha definitiva
 - Senha definida pelo colaborador com no mínimo 8 caracteres (RN-28), valor configurável em `VIGENT["SENHA_MINIMA"]`
 - Bloqueio temporário após tentativas de login malsucedidas repetidas, por e-mail e por IP. O IP vem da conexão; o cabeçalho `X-Forwarded-For` só é lido quando há proxy confiável na frente da aplicação (`PROXIES_CONFIAVEIS`), e mesmo assim só o trecho escrito pelo proxy. Assim o cliente não consegue trocar de IP a cada tentativa para escapar do bloqueio
@@ -126,7 +127,7 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
    ```
    pip install -r requirements.txt
    ```
-4. Copie `.env.example` para `.env` e preencha as variáveis da seção [Variáveis de ambiente](#variáveis-de-ambiente). Para rodar localmente bastam `SECRET_KEY`, `DATABASE_URL` e `DEBUG=True`; sem a chave do Brevo, os e-mails ficam registrados na auditoria em vez de enviados
+4. Copie `.env.example` para `.env` e preencha as variáveis da seção [Variáveis de ambiente](#variáveis-de-ambiente). Para rodar localmente bastam `SECRET_KEY`, `DATABASE_URL` e `DEBUG=True`; sem a chave do Brevo, os e-mails ficam registrados na auditoria em vez de enviados. Com `DEBUG=True`, o código de verificação e a senha provisória aparecem também no terminal do `runserver`, para entrar sem receber o e-mail (na auditoria eles ficam mascarados)
 5. Rode as migrações:
    ```
    python manage.py migrate
@@ -168,7 +169,7 @@ Nenhum valor real vai para o repositório: localmente eles ficam no `.env` (fora
 
 ## Testes
 
-São 251 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 260 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
@@ -191,6 +192,7 @@ coverage report
 | `contas/test_integracao_cadastro.py` | 8 | Cadastro de colaborador, com departamento e grupo validados |
 | `contas/test_integracao_edicao.py` | 16 | Edição de colaborador pelo RH: dados e e-mail, troca de departamento (RN-02), perfil em destaque na auditoria, RH não muda o próprio perfil, conta desligada bloqueada e avisos de vencimento só do departamento atual e de contas ativas |
 | `contas/test_integracao_codigo.py` | 12 | Segundo fator e redefinição de senha: limite de tentativas (RN-25) e intervalo de 5 minutos entre códigos |
+| `contas/test_codigo_hmac.py` | 9 | Código de verificação só como HMAC (sem texto no banco, hash por usuário e dependente da `SECRET_KEY`), login completo com o código enviado, código e senha provisória mascarados na auditoria e migração que mascara os registros antigos |
 | `contas/test_senha_e_links.py` | 8 | Senha mínima de 8 caracteres no primeiro acesso e na redefinição (RN-28), link clicável do site no e-mail de primeiro acesso e texto do e-mail escapado |
 | `contas/test_sessao_unica.py` | 10 | Sessão única por conta (novo login em outro computador encerra a sessão anterior) e expiração após 30 minutos sem uso ou ao fechar o navegador |
 | `contas/test_rede.py` | 11 | IP de origem: `X-Forwarded-For` ignorado sem proxy confiável, leitura do trecho escrito pelo proxy, IP inválido descartado |

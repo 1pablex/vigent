@@ -14,6 +14,7 @@ from brevo.core.api_error import ApiError
 
 
 DOMINIO_SEM_ENTREGA = ".invalid"   # RFC 2606: reservado, nunca existe na internet
+MASCARA = "******"
 
 
 def _html(corpo_texto):
@@ -29,9 +30,18 @@ def _link(nome_rota):
     return settings.SITE_URL.rstrip("/") + reverse(nome_rota)
 
 
-def _enviar(destinatario, assunto, corpo_texto, tipo):
+def _enviar(destinatario, assunto, corpo_texto, tipo, segredo=None):
+    """Envia pelo Brevo e registra na auditoria.
+
+    `segredo` (código de verificação ou senha provisória) vai no e-mail ao titular, mas
+    é mascarado no registro da auditoria: o banco nunca guarda credencial em texto.
+    """
+    corpo_auditoria = corpo_texto.replace(segredo, MASCARA) if segredo else corpo_texto
     registro = EmailEnviado(tipo=tipo, destinatario=destinatario,
-                            assunto=assunto, corpo=corpo_texto)
+                            assunto=assunto, corpo=corpo_auditoria)
+    if segredo and settings.DEBUG:
+        # Só em desenvolvimento: permite entrar sem chave do Brevo, lendo no terminal.
+        print(f"[DEBUG] {tipo} para {destinatario}: {segredo}")
     if destinatario.lower().endswith(DOMINIO_SEM_ENTREGA):
         # Contas de demonstração: o e-mail fica registrado na auditoria, mas não sai
         # pelo Brevo (não gasta cota nem prejudica a reputação do remetente).
@@ -79,31 +89,31 @@ def enviar_primeiro_acesso(usuario, senha_provisoria):
         f"Essa senha é de uso único - o sistema vai pedir que você defina "
         f"uma senha pessoal ao entrar."
     )
-    return _enviar(usuario.email, assunto, corpo, "Primeiro acesso")
+    return _enviar(usuario.email, assunto, corpo, "Primeiro acesso", segredo=senha_provisoria)
 
 
-def enviar_codigo_verificacao(usuario, codigo_obj):
+def enviar_codigo_verificacao(usuario, codigo):
     """RN-25 - segundo fator de autenticação."""
     assunto = "Seu código de verificação Vigent"
     corpo = (
         f"Olá, {usuario.get_short_name()}.\n\n"
-        f"Seu código de verificação é: {codigo_obj.codigo}\n\n"
+        f"Seu código de verificação é: {codigo}\n\n"
         f"Ele é válido por 5 minutos e só pode ser usado uma vez. Se você não "
         f"tentou entrar no Vigent agora, ignore este e-mail."
     )
-    return _enviar(usuario.email, assunto, corpo, "Código de verificação")
+    return _enviar(usuario.email, assunto, corpo, "Código de verificação", segredo=codigo)
 
-def enviar_codigo_redefinicao(usuario, codigo_obj):
+def enviar_codigo_redefinicao(usuario, codigo):
     """Redefinição de senha - código enviado por e-mail."""
     assunto = "Redefinição de senha Vigent"
     corpo = (
         f"Olá, {usuario.get_short_name()}.\n\n"
         f"Recebemos uma solicitação para redefinir sua senha no Vigent.\n\n"
-        f"Seu código de redefinição é: {codigo_obj.codigo}\n\n"
+        f"Seu código de redefinição é: {codigo}\n\n"
         f"Ele é válido por 5 minutos e só pode ser usado uma vez. Se você não "
         f"solicitou essa redefinição, ignore este e-mail: sua senha continuará a mesma."
     )
-    return _enviar(usuario.email, assunto, corpo, "Redefinição de senha")
+    return _enviar(usuario.email, assunto, corpo, "Redefinição de senha", segredo=codigo)
 
 def enviar_alerta_vencimento(usuario, certificado, dias):
     """RF-13 - alerta nos marcos de 30, 15 e 7 dias antes do vencimento."""

@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models, transaction
 from django.utils import timezone
+from django.utils.crypto import salted_hmac
 
 
 class Departamento(models.Model):
@@ -126,10 +127,16 @@ class Reidentificacao(models.Model):
 
 
 class CodigoVerificacao(models.Model):
-    """Segundo fator enviado por api brevo (RN-25)."""
+    """Segundo fator enviado por api brevo (RN-25).
+
+    O código não é gravado: fica só o HMAC-SHA256 dele, com chave derivada da SECRET_KEY
+    Sem a SECRET_KEY, que não fica no banco, não dá para ficar testando n codigos.
+    """
+
+    SAL_HMAC = "vigent.contas.CodigoVerificacao"
 
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="codigos")
-    codigo = models.CharField(max_length=6)
+    codigo_hash = models.CharField(max_length=64, editable=False)
     data_geracao = models.DateTimeField(auto_now_add=True)
     data_expiracao = models.DateTimeField()
     utilizado = models.BooleanField(default=False)
@@ -149,8 +156,15 @@ class CodigoVerificacao(models.Model):
         return (not self.utilizado and not self.bloqueado
                 and timezone.now() < self.data_expiracao)
 
+    @classmethod
+    def calcular_hash(cls, usuario_id, codigo):
+        # O id do usuário entra na mensagem: o mesmo código para duas pessoas gera hashes diferentes.
+        return salted_hmac(cls.SAL_HMAC, f"{usuario_id}:{codigo}", algorithm="sha256").hexdigest()
+
     def confere(self, digitado):
-        return secrets.compare_digest(digitado, self.codigo)
+        """Compara os HMACs em tempo constante; o código digitado nunca é comparado em texto."""
+        return secrets.compare_digest(self.calcular_hash(self.usuario_id, digitado or ""),
+                                      self.codigo_hash)
 
     def registrar_erro(self):
         """Conta um erro de forma atômica; ao atingir o limite o código deixa de valer."""

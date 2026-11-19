@@ -22,13 +22,18 @@ def registrar(nivel, evento, detalhe="", usuario=None, ip=None):
     )
 
 def gerar_codigo_verificacao(usuario):
-    """RN-25 - código de 6 dígitos, válido por 5 minutos, uso único."""
+    """RN-25 - código de 6 dígitos, válido por 5 minutos, uso único.
+
+    Devolve (registro, codigo). O banco guarda só o HMAC; o código em texto existe apenas
+    na memória, para ser enviado por e-mail ao titular.
+    """
     codigo = f"{secrets.randbelow(1_000_000):06d}"
     minutos = settings.VIGENT["VALIDADE_CODIGO_2FA_MIN"]
-    return CodigoVerificacao.objects.create(
-        usuario=usuario, codigo=codigo,
+    registro = CodigoVerificacao.objects.create(
+        usuario=usuario, codigo_hash=CodigoVerificacao.calcular_hash(usuario.pk, codigo),
         data_expiracao=timezone.now() + timedelta(minutes=minutos),
     )
+    return registro, codigo
 
 #RN-02/RN-04 visibilidade de cursos
 def cursos_do_usuario(usuario):

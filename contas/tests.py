@@ -32,8 +32,10 @@ class AutenticacaoTestCase(TestCase):
         })
         self.assertRedirects(resposta, reverse("contas:verificar_codigo"))
         self.assertFalse(resposta.wsgi_request.user.is_authenticated)
-        codigo = CodigoVerificacao.objects.get(usuario=self.colaborador)
-        self.enviar_codigo.assert_called_once_with(self.colaborador, codigo)
+        self.enviar_codigo.assert_called_once()
+        destinatario, valor = self.enviar_codigo.call_args.args
+        self.assertEqual(destinatario, self.colaborador)
+        self.assertTrue(CodigoVerificacao.objects.get(usuario=self.colaborador).confere(valor))
 
     def test_rn18_codigo_correto_conclui_login_e_invalida_o_codigo(self):
         self.client.post(reverse("contas:login"), {
@@ -42,7 +44,7 @@ class AutenticacaoTestCase(TestCase):
         codigo = CodigoVerificacao.objects.get(usuario=self.colaborador)
 
         resposta = self.client.post(reverse("contas:verificar_codigo"),
-                                    {"codigo": codigo.codigo})
+                                    {"codigo": self.enviar_codigo.call_args.args[1]})
 
         self.assertRedirects(resposta, reverse("core:inicio"), fetch_redirect_response=False)
         self.assertEqual(int(self.client.session["_auth_user_id"]), self.colaborador.pk)
