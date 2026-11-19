@@ -45,7 +45,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 - Permissions-Policy desliga câmera, microfone, geolocalização, pagamento e USB, que o Vigent não usa
 - Em produção (`HTTPS=True`): redirecionamento para HTTPS, cookies seguros e HSTS de 1 ano com `includeSubDomains` e `preload` (o preload só tem efeito com domínio próprio, porque a lista dos navegadores não aceita subdomínios de `onrender.com`)
 - `DEBUG` e `ALLOWED_HOSTS` controlados por variável de ambiente, nunca fixos no código
-- LGPD: pseudonimização no desligamento, expurgo dos dados originais após 90 dias (comando `expurgar_reidentificacoes`) e registros de remoção e expurgo na auditoria sem o nome real do colaborador
+- LGPD: pseudonimização no desligamento, expurgo dos dados originais após 90 dias (comando `expurgar_reidentificacoes`) e registros de remoção e expurgo na auditoria sem o nome real do colaborador. A execução diária do expurgo é monitorada pelo Healthchecks.io e por um alerta no painel do RH (ver [Implantação (Render)](#implantação-render))
 
 **Em produção:** https://vigent.onrender.com (Render, com banco no Supabase e imagens no Cloudinary). As rotinas `verificar_vencimentos` e `expurgar_reidentificacoes` rodam todo dia às 06:00 pelo Cron Job do Render e também pelo botão do painel de conformidade. Detalhes em [Implantação (Render)](#implantação-render).
 
@@ -167,19 +167,20 @@ Nenhum valor real vai para o repositório: localmente eles ficam no `.env` (fora
 | `CSRF_TRUSTED_ORIGINS` | Opcional | Opcional | Domínios extras aceitos em formulários | - |
 | `PROXIES_CONFIAVEIS` | `0` | `1` | Quantos proxies confiáveis ficam na frente da aplicação (IP de origem, RNF-14) | - |
 | `SITE_URL` | Opcional | Opcional | Endereço usado no link do e-mail de primeiro acesso; padrão `https://vigent.onrender.com` | - |
+| `MONITOR_ROTINAS_URL` | Vazia | Obrigatória no Cron Job | Aviso das rotinas diárias ao monitor externo; vazia, nenhum aviso é enviado | Healthchecks.io > check das rotinas > Ping URL (`https://hc-ping.com/...`) |
 
 `BREVO_SMTP_USER` e `BREVO_SMTP_PASSWORD` aparecem no `.env.example`, mas não são necessárias: o envio usa a API do Brevo, e não SMTP.
 
 ## Testes
 
-São 277 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 290 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
 Separados, como no CI:
 ```
 python manage.py test --tag unitario          # 46 unitários: SimpleTestCase, sem banco
-python manage.py test --exclude-tag unitario  # 231 de integração: views, API e banco de teste
+python manage.py test --exclude-tag unitario  # 244 de integração: views, API e banco de teste
 ```
 
 **Integração contínua:** o GitHub Actions (`.github/workflows/ci.yml`) roda três checagens em paralelo, em ambiente limpo, a cada Pull Request para a `main` e a cada push na `main`: **Testes unitários**, **Testes de integração** e **Linter** (`ruff check .`, regras em `pyproject.toml`). Não usa nenhum segredo real: a `SECRET_KEY` é gerada na hora e descartada, e o envio de e-mail é simulado nos próprios testes.
@@ -195,6 +196,7 @@ coverage report
 | `core/test_services_unitarios.py` | 12 | Unitários sem banco: emissão de certificado, índice de conformidade (RN-38), faixas de vencimento (RN-39) |
 | `core/test_api_indicadores.py` | 19 | API de indicadores: acesso, contrato JSON, reação histórica (RN-30), reciclagem atômica, número de consultas, tela do dashboard |
 | `core/test_seguranca_endpoints.py` | 29 | Autenticação, perfil, IDOR, CSRF, XSS, upload, redirecionamento aberto, cabeçalhos, parâmetros inválidos na URL. Toda rota nova precisa ser classificada aqui |
+| `core/test_monitor_rotinas.py` | 13 | Monitoramento das rotinas (RN-35): aviso ao Healthchecks.io (início, sucesso e falha), sem envio quando não configurado, monitor fora do ar sem derrubar a rotina, `rodar_rotinas` com falha numa rotina sem impedir a outra, alerta de rotina atrasada no painel do RH |
 | `core/test_cabecalhos_seguranca.py` | 17 | CSP e Permissions-Policy em telas, API, erro e redirecionamento; nenhum template com script inline ou `on...=`; HSTS de produção; Swagger sem CDN e sem script inline |
 | `core/test_seed_cursos.py` | 4 | Carga de cursos: mesmo conteúdo e departamentos do arquivo versionado, uma alternativa correta por questão, imagens regravadas (RN-41) e repetição sem duplicar |
 | `core/test_seed_demonstracao.py` | 8 | Seed de demonstração: volume e mistura de situações, perfis por departamento, repetição sem duplicar, limpeza, bloqueio sem `DEBUG` (liberado só com `--permitir-producao`) e e-mail `.invalid` que não sai pelo Brevo |
@@ -261,7 +263,9 @@ O arquivo `render.yaml` descreve os dois serviços, criados juntos pelo Blueprin
 | Serviço | Tipo | O que faz |
 |---|---|---|
 | `vigent` | Web (plano gratuito) | Instala as dependências e roda o `collectstatic` no build; aplica as migrações e sobe o Gunicorn a cada início |
-| `vigent-rotinas` | Cron Job, diário às 06:00 de Brasília | Roda `verificar_vencimentos` e `expurgar_reidentificacoes` |
+| `vigent-rotinas` | Cron Job, diário às 06:00 de Brasília | Roda `rodar_rotinas`: `verificar_vencimentos` e `expurgar_reidentificacoes`, com aviso ao monitor |
+
+**Monitoramento das rotinas (RN-35):** o comando `rodar_rotinas` avisa o [Healthchecks.io](https://healthchecks.io) no início, no sucesso ou na falha (`core/monitor.py`). O check é configurado com o mesmo horário do Cron Job (`0 6 * * *`, America/Sao_Paulo) e 1 hora de tolerância: se o aviso de sucesso não chegar, ou se chegar um aviso de falha, o Healthchecks.io alerta por e-mail. Assim, uma falha do agendamento não deixa os dados do cofre de reidentificação guardados além dos 90 dias sem ninguém saber. O endereço de aviso fica na variável secreta `MONITOR_ROTINAS_URL`, só no Cron Job. Como segunda camada, independente do serviço externo, o painel de conformidade mostra um alerta ao RH quando uma rotina fica mais de 26 horas sem execução bem-sucedida (`VIGENT["HORAS_ALERTA_ROTINAS"]`).
 
 Infraestrutura usada:
 

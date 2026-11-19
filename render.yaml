@@ -32,6 +32,7 @@ services:
         sync: false
 
   # RF-12 e RN-35: avisos de vencimento e expurgo do cofre, uma vez por dia às 06:00 de Brasília.
+  # rodar_rotinas avisa o Healthchecks.io; se o aviso não chegar, o monitor alerta por e-mail.
   - type: cron
     name: vigent-rotinas
     runtime: python
@@ -40,12 +41,14 @@ services:
     branch: main
     schedule: "0 9 * * *"
     buildCommand: pip install -r requirements.txt
-    startCommand: python manage.py verificar_vencimentos && python manage.py expurgar_reidentificacoes
+    startCommand: python manage.py rodar_rotinas
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: DEBUG
         value: "False"
+      - key: MONITOR_ROTINAS_URL   # Ping URL do Healthchecks.io (secreto)
+        sync: false
       - key: SECRET_KEY
         fromService:
           type: web

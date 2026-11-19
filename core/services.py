@@ -11,7 +11,7 @@ from django.db import transaction
 from django.db.models import Avg, Count
 from django.utils import timezone
 
-from auditoria.models import LogSistema
+from auditoria.models import ExecucaoRotina, LogSistema
 from avaliacoes.models import AvaliacaoReacao, RespostaProva
 from certificacao.models import Certificado
 from contas.models import CodigoVerificacao, Reidentificacao, Usuario
@@ -427,3 +427,24 @@ def expurgar_reidentificacoes(hoje=None):
         registrar(LogSistema.Nivel.OK, "Dados de reidentificação expurgados",
                   f"{len(pseudonimos)} registro(s): {', '.join(pseudonimos)}"[:500])
     return avaliados, len(pseudonimos)
+
+
+ROTINAS_DIARIAS = ("verificar_vencimentos", "expurgar_reidentificacoes")
+
+
+def rotinas_atrasadas(agora=None):
+    """RN-35 - rotinas diárias sem execução bem-sucedida dentro do prazo
+    (VIGENT["HORAS_ALERTA_ROTINAS"]).
+
+    Segunda camada do monitoramento, independente do serviço externo: se o Cron Job parar,
+    o painel do RH mostra o alerta. Devolve [(rotina, última execução ok ou None)].
+    """
+    agora = agora or timezone.now()
+    limite = agora - timedelta(hours=settings.VIGENT["HORAS_ALERTA_ROTINAS"])
+    atrasadas = []
+    for rotina in ROTINAS_DIARIAS:
+        ultima = (ExecucaoRotina.objects.filter(rotina=rotina, sucesso=True)
+                  .order_by("-data_hora").values_list("data_hora", flat=True).first())
+        if ultima is None or ultima < limite:
+            atrasadas.append((rotina, ultima))
+    return atrasadas
