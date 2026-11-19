@@ -1,13 +1,13 @@
 """Verifica certificados próximos do vencimento e envia alerta por e-mail.
-RF-11, RF-12, RN-11 (idempotencia), RN-12 (vencido não notifica de novo)."""
+RF-12, RF-13, RN-11 (idempotencia), RN-12 (vencido não notifica de novo)."""
 import time
 
 from django.core.management.base import BaseCommand
 
 from auditoria.models import ExecucaoRotina, LogSistema
-from certificacao.models import Certificado, NotificacaoEnviada
+from certificacao.models import NotificacaoEnviada
 from core.correio import enviar_alerta_vencimento
-from core.services import registrar
+from core.services import certificados_monitorados, registrar
 
 MARCOS_DIAS = [30, 15, 7]
 
@@ -19,7 +19,7 @@ class Command(BaseCommand):
         avaliados = notificados = ignorados = 0
         sucesso = True
 
-        for cert in Certificado.objects.select_related("usuario", "curso"):
+        for cert in certificados_monitorados():   # só contas ativas e cursos exigidos (RN-02)
             avaliados += 1
             dias = cert.dias_para_vencer
 

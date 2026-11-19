@@ -1,4 +1,4 @@
-"""RN-40 - Segurança do conteúdo dos cursos: imagens enviadas e texto dos slides."""
+"""RN-41 - Segurança do conteúdo dos cursos: imagens enviadas e texto dos slides."""
 import shutil
 import tempfile
 from io import BytesIO

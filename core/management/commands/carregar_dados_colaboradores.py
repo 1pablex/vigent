@@ -8,7 +8,7 @@ class Command(BaseCommand):
     help = "Cria departamentos e usuários de demonstração."
 
     def handle(self, *args, **options):
-        departamentos = ["Vendas", "Operações", "Sala Limpa"]
+        departamentos = ["Vendas", "Operações", "Sala Limpa", "Recursos Humanos"]
         deps = {}
         for nome in departamentos:
             dep, criado = Departamento.objects.get_or_create(nome=nome)
@@ -19,7 +19,7 @@ class Command(BaseCommand):
         # (email, nome, cargo, departamento, grupo, senha, senha_provisoria)
         usuarios = [
             ("ricardo.lima@nortex.com.br", "Ricardo Lima", "Coordenador de RH",
-             "Operações", Usuario.Grupo.RH, "123456", False),
+             "Recursos Humanos", Usuario.Grupo.RH, "123456", False),
             ("fernanda.lima@nortex.com.br", "Fernanda Lima", "Analista de Vendas",
              "Vendas", Usuario.Grupo.COLABORADOR, "123456", False),
             ("bruno.tavares@nortex.com.br", "Bruno Tavares", "Técnico de Sala Limpa",

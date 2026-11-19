@@ -5,7 +5,8 @@ cada treinamento distribuída entre em dia, vencendo, vencido e pendente. Cada
 departamento tem um perfil diferente (acima da meta, na média, crítico), para que os
 gráficos de conformidade contem uma história.
 
-- Só roda com DEBUG=True: nunca popula o banco de produção com dados fictícios.
+- Só roda com DEBUG=True, para nunca popular o banco de produção por engano. A base de
+  apresentação em produção exige pedir explicitamente: --permitir-producao.
 - Os e-mails usam o domínio reservado .invalid: nenhuma mensagem sai pelo Brevo.
 - O sorteio usa semente fixa: os números do dashboard são os mesmos a cada execução.
 - Rodar de novo recria a base; --limpar só remove. Os demais usuários não são tocados.
@@ -30,8 +31,6 @@ from treinamentos.models import Curso, CursoDepartamento, ProgressoAula
 DOMINIO = "exemplo.invalid"
 SENHA = "123456"
 SEMENTE = 2026
-CURSOS_GERAIS = ["LGPD - Proteção de Dados", "Código de Conduta Ética"]
-DEPARTAMENTOS_NOVOS = ["Financeiro", "TI"]
 
 # departamento: (quantidade, cargos, pesos de em dia / vencendo / vencido / pendente)
 PERFIS = {
@@ -47,12 +46,15 @@ PERFIS = {
                    (30, 15, 27, 28)),  # crítico
 }
 
-# curso: (média de didática, média de entendimento) - dá contraste ao gráfico de reação
+# curso: (média de didática, média de entendimento) - dá contraste ao gráfico de reação.
+# Curso fora da lista (cadastrado depois) usa a média padrão.
 REACAO_POR_CURSO = {
-    "LGPD - Proteção de Dados": (8.6, 7.4),
-    "Código de Conduta Ética": (7.8, 8.7),
-    "Parametrização de Sala Limpa": (6.9, 6.1),
+    "Compliance e codigo de conduta": (8.6, 7.4),
+    "Abertura de chamados": (7.8, 8.7),
+    "Prevenção a fraude": (6.9, 6.1),
+    "Recrutamento e seleção sem discriminação": (8.2, 7.9),
 }
+REACAO_PADRAO = (8.0, 8.0)
 
 NOMES = ["Ana", "Bruno", "Camila", "Daniel", "Eduarda", "Felipe", "Gabriela", "Henrique",
          "Isabela", "João", "Juliana", "Lucas", "Mariana", "Mateus", "Natália", "Otávio",
@@ -71,18 +73,25 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--limpar", action="store_true",
                             help="Só remove os colaboradores criados por este comando.")
+        parser.add_argument("--permitir-producao", action="store_true",
+                            help="Roda mesmo com DEBUG=False, para a base de apresentação. "
+                                 "Os e-mails .invalid continuam sem envio real.")
 
     def handle(self, *args, **options):
-        if not settings.DEBUG:
+        if not settings.DEBUG and not options["permitir_producao"]:
             raise CommandError("Seed de demonstração bloqueada: só roda com DEBUG=True, "
-                               "para não popular o banco de produção com dados fictícios.")
+                               "para não popular o banco de produção com dados fictícios. "
+                               "Para a base de apresentação, use --permitir-producao.")
 
         removidos = self._limpar()
         if options["limpar"]:
             self.stdout.write(self.style.SUCCESS(f"Removidos {removidos} colaboradores de demonstração."))
             return
 
-        call_command("carregar_dados_colaboradores", stdout=self._silencio())
+        # Em produção não cria as contas @nortex.com.br: as senhas estão no repositório público
+        # e o domínio é real, então o Brevo mandaria códigos para a caixa de terceiros.
+        if not options["permitir_producao"]:
+            call_command("carregar_dados_colaboradores", stdout=self._silencio())
         call_command("carregar_dados_cursos", stdout=self._silencio())
         resumo = self._popular(random.Random(SEMENTE))
 
@@ -102,33 +111,22 @@ class Command(BaseCommand):
         seed = Usuario.objects.filter(email__endswith=f"@{DOMINIO}")
         quantidade = seed.count()
         seed.delete()   # certificados, reações, provas e progresso vão junto (CASCADE)
-        for nome in DEPARTAMENTOS_NOVOS:
-            dep = Departamento.objects.filter(nome=nome).first()
-            if dep and not dep.colaboradores.exists():
-                CursoDepartamento.objects.filter(departamento=dep).delete()
-                dep.delete()
-        return quantidade
+        return quantidade   # departamentos e cursos ficam: são da carga de cursos
 
     # ── criação ──────────────────────────────────────────────────
     @transaction.atomic
     def _popular(self, rng):
         hoje = timezone.localdate()
+        # Cursos e vínculos com os departamentos vêm da carga de cursos: um curso geral
+        # está marcado para todos os departamentos, um específico só para o seu.
         cursos = {c.nome: c for c in Curso.objects.prefetch_related("aulas__slides", "prova")}
-        faltando = [n for n in REACAO_POR_CURSO if n not in cursos]
-        if faltando:
-            raise CommandError(f"Cursos não encontrados: {', '.join(faltando)}")
-
-        for nome in DEPARTAMENTOS_NOVOS:
-            dep, _ = Departamento.objects.get_or_create(nome=nome)
-            for curso in CURSOS_GERAIS:   # cursos gerais valem para todos os departamentos
-                CursoDepartamento.objects.get_or_create(curso=cursos[curso], departamento=dep)
 
         nomes = self._nomes_unicos(rng, sum(p[0] for p in PERFIS.values()))
         situacoes = {"EM DIA": 0, "VENCENDO": 0, "VENCIDO": 0, "PENDENTE": 0}
         criados = 0
 
         for dep_nome, (quantidade, cargos, pesos) in PERFIS.items():
-            dep = Departamento.objects.get(nome=dep_nome)
+            dep, _ = Departamento.objects.get_or_create(nome=dep_nome)
             cursos_dep = [cursos[cd.curso.nome] for cd in
                           CursoDepartamento.objects.filter(departamento=dep).select_related("curso")
                           if cd.curso.nome in cursos]
@@ -170,7 +168,7 @@ class Command(BaseCommand):
                 usuario=usuario, aula=aula, concluida=True, data_conclusao=momento,
                 slides_vistos=[s.ordem for s in aula.slides.all()])
 
-        didatica, entendimento = REACAO_POR_CURSO[curso.nome]
+        didatica, entendimento = REACAO_POR_CURSO.get(curso.nome, REACAO_PADRAO)
         AvaliacaoReacao.objects.create(
             usuario=usuario, curso=curso, data_resposta=momento,
             nota_didatica=self._nota(rng, didatica), nota_entendimento=self._nota(rng, entendimento))

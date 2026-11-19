@@ -26,12 +26,12 @@
   <div style="overflow-x:auto">
   <table>
     <thead><tr><th>Matrícula</th><th>Nome</th><th>E-mail corporativo</th><th>Cargo</th>
-      <th>Departamento</th><th>Grupo</th><th>Conta</th><th>Ações</th></tr></thead>
+      <th>Departamento</th><th>Grupo</th><th>Conta</th><th class="col-acao">Ações</th></tr></thead>
     <tbody>
       {% for c in colaboradores %}
       <tr>
         <td class="mono">{{ c.matricula }}</td>
-        <td>{{ c.nome }}</td>
+        <td>{% if c.is_active %}<a class="link-nome" href="{% url 'contas:editar' c.pk %}" title="Editar cadastro">{{ c.nome }}</a>{% else %}{{ c.nome }}{% endif %}</td>
         <td class="mono">{{ c.email }}</td>
         <td>{{ c.cargo }}</td>
         <td>{{ c.departamento.nome|default:"-" }}</td>
@@ -45,15 +45,18 @@
           {% else %}<span class="badge badge-expired">Desligado</span>{% endif %}
         </td>
         <td>
-          {% if c.pk != request.user.pk %}
-            {% if c.is_active %}
+          {% if c.is_active %}
+            <div class="acoes" style="justify-content:flex-start">
+              <a class="btn btn-ghost btn-sm" href="{% url 'contas:editar' c.pk %}">Editar</a>
+              {% if c.pk != request.user.pk %}
               <form method="post" action="{% url 'core:rh_remover' c.pk %}"
                     onsubmit="return confirm('Remover a matrícula {{ c.matricula }}? A conta será desligada e o nome e o e-mail serão substituídos por colab{{ c.matricula }}. Essa ação não pode ser desfeita.')">
                 {% csrf_token %}
                 <button class="btn btn-danger btn-sm">Remover</button>
               </form>
-            {% else %}<span class="sub">-</span>{% endif %}
-          {% endif %}
+              {% endif %}
+            </div>
+          {% else %}<span class="sub">-</span>{% endif %}
         </td>
       </tr>
       {% empty %}

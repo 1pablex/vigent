@@ -1,4 +1,4 @@
-"""Testes da API de indicadores (/api/v1/) e da tela do dashboard do RH (RF-29, RF-30).
+"""Testes da API de indicadores (/api/v1/) e da tela do dashboard do RH (RF-30, RF-31).
 
 Cobrem o controle de acesso (anônimo, colaborador, RH com pendências), o contrato
 JSON de cada endpoint, as regras RN-38 (índice), RN-39 (faixas de vencimento),

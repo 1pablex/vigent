@@ -80,7 +80,7 @@ class EmitirCertificadoTest(SimpleTestCase):
 
 
 def linhas_do_departamento(nome, total, em_dia):
-    """Monta linhas da matriz de conformidade (RF-13) em memória."""
+    """Monta linhas da matriz de conformidade (RF-14) em memória."""
     departamento = SimpleNamespace(nome=nome) if nome else None
     usuario = SimpleNamespace(departamento=departamento)
     return [{"usuario": usuario, "situacao": "EM DIA" if i < em_dia else "VENCIDO"}
@@ -89,7 +89,7 @@ def linhas_do_departamento(nome, total, em_dia):
 
 @tag("unitario")
 class ConformidadePorDepartamentoTest(SimpleTestCase):
-    """RF-14/RN-38: índice (em dia + vencendo) por departamento, com faixa de cor do painel."""
+    """RF-15/RN-38: índice (em dia + vencendo) por departamento, com faixa de cor do painel."""
 
     def test_deve_calcular_percentual_e_ordenar_do_pior_para_o_melhor(self):
         # Arrange

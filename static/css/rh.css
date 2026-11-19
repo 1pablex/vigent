@@ -309,3 +309,5 @@ form.inline{ display:inline; }
 .acoes{ display:flex; gap:8px; justify-content:flex-end; align-items:center; flex-wrap:wrap; }
 .capa-mini{ width:56px; height:36px; object-fit:cover; border-radius:6px; border:1px solid var(--line); }
 @media (max-width:640px){ .slide-grid{ grid-template-columns:1fr; } }
+.link-nome{ color:inherit; font-weight:600; text-decoration:none; }
+.link-nome:hover, .link-nome:focus-visible{ color:var(--teal); text-decoration:underline; }

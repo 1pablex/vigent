@@ -32,17 +32,18 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 - Hash de senha com Argon2 (migração progressiva: contas antigas em PBKDF2 são atualizadas sozinhas no próximo login bem-sucedido)
 - Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail) em todo login com senha já definida. Um novo código, de login ou de "Esqueci minha senha", só pode ser pedido 5 minutos depois do anterior, o que evita inundar o e-mail do colaborador e gastar a cota do Brevo. Na redefinição, a resposta é a mesma para qualquer e-mail, sem revelar quem é cadastrado
 - Senha provisória de uso único: deixa de valer assim que o colaborador define a senha definitiva
+- Senha definida pelo colaborador com no mínimo 8 caracteres (RN-28), valor configurável em `VIGENT["SENHA_MINIMA"]`
 - Bloqueio temporário após tentativas de login malsucedidas repetidas, por e-mail e por IP. O IP vem da conexão; o cabeçalho `X-Forwarded-For` só é lido quando há proxy confiável na frente da aplicação (`PROXIES_CONFIAVEIS`), e mesmo assim só o trecho escrito pelo proxy. Assim o cliente não consegue trocar de IP a cada tentativa para escapar do bloqueio
 - Sessão única por conta (RNF-13): um novo login em outro computador encerra a sessão anterior, que volta ao login com um aviso e fica registrada na auditoria. O progresso do curso fica salvo no banco, então o colaborador continua do slide onde parou
 - A sessão expira ao fechar o navegador e após 30 minutos sem uso (RNF-12); cada acesso renova o prazo
 - Toda verificação de permissão ocorre no back-end, nunca só ocultando elemento na tela; na API, quem não é RH recebe 403 em JSON
 - Entradas validadas no back-end: departamento e grupo do cadastro são conferidos antes de criar a conta (nenhum e-mail sai com dado inválido), e parâmetros inválidos na URL das listagens não geram erro 500
-- Upload de imagens dos cursos (capa e slides, RN-40): só JPG, PNG ou WEBP, identificados pelo conteúdo e não pela extensão, com no máximo 5 MB e 25 megapixels. A imagem aceita é regravada a partir dos pixels, com nome aleatório: conteúdo escondido no arquivo (script anexado) e metadados EXIF/GPS são descartados. Vale para o painel do RH e para o admin
+- Upload de imagens dos cursos (capa e slides, RN-41): só JPG, PNG ou WEBP, identificados pelo conteúdo e não pela extensão, com no máximo 5 MB e 25 megapixels. A imagem aceita é regravada a partir dos pixels, com nome aleatório: conteúdo escondido no arquivo (script anexado) e metadados EXIF/GPS são descartados. Vale para o painel do RH e para o admin
 - Texto dos slides sanitizado com `nh3` ao salvar e de novo na exibição: só parágrafo, lista, negrito, itálico e quebra de linha; scripts e atributos como `onerror` são removidos
 - `DEBUG` e `ALLOWED_HOSTS` controlados por variável de ambiente, nunca fixos no código
 - LGPD: pseudonimização no desligamento, expurgo dos dados originais após 90 dias (comando `expurgar_reidentificacoes`) e registros de remoção e expurgo na auditoria sem o nome real do colaborador
 
-**Pendente:** agendamento automático (cron) das rotinas `verificar_vencimentos` e `expurgar_reidentificacoes`; hoje elas rodam pelo botão do painel de conformidade ou pelo terminal.
+**Em produção:** https://vigent.onrender.com (Render, com banco no Supabase e imagens no Cloudinary). As rotinas `verificar_vencimentos` e `expurgar_reidentificacoes` rodam todo dia às 06:00 pelo Cron Job do Render e também pelo botão do painel de conformidade. Detalhes em [Implantação (Render)](#implantação-render).
 
 **Evoluções previstas:**
 - Atribuição individual de curso como exceção à regra do departamento (onboarding, reciclagem pontual, curso de outro setor). A estrutura de dados (`AtribuicaoManual`) foi mantida no banco, desativada, como base para essa feature
@@ -125,7 +126,7 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
    ```
    pip install -r requirements.txt
    ```
-4. Copie `.env.example` para `.env` e preencha `SECRET_KEY`, `DATABASE_URL`, `BREVO_API_KEY`, `BREVO_SMTP_USER`, `BREVO_SMTP_PASSWORD` e `DEFAULT_FROM_EMAIL`. Em desenvolvimento local mantenha `DEBUG=True`; em produção defina `DEBUG=False` e liste os domínios liberados em `ALLOWED_HOSTS`
+4. Copie `.env.example` para `.env` e preencha as variáveis da seção [Variáveis de ambiente](#variáveis-de-ambiente). Para rodar localmente bastam `SECRET_KEY`, `DATABASE_URL` e `DEBUG=True`; sem a chave do Brevo, os e-mails ficam registrados na auditoria em vez de enviados
 5. Rode as migrações:
    ```
    python manage.py migrate
@@ -145,9 +146,29 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
    ```
 8. Acesse `http://127.0.0.1:8000/`. Com o RH logado, a documentação da API fica em `http://127.0.0.1:8000/api/v1/docs/`
 
+## Variáveis de ambiente
+
+Nenhum valor real vai para o repositório: localmente eles ficam no `.env` (fora do Git) e em produção no painel do Render.
+
+| Variável | Local | Produção | Para que serve | Onde obter |
+|---|---|---|---|---|
+| `SECRET_KEY` | Obrigatória | Gerada pelo Render | Assinatura de sessões e tokens do Django | Qualquer texto longo e aleatório, ex.: `python -c "import secrets; print(secrets.token_urlsafe(50))"` |
+| `DATABASE_URL` | Obrigatória | Obrigatória | Conexão com o PostgreSQL | Local: o seu PostgreSQL. Produção: Supabase > Connect > Session pooler (porta 5432), com `?sslmode=require` no fim |
+| `DEBUG` | `True` | `False` | Modo de desenvolvimento | - |
+| `BREVO_API_KEY` | Opcional | Obrigatória | Envio de e-mails (2FA, primeiro acesso, redefinição, avisos) | Brevo > SMTP & API > API Keys |
+| `DEFAULT_FROM_EMAIL` | Opcional | Obrigatória | Remetente dos e-mails (só o endereço, sem nome) | Um remetente verificado no Brevo (Senders) |
+| `CLOUDINARY_URL` | Opcional | Obrigatória | Imagens dos cursos; vazia, elas vão para a pasta `media/` | Cloudinary > Settings > API Keys, no formato `cloudinary://API_KEY:API_SECRET@CLOUD_NAME` |
+| `HTTPS` | `False` | `True` | Redirecionamento para HTTPS, cookies seguros e HSTS | - |
+| `ALLOWED_HOSTS` | `localhost,127.0.0.1` | Opcional | Domínios aceitos; o domínio do Render entra sozinho | - |
+| `CSRF_TRUSTED_ORIGINS` | Opcional | Opcional | Domínios extras aceitos em formulários | - |
+| `PROXIES_CONFIAVEIS` | `0` | `1` | Quantos proxies confiáveis ficam na frente da aplicação (IP de origem, RNF-14) | - |
+| `SITE_URL` | Opcional | Opcional | Endereço usado no link do e-mail de primeiro acesso; padrão `https://vigent.onrender.com` | - |
+
+`BREVO_SMTP_USER` e `BREVO_SMTP_PASSWORD` aparecem no `.env.example`, mas não são necessárias: o envio usa a API do Brevo, e não SMTP.
+
 ## Testes
 
-São 222 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 251 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
@@ -168,16 +189,19 @@ coverage report
 | `core/test_services_unitarios.py` | 12 | Unitários sem banco: emissão de certificado, índice de conformidade (RN-38), faixas de vencimento (RN-39) |
 | `core/test_api_indicadores.py` | 19 | API de indicadores: acesso, contrato JSON, reação histórica (RN-30), reciclagem atômica, número de consultas, tela do dashboard |
 | `core/test_seguranca_endpoints.py` | 29 | Autenticação, perfil, IDOR, CSRF, XSS, upload, redirecionamento aberto, cabeçalhos, parâmetros inválidos na URL. Toda rota nova precisa ser classificada aqui |
-| `core/test_seed_demonstracao.py` | 7 | Seed de demonstração: volume e mistura de situações, perfis por departamento, repetição sem duplicar, limpeza, bloqueio sem `DEBUG` e e-mail `.invalid` que não sai pelo Brevo |
+| `core/test_seed_cursos.py` | 4 | Carga de cursos: mesmo conteúdo e departamentos do arquivo versionado, uma alternativa correta por questão, imagens regravadas (RN-41) e repetição sem duplicar |
+| `core/test_seed_demonstracao.py` | 8 | Seed de demonstração: volume e mistura de situações, perfis por departamento, repetição sem duplicar, limpeza, bloqueio sem `DEBUG` (liberado só com `--permitir-producao`) e e-mail `.invalid` que não sai pelo Brevo |
 | `core/test_integracao_rh.py` | 13 | Painel do RH: conformidade, rotinas, reciclagem, paginação de colaboradores e do painel de conformidade |
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
 | `contas/test_integracao_cadastro.py` | 8 | Cadastro de colaborador, com departamento e grupo validados |
+| `contas/test_integracao_edicao.py` | 16 | Edição de colaborador pelo RH: dados e e-mail, troca de departamento (RN-02), perfil em destaque na auditoria, RH não muda o próprio perfil, conta desligada bloqueada e avisos de vencimento só do departamento atual e de contas ativas |
 | `contas/test_integracao_codigo.py` | 12 | Segundo fator e redefinição de senha: limite de tentativas (RN-25) e intervalo de 5 minutos entre códigos |
+| `contas/test_senha_e_links.py` | 8 | Senha mínima de 8 caracteres no primeiro acesso e na redefinição (RN-28), link clicável do site no e-mail de primeiro acesso e texto do e-mail escapado |
 | `contas/test_sessao_unica.py` | 10 | Sessão única por conta (novo login em outro computador encerra a sessão anterior) e expiração após 30 minutos sem uso ou ao fechar o navegador |
 | `contas/test_rede.py` | 11 | IP de origem: `X-Forwarded-For` ignorado sem proxy confiável, leitura do trecho escrito pelo proxy, IP inválido descartado |
 | `treinamentos/tests.py` | 5 | Models de curso, aula, slide e progresso |
 | `treinamentos/test_integracao_gestao_cursos.py` | 24 | Gestão de cursos pelo RH: curso, aula, slides um por vez e questões |
-| `treinamentos/test_upload_seguro.py` | 14 | Upload de imagens e texto dos slides (RN-40): formatos, limites, arquivo poliglota, EXIF, nome aleatório, sanitização |
+| `treinamentos/test_upload_seguro.py` | 14 | Upload de imagens e texto dos slides (RN-41): formatos, limites, arquivo poliglota, EXIF, nome aleatório, sanitização |
 | `avaliacoes/test_integracao.py` | 10 | Avaliação de reação e prova |
 | `certificacao/tests.py` | 3 | Situação do certificado |
 | `certificacao/test_integracao.py` | 4 | Meus certificados e acesso ao certificado |
@@ -189,13 +213,29 @@ Os testes comentados com "Corrigido:" em `test_seguranca_endpoints.py` nasceram 
 
 Criadas pelo comando `carregar_dados_colaboradores`:
 
-| Papel | E-mail | Senha |
-|---|---|---|
-| RH | ricardo.lima@nortex.com.br | 123456 |
-| Colaboradora (Vendas) | fernanda.lima@nortex.com.br | 123456 |
-| Primeiro acesso (Sala Limpa) | bruno.tavares@nortex.com.br | Nortex@2026 |
+| Papel | E-mail |
+|---|---|
+| RH (Recursos Humanos) | ricardo.lima@nortex.com.br |
+| Colaboradora (Vendas) | fernanda.lima@nortex.com.br |
+| Primeiro acesso (Sala Limpa) | bruno.tavares@nortex.com.br |
 
-O comando `carregar_dados_cursos` cria três treinamentos: **LGPD (Proteção de Dados)** e **Código de Conduta Ética** (todos os departamentos), e **Parametrização de Sala Limpa** (restrito ao departamento Sala Limpa), cada um já com aulas, slides, prova e questões prontas para teste.
+As senhas iniciais dessas contas são definidas no próprio comando de carga e servem apenas para o ambiente de desenvolvimento; não as reutilize em produção. A conta de primeiro acesso recebe uma senha provisória e precisa trocá-la no primeiro login.
+
+O comando `carregar_dados_cursos` cria quatro treinamentos, cada um com capa, aulas, slides com imagem, prova e questões:
+
+| Curso | Departamentos |
+|---|---|
+| Abertura de chamados | Todos |
+| Compliance e codigo de conduta | Todos |
+| Prevenção a fraude | Financeiro |
+| Recrutamento e seleção sem discriminação | Recursos Humanos |
+
+O conteúdo fica versionado em `core/dados/cursos/` (`cursos.json` e a pasta `imagens/`). As imagens passam pela mesma validação e regravação do upload pelo RH (RN-41) e são salvas pelo storage do Django, então em produção vão para o storage configurado. Rodar o comando de novo não duplica: curso que já existe é pulado.
+
+Para transformar cursos cadastrados pela tela do RH em carga de dados, exporte-os pelos ids (sem ids, exporta todos). O comando reescreve `core/dados/cursos/`:
+```
+python manage.py exportar_cursos 5 6 7 8
+```
 
 O comando `carregar_dados_demonstracao` cria uma base grande para o dashboard de indicadores (ele já roda os dois comandos acima):
 
@@ -203,8 +243,36 @@ O comando `carregar_dados_demonstracao` cria uma base grande para o dashboard de
 - Cada departamento tem um perfil: Vendas fica acima da meta de 90% e Sala Limpa fica crítico, para os gráficos terem contraste
 - Quem tem certificado também tem progresso nas aulas, avaliação de reação e tentativas de prova, então todos os indicadores são preenchidos
 - O sorteio usa semente fixa: os números são os mesmos a cada execução. Rodar de novo recria a base, e `--limpar` remove só esses colaboradores
-- Login de qualquer um deles: `nome.sobrenome@exemplo.invalid` (sem acento), senha `123456`
-- Proteções: o comando só roda com `DEBUG=True`, para nunca popular o banco de produção, e e-mails para o domínio reservado `.invalid` ficam registrados na auditoria mas não são enviados pelo Brevo
+- Login de qualquer um deles: `nome.sobrenome@exemplo.invalid` (sem acento), com a senha definida no comando (constante `SENHA`)
+- Proteções: o comando só roda com `DEBUG=True`, para nunca popular o banco de produção por engano (a base de apresentação em produção exige `--permitir-producao`), e e-mails para o domínio reservado `.invalid` ficam registrados na auditoria mas não são enviados pelo Brevo
+
+## Implantação (Render)
+
+O arquivo `render.yaml` descreve os dois serviços, criados juntos pelo Blueprint do Render:
+
+| Serviço | Tipo | O que faz |
+|---|---|---|
+| `vigent` | Web (plano gratuito) | Instala as dependências e roda o `collectstatic` no build; aplica as migrações e sobe o Gunicorn a cada início |
+| `vigent-rotinas` | Cron Job, diário às 06:00 de Brasília | Roda `verificar_vencimentos` e `expurgar_reidentificacoes` |
+
+Infraestrutura usada:
+
+- **Banco:** PostgreSQL no Supabase, pela conexão *Session pooler* (IPv4), com `?sslmode=require` no fim da `DATABASE_URL`
+- **Imagens dos cursos:** Cloudinary, ativado pela variável `CLOUDINARY_URL`; sem ela, as imagens vão para a pasta `media/`
+- **Arquivos estáticos:** WhiteNoise, servidos pelo próprio Gunicorn
+- **HTTPS:** `HTTPS=True` liga o redirecionamento para HTTPS, os cookies seguros e o HSTS
+
+Variáveis informadas no painel do Render (nunca vão para o Git): `DATABASE_URL`, `CLOUDINARY_URL`, `BREVO_API_KEY` e `DEFAULT_FROM_EMAIL` (remetente verificado no Brevo, só o endereço). A `SECRET_KEY` é gerada pelo próprio Render.
+
+Primeira carga, rodada uma vez a partir de uma máquina com a `DATABASE_URL` e a `CLOUDINARY_URL` de produção no ambiente:
+
+```
+python manage.py migrate
+python manage.py carregar_dados_demonstracao --permitir-producao
+python manage.py createsuperuser
+```
+
+Com `--permitir-producao`, a carga cria só os cursos e os 60 colaboradores fictícios `@exemplo.invalid`, que nunca recebem e-mail. As contas `@nortex.com.br` do ambiente de desenvolvimento ficam de fora, porque as senhas delas estão no repositório e o domínio é real. A conta de RH de produção é criada pelo `createsuperuser`, com um e-mail que recebe o código de verificação.
 
 ## Estrutura dos apps
 

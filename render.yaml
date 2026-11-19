@@ -1,0 +1,73 @@
+# Implantação do Vigent no Render (Blueprint).
+# Segredos ficam com "sync: false": o Render pede o valor no painel e ele nunca vai para o Git.
+services:
+  - type: web
+    name: vigent
+    runtime: python
+    plan: free
+    region: virginia
+    branch: main
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    # As migrações rodam a cada início: aplicam só o que faltar no banco.
+    startCommand: python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    healthCheckPath: /conta/entrar/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEBUG
+        value: "False"
+      - key: HTTPS
+        value: "True"
+      - key: PROXIES_CONFIAVEIS
+        value: "1"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+
+  # RF-12 e RN-35: avisos de vencimento e expurgo do cofre, uma vez por dia às 06:00 de Brasília.
+  - type: cron
+    name: vigent-rotinas
+    runtime: python
+    plan: starter
+    region: virginia
+    branch: main
+    schedule: "0 9 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py verificar_vencimentos && python manage.py expurgar_reidentificacoes
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        fromService:
+          type: web
+          name: vigent
+          envVarKey: SECRET_KEY
+      - key: DATABASE_URL
+        fromService:
+          type: web
+          name: vigent
+          envVarKey: DATABASE_URL
+      - key: CLOUDINARY_URL
+        fromService:
+          type: web
+          name: vigent
+          envVarKey: CLOUDINARY_URL
+      - key: BREVO_API_KEY
+        fromService:
+          type: web
+          name: vigent
+          envVarKey: BREVO_API_KEY
+      - key: DEFAULT_FROM_EMAIL
+        fromService:
+          type: web
+          name: vigent
+          envVarKey: DEFAULT_FROM_EMAIL
