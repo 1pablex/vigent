@@ -41,6 +41,9 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 - Entradas validadas no back-end: departamento e grupo do cadastro são conferidos antes de criar a conta (nenhum e-mail sai com dado inválido), e parâmetros inválidos na URL das listagens não geram erro 500
 - Upload de imagens dos cursos (capa e slides, RN-41): só JPG, PNG ou WEBP, identificados pelo conteúdo e não pela extensão, com no máximo 5 MB e 25 megapixels. A imagem aceita é regravada a partir dos pixels, com nome aleatório: conteúdo escondido no arquivo (script anexado) e metadados EXIF/GPS são descartados. Vale para o painel do RH e para o admin
 - Texto dos slides sanitizado com `nh3` ao salvar e de novo na exibição: só parágrafo, lista, negrito, itálico e quebra de linha; scripts e atributos como `onerror` são removidos
+- Content-Security-Policy em todas as respostas (`core/middleware.py`): o navegador só executa scripts servidos pelo próprio Vigent (`script-src 'self'`), então mesmo um XSS que passasse pelas outras proteções não seria executado. Nenhum template tem script inline nem atributo `on...=`: os eventos ficam em `static/js/vigent.js` (atributos `data-envio-automatico`, `data-confirmar` e `data-imprimir`) e o dashboard em `static/js/dashboard.js`. O Swagger usa arquivos locais (`drf-spectacular-sidecar`), sem CDN. A política também impede exibir o Vigent em iframe e enviar formulários para outros sites
+- Permissions-Policy desliga câmera, microfone, geolocalização, pagamento e USB, que o Vigent não usa
+- Em produção (`HTTPS=True`): redirecionamento para HTTPS, cookies seguros e HSTS de 1 ano com `includeSubDomains` e `preload` (o preload só tem efeito com domínio próprio, porque a lista dos navegadores não aceita subdomínios de `onrender.com`)
 - `DEBUG` e `ALLOWED_HOSTS` controlados por variável de ambiente, nunca fixos no código
 - LGPD: pseudonimização no desligamento, expurgo dos dados originais após 90 dias (comando `expurgar_reidentificacoes`) e registros de remoção e expurgo na auditoria sem o nome real do colaborador
 
@@ -169,14 +172,14 @@ Nenhum valor real vai para o repositório: localmente eles ficam no `.env` (fora
 
 ## Testes
 
-São 260 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 277 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
 Separados, como no CI:
 ```
-python manage.py test --tag unitario          # 38 unitários: SimpleTestCase, sem banco
-python manage.py test --exclude-tag unitario  # 222 de integração: views, API e banco de teste
+python manage.py test --tag unitario          # 46 unitários: SimpleTestCase, sem banco
+python manage.py test --exclude-tag unitario  # 231 de integração: views, API e banco de teste
 ```
 
 **Integração contínua:** o GitHub Actions (`.github/workflows/ci.yml`) roda três checagens em paralelo, em ambiente limpo, a cada Pull Request para a `main` e a cada push na `main`: **Testes unitários**, **Testes de integração** e **Linter** (`ruff check .`, regras em `pyproject.toml`). Não usa nenhum segredo real: a `SECRET_KEY` é gerada na hora e descartada, e o envio de e-mail é simulado nos próprios testes.
@@ -192,6 +195,7 @@ coverage report
 | `core/test_services_unitarios.py` | 12 | Unitários sem banco: emissão de certificado, índice de conformidade (RN-38), faixas de vencimento (RN-39) |
 | `core/test_api_indicadores.py` | 19 | API de indicadores: acesso, contrato JSON, reação histórica (RN-30), reciclagem atômica, número de consultas, tela do dashboard |
 | `core/test_seguranca_endpoints.py` | 29 | Autenticação, perfil, IDOR, CSRF, XSS, upload, redirecionamento aberto, cabeçalhos, parâmetros inválidos na URL. Toda rota nova precisa ser classificada aqui |
+| `core/test_cabecalhos_seguranca.py` | 17 | CSP e Permissions-Policy em telas, API, erro e redirecionamento; nenhum template com script inline ou `on...=`; HSTS de produção; Swagger sem CDN e sem script inline |
 | `core/test_seed_cursos.py` | 4 | Carga de cursos: mesmo conteúdo e departamentos do arquivo versionado, uma alternativa correta por questão, imagens regravadas (RN-41) e repetição sem duplicar |
 | `core/test_seed_demonstracao.py` | 8 | Seed de demonstração: volume e mistura de situações, perfis por departamento, repetição sem duplicar, limpeza, bloqueio sem `DEBUG` (liberado só com `--permitir-producao`) e e-mail `.invalid` que não sai pelo Brevo |
 | `core/test_integracao_rh.py` | 13 | Painel do RH: conformidade, rotinas, reciclagem, paginação de colaboradores e do painel de conformidade |

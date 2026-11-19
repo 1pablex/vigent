@@ -66,7 +66,7 @@
       <div class="sub">{{ total_linhas }} registro{{ total_linhas|pluralize }}</div></div>
     <form method="get" style="display:flex;gap:9px;flex-wrap:wrap">
       <input class="search" name="busca" value="{{ busca }}" placeholder="Buscar matrícula, colaborador ou treinamento">
-      <select class="search" name="situacao" onchange="this.form.submit()">
+      <select class="search" name="situacao" data-envio-automatico>
         <option value="TODOS" {% if situacao_selecionada == "TODOS" %}selected{% endif %}>Todos os status</option>
         <option value="EM DIA" {% if situacao_selecionada == "EM DIA" %}selected{% endif %}>Em dia</option>
         <option value="VENCENDO" {% if situacao_selecionada == "VENCENDO" %}selected{% endif %}>Vencendo</option>

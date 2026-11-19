@@ -6,6 +6,9 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
+from auditoria.models import LogSistema
+from core.services import registrar
+
 
 def _bloquear(request, destino, motivo):
     """Telas são redirecionadas; a API (/api/) recebe 403 em JSON, sem redirect."""
@@ -68,8 +71,6 @@ class SessaoUnicaMiddleware:
         usuario = getattr(request, "user", None)
         if (usuario is not None and usuario.is_authenticated and usuario.sessao_ativa
                 and request.session.session_key != usuario.sessao_ativa):
-            from auditoria.models import LogSistema
-            from core.services import registrar
             registrar(LogSistema.Nivel.WARN, "Sessão encerrada por novo login",
                       f"{usuario.email} entrou em outro dispositivo", usuario)
             logout(request)

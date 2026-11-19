@@ -42,7 +42,7 @@
           <div class="acoes" style="justify-content:center">
             <a class="btn btn-ghost btn-sm" href="{% url 'cursos_rh:slide_editar' curso.id aula.id s.id %}">Editar</a>
             <form class="inline" method="post" action="{% url 'cursos_rh:slide_excluir' curso.id aula.id s.id %}"
-                  onsubmit="return confirm('Excluir o slide {{ s.ordem }}?')">
+                  data-confirmar="Excluir o slide {{ s.ordem }}?">
               {% csrf_token %}<button class="btn btn-danger btn-sm">Excluir</button>
             </form>
           </div>

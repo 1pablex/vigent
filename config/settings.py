@@ -40,7 +40,12 @@ if HTTPS:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 3600
+    # HSTS: o navegador passa a recusar HTTP para o Vigent por 1 ano, inclusive nos
+    # subdomínios. O preload só tem efeito com domínio próprio (a lista dos navegadores
+    # não aceita subdomínios de onrender.com), mas o cabeçalho já sai pronto para isso.
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 
 # Application definition
@@ -60,10 +65,12 @@ INSTALLED_APPS = [
     'certificacao',
     'rest_framework',
     'drf_spectacular',
+    'drf_spectacular_sidecar',   # arquivos do Swagger servidos pelo Vigent, sem CDN (CSP)
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'core.middleware.CabecalhosSegurancaMiddleware',   # CSP e Permissions-Policy em toda resposta
     'whitenoise.middleware.WhiteNoiseMiddleware',   # serve o CSS/JS em produção
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -251,4 +258,8 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PERMISSIONS": ["core.api.permissions.SomenteRH"],
+    # Swagger com arquivos locais (pacote sidecar) em vez do CDN, compatível com a CSP
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
 }

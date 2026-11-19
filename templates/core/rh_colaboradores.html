@@ -12,7 +12,7 @@
   <div class="head" style="margin-bottom:14px">
     <form method="get" style="display:flex;gap:9px;flex-wrap:wrap">
       <input class="search" name="busca" value="{{ busca }}" placeholder="Buscar por matrícula, nome ou e-mail">
-      <select class="search" name="departamento" onchange="this.form.submit()">
+      <select class="search" name="departamento" data-envio-automatico>
         <option value="TODOS" {% if departamento_selecionado == "TODOS" %}selected{% endif %}>Todos os departamentos</option>
         {% for dep in departamentos %}
           <option value="{{ dep.id }}" {% if departamento_selecionado == dep.id|stringformat:"s" %}selected{% endif %}>{{ dep.nome }}</option>
@@ -50,7 +50,7 @@
               <a class="btn btn-ghost btn-sm" href="{% url 'contas:editar' c.pk %}">Editar</a>
               {% if c.pk != request.user.pk %}
               <form method="post" action="{% url 'core:rh_remover' c.pk %}"
-                    onsubmit="return confirm('Remover a matrícula {{ c.matricula }}? A conta será desligada e o nome e o e-mail serão substituídos por colab{{ c.matricula }}. Essa ação não pode ser desfeita.')">
+                    data-confirmar="Remover a matrícula {{ c.matricula }}? A conta será desligada e o nome e o e-mail serão substituídos por colab{{ c.matricula }}. Essa ação não pode ser desfeita.">
                 {% csrf_token %}
                 <button class="btn btn-danger btn-sm">Remover</button>
               </form>

@@ -1,5 +1,5 @@
 from django.urls import path
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerSplitView
 
 from . import views
 
@@ -17,5 +17,7 @@ urlpatterns = [
     path("indicadores/qualidade/", views.QualidadePercebidaView.as_view(), name="qualidade"),
     # Documentação OpenAPI 3 gerada a partir do código (também restrita ao RH)
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("docs/", SpectacularSwaggerView.as_view(url_name="api:schema"), name="docs"),
+    # Versão "split": o script de inicialização vem numa requisição separada, sem script
+    # inline no HTML, o que a CSP (script-src 'self') exige.
+    path("docs/", SpectacularSwaggerSplitView.as_view(url_name="api:schema"), name="docs"),
 ]
