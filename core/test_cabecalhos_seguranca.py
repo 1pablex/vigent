@@ -89,7 +89,7 @@ class CabecalhosNasRespostasTest(TestCase):
     def setUp(self):
         self.rh = Usuario.objects.create_user(
             email="rh@exemplo.invalid", nome="RH Teste", password="x",
-            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceitou_termos=True)
+            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceite_termo_vigente=True)
 
     def assert_cabecalhos(self, resposta):
         self.assertEqual(resposta["Content-Security-Policy"], CSP)
@@ -135,7 +135,7 @@ class SwaggerSemCdnTest(TestCase):
     def setUp(self):
         rh = Usuario.objects.create_user(
             email="rh@exemplo.invalid", nome="RH Teste", password="x",
-            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceitou_termos=True)
+            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceite_termo_vigente=True)
         self.client.force_login(rh)
 
     def test_pagina_do_swagger_so_usa_arquivos_locais(self):

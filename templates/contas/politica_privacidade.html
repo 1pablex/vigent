@@ -15,7 +15,12 @@
     <h1>Política de Privacidade</h1>
     <p class="subtitle">Como tratamos os seus dados pessoais no Vigent.</p>
 
-    {% include "contas/_politica_conteudo.html" %}
+    {% if termo %}
+      <p class="termo-versao">Versão {{ termo.versao }}, publicada em {{ termo.publicado_em|date:"d/m/Y" }}</p>
+      <div class="termo-texto">{{ conteudo }}</div>
+    {% else %}
+      <p>A política de privacidade ainda não foi publicada.</p>
+    {% endif %}
 
     <a class="link-out" href="{% url 'contas:login' %}">Voltar ao login</a>
   </div>

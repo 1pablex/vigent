@@ -25,7 +25,7 @@ class SessaoUnicaTest(TestCase):
     def setUp(self):
         self.usuario = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-123",
-            senha_provisoria=False, aceitou_termos=True,
+            senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.pc_fabrica = Client()
         self.notebook = Client()
@@ -121,7 +121,7 @@ class ExpiracaoDaSessaoTest(TestCase):
     def setUp(self):
         self.usuario = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-123",
-            senha_provisoria=False, aceitou_termos=True,
+            senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.client.force_login(self.usuario)
         self.inicio = reverse("treinamentos:inicio")

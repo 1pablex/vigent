@@ -42,6 +42,11 @@
       <dt>Setor</dt>
       <dd>{{ usuario.departamento|default:"Sem departamento" }}</dd>
     </div>
+    <div class="dados-item dados-item-largo">
+      <dt>Política de privacidade</dt>
+      <dd>{% if aceite %}Versão {{ aceite.termo.versao }}, aceita em {{ aceite.data_hora|date:"d/m/Y H:i" }}{% else %}Não aceita{% endif %}
+        · <a href="{% url 'contas:politica_privacidade' %}" target="_blank">ler a versão vigente</a></dd>
+    </div>
   </dl>
 
 </div>

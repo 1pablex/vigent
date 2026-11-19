@@ -135,7 +135,7 @@ class AlertaNoPainelTest(TestCase):
     def setUp(self):
         rh = Usuario.objects.create_user(
             email="rh@exemplo.invalid", nome="RH Teste", password="x",
-            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceitou_termos=True)
+            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceite_termo_vigente=True)
         self.client.force_login(rh)
 
     def test_painel_mostra_alerta_quando_rotina_esta_atrasada(self):

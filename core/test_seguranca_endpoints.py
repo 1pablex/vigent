@@ -85,13 +85,13 @@ class CenarioSeguranca(TestCase):
         self.vendas = Departamento.objects.create(nome="Vendas")
         self.rh = Usuario.objects.create_user(
             email="rh@nortex.com.br", nome="Rita RH", password="senha-123",
-            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceitou_termos=True)
+            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceite_termo_vigente=True)
         self.colaborador = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-123",
-            departamento=self.vendas, senha_provisoria=False, aceitou_termos=True)
+            departamento=self.vendas, senha_provisoria=False, aceite_termo_vigente=True)
         self.outro = Usuario.objects.create_user(
             email="bruno@nortex.com.br", nome="Bruno Colaborador", password="senha-123",
-            departamento=self.vendas, senha_provisoria=False, aceitou_termos=True)
+            departamento=self.vendas, senha_provisoria=False, aceite_termo_vigente=True)
 
         self.curso = Curso.objects.create(nome="LGPD na Prática", categoria="Compliance")
         CursoDepartamento.objects.create(curso=self.curso, departamento=self.vendas)
@@ -219,8 +219,7 @@ class ControleDeAcessoPorPerfilTest(CenarioSeguranca):
                                      reverse("contas:definir_senha"))
 
     def test_termo_nao_aceito_bloqueia_rotas_do_rh(self):
-        self.rh.aceitou_termos = False
-        self.rh.save()
+        self.rh.aceites_termo.all().delete()
         self.client.force_login(self.rh)
         self.assertRedirects(self.client.get(self.url("cursos_rh:lista")),
                              reverse("contas:aceitar_termo"))

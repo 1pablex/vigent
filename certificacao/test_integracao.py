@@ -19,11 +19,11 @@ class CertificadoIntegracaoTest(TestCase):
     def setUp(self):
         self.ana = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-123",
-            senha_provisoria=False, aceitou_termos=True,
+            senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.bruno = Usuario.objects.create_user(
             email="bruno@nortex.com.br", nome="Bruno Colaborador", password="senha-123",
-            senha_provisoria=False, aceitou_termos=True,
+            senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.certificado_ana = Certificado.objects.create(
             usuario=self.ana, curso=Curso.objects.create(nome="LGPD na Prática"),

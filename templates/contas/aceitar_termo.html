@@ -14,20 +14,36 @@
 
   <div class="card">
     <h1>Política de Privacidade</h1>
-    <p class="subtitle">Antes de continuar, é necessário ler e aceitar a política abaixo.</p>
+    {% if aceite_anterior %}
+      {# RN-33 - versão nova publicada: quem aceitou a anterior precisa aceitar de novo #}
+      <div class="termo-atualizado" role="status">
+        <strong>O termo foi atualizado para a versão {{ termo.versao }}.</strong>
+        Você aceitou a versão {{ aceite_anterior.termo.versao }} em
+        {{ aceite_anterior.data_hora|date:"d/m/Y" }}. Para continuar usando o Vigent, leia e
+        aceite a nova versão.
+        {% if termo.resumo_alteracoes %}
+          <p class="termo-mudancas"><strong>O que mudou:</strong> {{ termo.resumo_alteracoes|linebreaksbr }}</p>
+        {% endif %}
+      </div>
+    {% else %}
+      <p class="subtitle">Antes de continuar, é necessário ler e aceitar a política abaixo.</p>
+    {% endif %}
 
     {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
 
-    {% include "contas/_politica_conteudo.html" %}
+    <p class="termo-versao">Versão {{ termo.versao }}, publicada em {{ termo.publicado_em|date:"d/m/Y" }}</p>
+    <div class="termo-texto">{{ conteudo }}</div>
 
     <form method="post">
       {% csrf_token %}
+      <input type="hidden" name="versao" value="{{ termo.versao }}">
       <div class="aceite-row">
         <input type="checkbox" id="aceito" name="aceito" required>
-        <label for="aceito">Li e aceito a Política de Privacidade do Vigent.</label>
+        <label for="aceito">Li e aceito a versão {{ termo.versao }} da Política de Privacidade do Vigent.</label>
       </div>
       <button type="submit">Continuar</button>
     </form>
+    <a class="link-out" href="{% url 'contas:logout' %}">Não aceito: sair do sistema</a>
   </div>
 
 </body>

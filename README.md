@@ -10,7 +10,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 
 **Fluxo de treinamento**, completo de ponta a ponta:
 - Login com autenticação em duas etapas (segundo fator por e-mail); no primeiro acesso com senha provisória, o 2FA é dispensado (o código chegaria pelo mesmo e-mail que já entregou a credencial) e o colaborador vai direto para a troca obrigatória de senha
-- Aceite obrigatório do termo de uso após a primeira troca de senha, com política de privacidade acessível a partir da tela de login
+- Aceite obrigatório do termo de uso após a primeira troca de senha, com política de privacidade acessível a partir da tela de login. O termo é versionado (RN-33): cada versão fica registrada com o texto completo, e cada aceite guarda a versão, a data e o IP. Quando o superusuário publica uma versão nova no Django Admin, todos (inclusive o RH) veem o aviso de atualização com o resumo das mudanças no próximo acesso e só voltam a usar o sistema depois de aceitar. Versão publicada não é editada nem apagada; "Meus dados" mostra a versão aceita. A versão 1.0 é o texto que estava no sistema; a 1.1 corrige o parágrafo final, que prometia aviso por e-mail antes de uma nova versão entrar em vigor (o aviso é feito no próximo acesso)
 - Cursos vinculados ao colaborador pelo departamento: ao mudar de setor, ele passa a ver automaticamente os cursos do novo departamento, sem ação manual do RH
 - Conteúdo do curso, com trava de avanço sequencial pelos slides
 - Avaliação de reação, obrigatória antes da prova
@@ -173,14 +173,14 @@ Nenhum valor real vai para o repositório: localmente eles ficam no `.env` (fora
 
 ## Testes
 
-São 290 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 313 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
 Separados, como no CI:
 ```
 python manage.py test --tag unitario          # 46 unitários: SimpleTestCase, sem banco
-python manage.py test --exclude-tag unitario  # 244 de integração: views, API e banco de teste
+python manage.py test --exclude-tag unitario  # 267 de integração: views, API e banco de teste
 ```
 
 **Integração contínua:** o GitHub Actions (`.github/workflows/ci.yml`) roda três checagens em paralelo, em ambiente limpo, a cada Pull Request para a `main` e a cada push na `main`: **Testes unitários**, **Testes de integração** e **Linter** (`ruff check .`, regras em `pyproject.toml`). Não usa nenhum segredo real: a `SECRET_KEY` é gerada na hora e descartada, e o envio de e-mail é simulado nos próprios testes.
@@ -203,6 +203,7 @@ coverage report
 | `core/test_integracao_rh.py` | 13 | Painel do RH: conformidade, rotinas, reciclagem, paginação de colaboradores e do painel de conformidade |
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
 | `contas/test_integracao_cadastro.py` | 8 | Cadastro de colaborador, com departamento e grupo validados |
+| `contas/test_termo_versionado.py` | 23 | Termo versionado (RN-33): versão 1.0 vinda do texto anterior, versão 1.1 sem a promessa de e-mail, nova versão bloqueia até aceitar (telas, API e RH), aviso com o resumo das mudanças, aceite com versão, data e IP, aceite de texto desatualizado recusado, versão publicada imutável, publicação pelo Admin, HTML limpo na exibição e migração dos aceites antigos |
 | `contas/test_integracao_edicao.py` | 16 | Edição de colaborador pelo RH: dados e e-mail, troca de departamento (RN-02), perfil em destaque na auditoria, RH não muda o próprio perfil, conta desligada bloqueada e avisos de vencimento só do departamento atual e de contas ativas |
 | `contas/test_integracao_codigo.py` | 12 | Segundo fator e redefinição de senha: limite de tentativas (RN-25) e intervalo de 5 minutos entre códigos |
 | `contas/test_codigo_hmac.py` | 9 | Código de verificação só como HMAC (sem texto no banco, hash por usuário e dependente da `SECRET_KEY`), login completo com o código enviado, código e senha provisória mascarados na auditoria e migração que mascara os registros antigos |

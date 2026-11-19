@@ -33,9 +33,11 @@ class SenhaProvisoriaMiddleware:
         return self.get_response(request)
 
 class TermoAceiteMiddleware:
-    """RN-33 - bloqueia acesso até o aceite do termo de uso.
+    """RN-33 - bloqueia o acesso até o aceite da versão vigente do termo de uso.
 
-    Exceto para RH e para o colaborador ainda em processo de definir a senha.
+    Vale para todos os perfis, inclusive o RH. Quando uma versão nova é publicada, quem
+    aceitou só a anterior volta a ver o termo e não usa o sistema até aceitar. Quem ainda
+    está com a senha provisória define a senha primeiro (SenhaProvisoriaMiddleware).
     """
     LIBERADAS = ("contas:aceitar_termo", "contas:logout", "contas:definir_senha")
 
@@ -45,7 +47,7 @@ class TermoAceiteMiddleware:
     def __call__(self, request):
         usuario = getattr(request, "user", None)
         if (usuario is not None and usuario.is_authenticated
-                and not usuario.senha_provisoria and not usuario.aceitou_termos):
+                and not usuario.senha_provisoria and usuario.precisa_aceitar_termo):
             liberadas = [reverse(n) for n in self.LIBERADAS]
             if (request.path not in liberadas
                     and not request.path.startswith("/static/")

@@ -135,8 +135,7 @@ class Command(BaseCommand):
                 usuario = Usuario.objects.create_user(
                     email=self._email(nome), nome=nome, password=SENHA,
                     cargo=rng.choice(cargos), departamento=dep,
-                    senha_provisoria=False, aceitou_termos=True,
-                    data_aceite_termos=timezone.now())
+                    senha_provisoria=False, aceite_termo_vigente=True)
                 criados += 1
                 for curso in cursos_dep:
                     situacao = rng.choices(list(situacoes), weights=pesos)[0]

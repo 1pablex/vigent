@@ -51,7 +51,7 @@ class SenhaMinimaRedefinicaoTest(TestCase):
         self.addCleanup(patch.stopall)
         self.usuario = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-antiga-123",
-            senha_provisoria=False, aceitou_termos=True)
+            senha_provisoria=False, aceite_termo_vigente=True)
         self.client.post(reverse("contas:esqueci_senha"), {"email": "ana@nortex.com.br"})
         self.codigo = enviar.call_args.args[1]
 

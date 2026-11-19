@@ -11,11 +11,13 @@ from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 
 from auditoria.models import LogSistema, RegistroAcesso
-from contas.models import CodigoVerificacao, Departamento, Usuario
+from contas.models import CodigoVerificacao, Departamento, TermoUso, Usuario
 from contas.rede import ip_do_cliente
 from contas.sessao import marcar_sessao_ativa
+from contas.termos import registrar_aceite, sanitizar_termo
 from core.correio import enviar_codigo_redefinicao, enviar_codigo_verificacao, enviar_primeiro_acesso
 from core.services import gerar_codigo_verificacao, registrar
 
@@ -154,8 +156,12 @@ def sair(request):
 
 
 def ver_politica_privacidade(request):
-    """RF-24 - política de privacidade disponível ao colaborador."""
-    return render(request, "contas/politica_privacidade.html")
+    """RF-24 - política de privacidade disponível ao colaborador (versão vigente)."""
+    termo = TermoUso.vigente()
+    return render(request, "contas/politica_privacidade.html", {
+        "termo": termo,
+        "conteudo": mark_safe(sanitizar_termo(termo.conteudo)) if termo else "",
+    })
 
 #obrigatorio apos o login, para que o usuario troque a senha provisoria
 @login_required
@@ -452,23 +458,32 @@ def redefinir_senha(request):
                   {"erro": erro, "email": email, "senha_minima": senha_minima()})
 @login_required
 def aceitar_termo(request):
-    """RF-24, RN-33 - aceite obrigatório do termo de uso."""
-    if request.user.aceitou_termos:
+    """RF-24, RN-33 - aceite obrigatório da versão vigente do termo de uso.
+
+    Quem já aceitou uma versão anterior vê o aviso de atualização e o resumo das mudanças.
+    """
+    termo = TermoUso.vigente()
+    if termo is None or not request.user.precisa_aceitar_termo:
         return redirect("core:inicio")
 
     erro = None
     if request.method == "POST":
-        if request.POST.get("aceito") == "on":
-            request.user.aceitou_termos = True
-            request.user.data_aceite_termos = timezone.now()
-            request.user.save()
-            registrar(LogSistema.Nivel.INFO, "Termo de uso aceito",
-                      "Aceite registrado no primeiro acesso pós-definição de senha",
-                      request.user)
+        # O formulário informa a versão lida: se outra foi publicada nesse meio tempo,
+        # o aceite não vale para ela e a tela é mostrada de novo com o texto novo.
+        if request.POST.get("versao") != termo.versao:
+            erro = "O termo foi atualizado enquanto você lia. Leia a versão atual para continuar."
+        elif request.POST.get("aceito") == "on":
+            registrar_aceite(request.user, _ip(request))
             return redirect("core:inicio")
-        erro = "É necessário marcar a caixa de aceite para continuar."
+        else:
+            erro = "É necessário marcar a caixa de aceite para continuar."
 
-    return render(request, "contas/aceitar_termo.html", {"erro": erro})
+    return render(request, "contas/aceitar_termo.html", {
+        "erro": erro,
+        "termo": termo,
+        "conteudo": mark_safe(sanitizar_termo(termo.conteudo)),
+        "aceite_anterior": request.user.ultimo_aceite,
+    })
 
 @login_required
 def meus_dados(request):
@@ -477,4 +492,5 @@ def meus_dados(request):
                .select_related("departamento")
                .only("nome", "matricula", "cargo", "data_cadastro", "departamento__nome")
                .get(pk=request.user.pk))
-    return render(request, "contas/meus_dados.html", {"usuario": usuario})
+    return render(request, "contas/meus_dados.html",
+                  {"usuario": usuario, "aceite": request.user.ultimo_aceite})

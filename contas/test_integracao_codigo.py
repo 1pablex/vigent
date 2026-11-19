@@ -29,7 +29,7 @@ class LimiteTentativasDoisFatoresTest(TestCase):
         self.addCleanup(patch.stopall)
         self.usuario = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-correta-123",
-            senha_provisoria=False, aceitou_termos=True,
+            senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.client.post(reverse("contas:login"), {
             "email": "ana@nortex.com.br", "senha": "senha-correta-123"})
@@ -130,7 +130,7 @@ class LimiteTentativasRedefinicaoSenhaTest(TestCase):
         self.addCleanup(patch.stopall)
         self.usuario = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-antiga-123",
-            senha_provisoria=False, aceitou_termos=True,
+            senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.client.post(reverse("contas:esqueci_senha"), {"email": "ana@nortex.com.br"})
         self.codigo = CodigoVerificacao.objects.get(usuario=self.usuario)

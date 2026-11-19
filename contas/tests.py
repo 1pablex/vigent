@@ -122,12 +122,12 @@ class MeusDadosTestCase(TestCase):
             email="dados@nortex.com.br", nome="Maria Souza",
             password="senha-correta-123", cargo="Analista",
             departamento=self.departamento, senha_provisoria=False,
-            aceitou_termos=True,
+            aceite_termo_vigente=True,
         )
         self.outro = Usuario.objects.create_user(
             email="outro@nortex.com.br", nome="Joao Lima",
             password="senha-correta-123", cargo="Gerente",
-            senha_provisoria=False, aceitou_termos=True,
+            senha_provisoria=False, aceite_termo_vigente=True,
         )
 
     def test_exige_login(self):

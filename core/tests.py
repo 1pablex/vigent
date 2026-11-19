@@ -201,11 +201,11 @@ class RemoverColaboradorTestCase(TestCase):
         self.reverse = reverse
         self.rh = Usuario.objects.create_user(
             email="rh@nortex.com.br", nome="Ana RH", password="senha-correta-123",
-            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceitou_termos=True,
+            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.colaborador = Usuario.objects.create_user(
             email="maria@nortex.com.br", nome="Maria Souza", password="senha-correta-123",
-            cargo="Analista", senha_provisoria=False, aceitou_termos=True,
+            cargo="Analista", senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.url = reverse("core:rh_remover", args=[self.colaborador.pk])
 

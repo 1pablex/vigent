@@ -14,6 +14,7 @@ from django.urls import reverse
 
 from auditoria.models import EmailEnviado
 from contas.models import CodigoVerificacao
+from contas.termos import registrar_aceite
 from core.correio import MASCARA, enviar_codigo_redefinicao, enviar_codigo_verificacao, enviar_primeiro_acesso
 from core.services import gerar_codigo_verificacao
 
@@ -55,8 +56,8 @@ class CodigoGuardadoComoHmacTest(TestCase):
     def test_login_completo_funciona_com_o_codigo_enviado(self):
         self.ana.set_password("senha-correta-123")
         self.ana.senha_provisoria = False
-        self.ana.aceitou_termos = True
         self.ana.save()
+        registrar_aceite(self.ana)
 
         with patch("contas.views.enviar_codigo_verificacao") as enviar:
             self.client.post(reverse("contas:login"),
