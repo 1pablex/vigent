@@ -1,18 +1,17 @@
-from django.contrib.auth.decorators import login_required
-from django.db.models import Q
-from django.shortcuts import redirect, render
-from django.core.paginator import Paginator
-from django.core.management import call_command
 from django.contrib import messages
-from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.core.management import call_command
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+
+from auditoria.models import EmailEnviado, ExecucaoRotina, LogSistema, RegistroAcesso
+from contas.models import Departamento, Usuario
+from core import services
+from core.correio import enviar_notificacao_reciclagem
 from treinamentos.models import Curso
 
-from contas.models import Departamento
-from contas.models import Usuario
-from auditoria.models import EmailEnviado, ExecucaoRotina, LogSistema, RegistroAcesso
-from core.correio import enviar_notificacao_reciclagem
-from core import services
 """apos login (tela de inicio) """
 @login_required
 def inicio(request):
@@ -149,11 +148,11 @@ def rh_conformidade(request):
 
     linhas = linhas_completas
     if busca:
-        linhas = [l for l in linhas if busca in l["usuario"].nome.lower()
-                 or busca in l["usuario"].matricula.lower()
-                 or busca in l["curso"].nome.lower()]
+        linhas = [linha for linha in linhas if busca in linha["usuario"].nome.lower()
+                 or busca in linha["usuario"].matricula.lower()
+                 or busca in linha["curso"].nome.lower()]
     if situacao_filtro != "TODOS":
-        linhas = [l for l in linhas if l["situacao"] == situacao_filtro]
+        linhas = [linha for linha in linhas if linha["situacao"] == situacao_filtro]
 
     pagina = Paginator(linhas, CONFORMIDADE_POR_PAGINA).get_page(request.GET.get("pagina"))
 

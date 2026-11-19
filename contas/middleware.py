@@ -30,7 +30,10 @@ class SenhaProvisoriaMiddleware:
         return self.get_response(request)
 
 class TermoAceiteMiddleware:
-    """RN-33 - bloqueia acesso até o aceite do termo de uso, exceto para RH/colaborador     ainda em processo de definir a senha"""
+    """RN-33 - bloqueia acesso até o aceite do termo de uso.
+
+    Exceto para RH e para o colaborador ainda em processo de definir a senha.
+    """
     LIBERADAS = ("contas:aceitar_termo", "contas:logout", "contas:definir_senha")
 
     def __init__(self, get_response):
@@ -65,8 +68,8 @@ class SessaoUnicaMiddleware:
         usuario = getattr(request, "user", None)
         if (usuario is not None and usuario.is_authenticated and usuario.sessao_ativa
                 and request.session.session_key != usuario.sessao_ativa):
-            from core.services import registrar
             from auditoria.models import LogSistema
+            from core.services import registrar
             registrar(LogSistema.Nivel.WARN, "Sessão encerrada por novo login",
                       f"{usuario.email} entrou em outro dispositivo", usuario)
             logout(request)

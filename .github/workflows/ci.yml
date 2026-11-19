@@ -1,0 +1,98 @@
+# Integração contínua do Vigent: a cada Pull Request para a main, três checagens
+# independentes rodam em paralelo, em ambiente limpo. Não há deploy (CD) aqui.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+# Somente leitura do repositório: a pipeline não escreve nada no GitHub.
+permissions:
+  contents: read
+
+# Um push novo no mesmo PR cancela a execução anterior, que ficou desatualizada.
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+  # Sem .env no runner: sem DATABASE_URL os testes usam SQLite de teste e o
+  # envio de e-mail fica mockado nos próprios testes. Nenhum segredo é usado.
+  DEBUG: "False"
+
+jobs:
+  unitarios:
+    name: Testes unitários
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7
+
+      - name: Instalar o Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar as dependências
+        run: pip install -r requirements.txt
+
+      - name: Gerar uma SECRET_KEY descartável
+        run: echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))')" >> "$GITHUB_ENV"
+
+      # Só os SimpleTestCase marcados com @tag("unitario"): o Django bloqueia
+      # qualquer acesso ao banco e nem cria o banco de teste.
+      - name: Rodar os testes unitários
+        run: python manage.py test --tag unitario --failfast
+
+  integracao:
+    name: Testes de integração
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7
+
+      - name: Instalar o Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar as dependências
+        run: pip install -r requirements.txt
+
+      - name: Gerar uma SECRET_KEY descartável
+        run: echo "SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))')" >> "$GITHUB_ENV"
+
+      # Tudo o que não é unitário: views, API e regras com banco. O Django cria um
+      # banco de teste isolado, aplica as migrações e o descarta no fim.
+      - name: Rodar os testes de integração
+        run: python manage.py test --exclude-tag unitario --failfast
+
+  linter:
+    name: Linter
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v7
+
+      - name: Instalar o Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      # Só o ruff, na versão fixada no requirements.txt: o linter não precisa do Django.
+      - name: Instalar o ruff
+        run: pip install "$(grep '^ruff==' requirements.txt)"
+
+      # Regras e exclusões versionadas em pyproject.toml ([tool.ruff]).
+      - name: Rodar o ruff
+        run: ruff check . --output-format=github

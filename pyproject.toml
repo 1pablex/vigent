@@ -1,0 +1,20 @@
+# Configuração do linter (ruff). O CI roda `ruff check .` e reprova o PR se houver violação.
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = ["*/migrations/*", "staticfiles", "media"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle: erros de estilo (indentação, espaços, linha longa)
+    "W",   # pycodestyle: avisos (espaço sobrando, fim de arquivo)
+    "F",   # pyflakes: import sem uso, nome indefinido, redefinição
+    "I",   # isort: ordem dos imports
+    "N",   # pep8-naming: nomes de classes, funções e variáveis
+    "B",   # flake8-bugbear: padrões que costumam esconder bug
+    "UP",  # pyupgrade: sintaxe moderna para o Python do projeto
+    "DJ",  # flake8-django: boas práticas de models e forms do Django
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["auditoria", "avaliacoes", "certificacao", "config", "contas", "core", "treinamentos"]

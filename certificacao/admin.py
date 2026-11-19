@@ -14,7 +14,7 @@ class CertificadoAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
-    
+
 @admin.register(NotificacaoEnviada)
 class NotificacaoAdmin(admin.ModelAdmin):
     list_display = ["certificado", "marco_dias", "data_envio"]

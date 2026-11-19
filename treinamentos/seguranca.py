@@ -32,8 +32,8 @@ def validar_imagem(arquivo):
             largura, altura = imagem.size
             if formato in FORMATOS_PERMITIDOS and largura * altura <= PIXELS_MAXIMOS:
                 imagem.verify()
-    except (UnidentifiedImageError, Image.DecompressionBombError, OSError, SyntaxError):
-        raise ValidationError("O arquivo enviado não é uma imagem válida.")
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError, SyntaxError) as erro:
+        raise ValidationError("O arquivo enviado não é uma imagem válida.") from erro
     finally:
         arquivo.seek(0)
 
