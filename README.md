@@ -176,8 +176,10 @@ python manage.py test
 Separados, como no CI:
 ```
 python manage.py test --tag unitario          # 38 unitários: SimpleTestCase, sem banco
-python manage.py test --exclude-tag unitario  # 184 de integração: views, API e banco de teste
+python manage.py test --exclude-tag unitario  # 222 de integração: views, API e banco de teste
 ```
+
+**Integração contínua:** o GitHub Actions (`.github/workflows/ci.yml`) roda três checagens em paralelo, em ambiente limpo, a cada Pull Request para a `main` e a cada push na `main`: **Testes unitários**, **Testes de integração** e **Linter** (`ruff check .`, regras em `pyproject.toml`). Não usa nenhum segredo real: a `SECRET_KEY` é gerada na hora e descartada, e o envio de e-mail é simulado nos próprios testes.
 Com cobertura:
 ```
 coverage run manage.py test
