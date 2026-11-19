@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+
 from .models import CodigoVerificacao, Departamento, Reidentificacao, Usuario
+
 
 #registra Departamento no admin
 @admin.register(Departamento)

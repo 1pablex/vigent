@@ -4,17 +4,19 @@ regras de negócio do sistema, implementadas como funções de serviço.
 import secrets
 from collections import defaultdict
 from datetime import timedelta
-from django.conf import settings
+
 from dateutil.relativedelta import relativedelta
-from django.utils import timezone
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Avg, Count
+from django.utils import timezone
 
 from auditoria.models import LogSistema
 from avaliacoes.models import AvaliacaoReacao, RespostaProva
 from certificacao.models import Certificado
-from treinamentos.models import Curso, CursoDepartamento, Presenca, ProgressoAula
 from contas.models import CodigoVerificacao, Reidentificacao, Usuario
+from treinamentos.models import Curso, CursoDepartamento, Presenca, ProgressoAula
+
 
 def registrar(nivel, evento, detalhe="", usuario=None, ip=None):
     return LogSistema.objects.create(
@@ -223,10 +225,10 @@ def matriz_conformidade():
 def kpis_conformidade(linhas):
     """RF-15 - indicadores consolidados da organização."""
     return {
-        "em_dia": sum(1 for l in linhas if l["situacao"] == "EM DIA"),
-        "vencendo": sum(1 for l in linhas if l["situacao"] == "VENCENDO"),
-        "vencido": sum(1 for l in linhas if l["situacao"] == "VENCIDO"),
-        "pendente": sum(1 for l in linhas if l["situacao"] == "PENDENTE"),
+        "em_dia": sum(1 for linha in linhas if linha["situacao"] == "EM DIA"),
+        "vencendo": sum(1 for linha in linhas if linha["situacao"] == "VENCENDO"),
+        "vencido": sum(1 for linha in linhas if linha["situacao"] == "VENCIDO"),
+        "pendente": sum(1 for linha in linhas if linha["situacao"] == "PENDENTE"),
     }
 
 
@@ -237,7 +239,7 @@ SITUACOES_CONFORMES = ("EM DIA", "VENCENDO")
 def percentual_conforme(linhas):
     """RN-38 - índice de conformidade: (em dia + vencendo) ÷ total de pares, em %."""
     total = len(linhas)
-    conformes = sum(1 for l in linhas if l["situacao"] in SITUACOES_CONFORMES)
+    conformes = sum(1 for linha in linhas if linha["situacao"] in SITUACOES_CONFORMES)
     return round(conformes / total * 100) if total else 0
 
 
@@ -262,8 +264,8 @@ def indice_conformidade(linhas):
 
 def _agrupar_conformidade(linhas, chave, rotulo):
     grupos = defaultdict(list)
-    for l in linhas:
-        grupos[chave(l)].append(l)
+    for linha in linhas:
+        grupos[chave(linha)].append(linha)
 
     resultado = []
     for nome, itens in grupos.items():
@@ -271,7 +273,7 @@ def _agrupar_conformidade(linhas, chave, rotulo):
         resultado.append({
             rotulo: nome, "percentual": pct, "cor": cor_do_percentual(pct),
             "total": len(itens),
-            "conformes": sum(1 for l in itens if l["situacao"] in SITUACOES_CONFORMES),
+            "conformes": sum(1 for linha in itens if linha["situacao"] in SITUACOES_CONFORMES),
         })
     return sorted(resultado, key=lambda x: (x["percentual"], x[rotulo]))
 
@@ -280,14 +282,14 @@ def conformidade_por_departamento(linhas):
     """RF-15/RN-38 - índice por setor, do pior para o melhor."""
     return _agrupar_conformidade(
         linhas,
-        lambda l: l["usuario"].departamento.nome if l["usuario"].departamento
+        lambda linha: linha["usuario"].departamento.nome if linha["usuario"].departamento
         else "Sem departamento",
         "departamento")
 
 
 def conformidade_por_curso(linhas):
     """RF-30/RN-38 - índice por treinamento, do pior para o melhor (gargalo primeiro)."""
-    return _agrupar_conformidade(linhas, lambda l: l["curso"].nome, "curso")
+    return _agrupar_conformidade(linhas, lambda linha: linha["curso"].nome, "curso")
 
 
 # RN-39 - faixas de vencimento previstas, em dias a partir de hoje
@@ -301,8 +303,8 @@ def vencimentos_por_faixa(linhas):
     curso ainda exigido pelo setor). Certificados já vencidos não entram.
     """
     contagem = {faixa: 0 for faixa in FAIXAS_VENCIMENTO}
-    for l in linhas:
-        cert = l["certificado"]
+    for linha in linhas:
+        cert = linha["certificado"]
         if cert is None:
             continue
         dias = cert.dias_para_vencer
@@ -336,7 +338,7 @@ def reacao_por_curso():
 def qualidade_percebida(linhas):
     """RF-16 - MEDIA, SITUACAO, CONCLUSAO."""
     total = len(linhas)
-    pendentes = sum(1 for l in linhas if l["situacao"] == "PENDENTE")
+    pendentes = sum(1 for linha in linhas if linha["situacao"] == "PENDENTE")
     taxa_conclusao = round((total - pendentes) / total * 100) if total else 0
 
     nota_media_prova = Certificado.objects.aggregate(media=Avg("nota_prova"))["media"] or 0
