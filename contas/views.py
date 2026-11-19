@@ -19,7 +19,7 @@ from auditoria.models import LogSistema, RegistroAcesso
 from contas.models import CodigoVerificacao, Departamento, TermoUso, Usuario
 from contas.rede import ip_do_cliente
 from contas.sessao import marcar_sessao_ativa
-from contas.termos import registrar_aceite, sanitizar_termo
+from contas.termos import formatar_termo, registrar_aceite
 from core.correio import enviar_codigo_redefinicao, enviar_codigo_verificacao, enviar_primeiro_acesso
 from core.services import gerar_codigo_verificacao, registrar
 
@@ -188,7 +188,7 @@ def ver_politica_privacidade(request):
     termo = TermoUso.vigente()
     return render(request, "contas/politica_privacidade.html", {
         "termo": termo,
-        "conteudo": mark_safe(sanitizar_termo(termo.conteudo)) if termo else "",
+        "conteudo": mark_safe(formatar_termo(termo.conteudo)) if termo else "",
     })
 
 #obrigatorio apos o login, para que o usuario troque a senha provisoria
@@ -510,7 +510,7 @@ def aceitar_termo(request):
     return render(request, "contas/aceitar_termo.html", {
         "erro": erro,
         "termo": termo,
-        "conteudo": mark_safe(sanitizar_termo(termo.conteudo)),
+        "conteudo": mark_safe(formatar_termo(termo.conteudo)),
         "aceite_anterior": request.user.ultimo_aceite,
     })
 

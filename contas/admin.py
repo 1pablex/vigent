@@ -1,9 +1,35 @@
+from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 
 from auditoria.models import LogSistema
 
 from .models import AceiteTermo, CodigoVerificacao, Departamento, Reidentificacao, TermoUso, Usuario
+from .termos import formatar_termo
+
+AJUDA_CONTEUDO = """Pode ser digitado em texto puro, sem HTML:
+linha em branco separa os parágrafos;
+"1. Título" sozinho na linha vira título de seção;
+linhas começando com "- " viram lista;
+linhas com barras viram tabela, a primeira linha é o cabeçalho:
+| Para que usamos | Base legal |
+|---|---|
+| Identificar você | Obrigação legal |
+Também aceita HTML simples (h3, p, ul, li, table, strong, em).
+Atenção: depois de salvar, a versão não pode ser alterada. Confira o texto num ambiente
+de teste antes de publicar em produção."""
+
+
+class TermoUsoForm(forms.ModelForm):
+    class Meta:
+        model = TermoUso
+        fields = ["versao", "resumo_alteracoes", "conteudo"]
+        widgets = {"conteudo": forms.Textarea(attrs={"rows": 30, "cols": 110}),
+                   "resumo_alteracoes": forms.Textarea(attrs={"rows": 3, "cols": 110})}
+        help_texts = {"conteudo": format_html("<pre style='white-space:pre-wrap'>{}</pre>",
+                                              AJUDA_CONTEUDO)}
 
 
 #registra Departamento no admin
@@ -55,13 +81,20 @@ class TermoUsoAdmin(admin.ModelAdmin):
 
     Versão publicada é somente leitura: para corrigir o texto, publique outra versão.
     """
+    form = TermoUsoForm
     list_display = ["versao", "publicado_em", "publicado_por", "total_aceites"]
     fields = ["versao", "resumo_alteracoes", "conteudo"]
-    readonly_fields = ["publicado_em", "publicado_por"]
+    readonly_fields = ["publicado_em", "publicado_por", "como_aparece"]
 
     @admin.display(description="Aceites")
     def total_aceites(self, termo):
         return termo.aceites.count()
+
+    @admin.display(description="Como aparece para o colaborador")
+    def como_aparece(self, termo):
+        return format_html('<div style="max-width:760px;border:1px solid #d7dbe3;'
+                           'border-radius:8px;padding:12px 16px;background:#fff">{}</div>',
+                           mark_safe(formatar_termo(termo.conteudo)))
 
     def get_fields(self, request, obj=None):
         return self.fields if obj is None else self.fields + self.readonly_fields
