@@ -1,0 +1,25 @@
+{% extends "core/rh_base.html" %}
+{% load static %}
+{% block titulo %}Termo de uso - versão {{ termo.versao }}{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="{% static 'css/termo_rh.css' %}">{% endblock %}
+{% block conteudo %}
+
+<div class="head">
+  <div><h1>Versão {{ termo.versao }}{% if termo.pk == vigente.pk %} <span class="badge badge-ok">Vigente</span>{% endif %}</h1>
+    <div class="sub">Publicada em {{ termo.publicado_em|date:"d/m/Y H:i" }}{% if termo.publicado_por %} por {{ termo.publicado_por.nome }}{% endif %}. Somente leitura: uma versão publicada não é alterada.</div></div>
+  <a class="btn btn-ghost" href="{% url 'termo_rh:lista' %}">← Voltar</a>
+</div>
+
+{% if termo.resumo_alteracoes %}
+<div class="card" style="margin-bottom:18px">
+  <div class="sec-k">O que mudou</div>
+  <p style="margin:8px 0 0">{{ termo.resumo_alteracoes|linebreaksbr }}</p>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="sec-k" style="margin-bottom:12px">Texto, como o colaborador vê</div>
+  <div class="termo-previa">{{ conteudo }}</div>
+</div>
+
+{% endblock %}

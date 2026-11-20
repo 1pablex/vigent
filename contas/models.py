@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models, transaction
 from django.utils import timezone
+from django.utils.crypto import salted_hmac
 
 
 class Departamento(models.Model):
@@ -25,13 +26,19 @@ class UsuarioManager(BaseUserManager):
         return (email or "").strip().lower()
 
     @transaction.atomic
-    def create_user(self, email, nome, password=None, **extra):
+    def create_user(self, email, nome, password=None, aceite_termo_vigente=False, **extra):
+        """Com aceite_termo_vigente=True, a conta já nasce com o aceite da versão vigente do
+        termo de uso (usado pela carga de demonstração e pelos testes)."""
         if not email:
             raise ValueError("O endereço de correio eletrônico é obrigatório.")
         email = self.normalize_email(email)
         usuario = self.model(email=email, nome=nome, **extra)
         usuario.set_password(password)
         usuario.save(using=self._db)
+        if aceite_termo_vigente:
+            termo = TermoUso.vigente()
+            if termo is not None:
+                AceiteTermo.objects.create(usuario=usuario, termo=termo)
         return usuario
 
     def create_superuser(self, email, nome, password=None, **extra):
@@ -62,10 +69,9 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     data_cadastro = models.DateTimeField(default=timezone.now, editable=False)
-    aceitou_termos = models.BooleanField(default=False)
     # Sessão única: só a sessão do último login vale; as outras são encerradas no próximo acesso.
     sessao_ativa = models.CharField(max_length=40, blank=True, editable=False)
-    data_aceite_termos = models.DateTimeField(null=True, blank=True)
+    # O aceite do termo de uso fica em AceiteTermo, um registro por versão aceita (RN-33).
 
     objects = UsuarioManager()
 
@@ -102,6 +108,81 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     def get_short_name(self):
         return self.nome.split(" ")[0]
 
+    @property
+    def aceite_vigente(self):
+        """Aceite da versão vigente do termo, ou None se ainda falta aceitar (RN-33)."""
+        termo = TermoUso.vigente()
+        if termo is None:
+            return None
+        return self.aceites_termo.filter(termo=termo).select_related("termo").first()
+
+    @property
+    def precisa_aceitar_termo(self):
+        """Há termo publicado e a pessoa ainda não aceitou a versão vigente."""
+        return TermoUso.vigente() is not None and self.aceite_vigente is None
+
+    @property
+    def ultimo_aceite(self):
+        return self.aceites_termo.select_related("termo").order_by("-data_hora").first()
+
+
+class TermoUso(models.Model):
+    """RN-33 - cada versão publicada do termo de uso e política de privacidade.
+
+    Vigente é a versão publicada mais recente. Uma versão publicada não é editada nem apagada:
+    para mudar o texto, publica-se uma versão nova (Django Admin), e todos precisam aceitá-la
+    no próximo acesso. Assim fica comprovado qual texto cada pessoa aceitou.
+    """
+
+    versao = models.CharField(max_length=10, unique=True, help_text="Ex.: 1.1")
+    conteudo = models.TextField(
+        help_text="Texto completo em HTML simples: títulos (h3), parágrafos, listas e tabelas.")
+    resumo_alteracoes = models.TextField(
+        blank=True, help_text="O que mudou em relação à versão anterior. Aparece para quem "
+                              "precisa aceitar de novo.")
+    publicado_em = models.DateTimeField(default=timezone.now, editable=False)
+    publicado_por = models.ForeignKey(
+        Usuario, on_delete=models.PROTECT, null=True, blank=True, editable=False,
+        related_name="termos_publicados")
+
+    class Meta:
+        ordering = ["-publicado_em", "-id"]
+        verbose_name = "termo de uso"
+        verbose_name_plural = "termos de uso"
+
+    def __str__(self):
+        return f"Versão {self.versao} ({timezone.localtime(self.publicado_em):%d/%m/%Y})"
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            raise ValueError("Versão publicada não pode ser alterada: publique uma versão nova.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValueError("Versão publicada não pode ser apagada.")
+
+    @classmethod
+    def vigente(cls):
+        return cls.objects.order_by("-publicado_em", "-id").first()
+
+
+class AceiteTermo(models.Model):
+    """RN-33 - registro de que a pessoa aceitou uma versão do termo (prova do aceite, LGPD)."""
+
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="aceites_termo")
+    termo = models.ForeignKey(TermoUso, on_delete=models.PROTECT, related_name="aceites")
+    data_hora = models.DateTimeField(default=timezone.now, editable=False)
+    ip = models.GenericIPAddressField(null=True, blank=True, editable=False)
+
+    class Meta:
+        unique_together = [("usuario", "termo")]
+        ordering = ["-data_hora"]
+        verbose_name = "aceite do termo"
+        verbose_name_plural = "aceites do termo"
+
+    def __str__(self):
+        return f"{self.usuario} - versão {self.termo.versao}"
+
 class Reidentificacao(models.Model):
     """Cofre de dados originais de colaboradores desligados (RN-35)."""
 
@@ -126,10 +207,16 @@ class Reidentificacao(models.Model):
 
 
 class CodigoVerificacao(models.Model):
-    """Segundo fator enviado por api brevo (RN-25)."""
+    """Segundo fator enviado por api brevo (RN-25).
+
+    O código não é gravado: fica só o HMAC-SHA256 dele, com chave derivada da SECRET_KEY
+    Sem a SECRET_KEY, que não fica no banco, não dá para ficar testando n codigos.
+    """
+
+    SAL_HMAC = "vigent.contas.CodigoVerificacao"
 
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="codigos")
-    codigo = models.CharField(max_length=6)
+    codigo_hash = models.CharField(max_length=64, editable=False)
     data_geracao = models.DateTimeField(auto_now_add=True)
     data_expiracao = models.DateTimeField()
     utilizado = models.BooleanField(default=False)
@@ -153,8 +240,15 @@ class CodigoVerificacao(models.Model):
         return (not self.utilizado and not self.bloqueado
                 and timezone.now() < self.data_expiracao)
 
+    @classmethod
+    def calcular_hash(cls, usuario_id, codigo):
+        # O id do usuário entra na mensagem: o mesmo código para duas pessoas gera hashes diferentes.
+        return salted_hmac(cls.SAL_HMAC, f"{usuario_id}:{codigo}", algorithm="sha256").hexdigest()
+
     def confere(self, digitado):
-        return secrets.compare_digest(digitado, self.codigo)
+        """Compara os HMACs em tempo constante; o código digitado nunca é comparado em texto."""
+        return secrets.compare_digest(self.calcular_hash(self.usuario_id, digitado or ""),
+                                      self.codigo_hash)
 
     def registrar_erro(self):
         """Conta um erro de forma atômica; ao atingir o limite o código deixa de valer."""

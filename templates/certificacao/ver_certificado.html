@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vigent - Certificado</title>
 <link rel="stylesheet" href="{% static 'css/certificado.css' %}">
+<script src="{% static 'js/vigent.js' %}" defer></script>
 </head>
 <body>
 
 <div class="no-print">
   <a href="{% url 'certificacao:meus' %}" class="btn-back">← Voltar</a>
-  <button onclick="window.print()" class="btn-print">Imprimir certificado</button>
+  <button data-imprimir class="btn-print">Imprimir certificado</button>
 </div>
 
 <div class="folha">

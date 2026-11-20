@@ -167,6 +167,7 @@ def rh_conformidade(request):
         "departamentos": services.conformidade_por_departamento(linhas_completas),
         "qualidade": services.qualidade_percebida(linhas_completas),
         "ultima_execucao": ExecucaoRotina.objects.order_by("-data_hora").first(),
+        "rotinas_atrasadas": services.rotinas_atrasadas(),
     })
 
 @login_required

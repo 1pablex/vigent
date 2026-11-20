@@ -21,14 +21,14 @@
         retenção de 90 dias.</div></div>
     <form method="get" style="display:flex;gap:9px;flex-wrap:wrap">
       <input class="search" name="busca" value="{{ busca }}" placeholder="Buscar evento ou detalhe">
-      <select class="search" name="nivel" onchange="this.form.submit()">
+      <select class="search" name="nivel" data-envio-automatico>
         <option value="TODOS" {% if nivel_selecionado == "TODOS" %}selected{% endif %}>Todos os níveis</option>
         <option value="INFO" {% if nivel_selecionado == "INFO" %}selected{% endif %}>Informação</option>
         <option value="OK" {% if nivel_selecionado == "OK" %}selected{% endif %}>Sucesso</option>
         <option value="WARN" {% if nivel_selecionado == "WARN" %}selected{% endif %}>Alerta</option>
         <option value="ERRO" {% if nivel_selecionado == "ERRO" %}selected{% endif %}>Erro</option>
       </select>
-      <select class="search" name="por_pagina" onchange="this.form.submit()">
+      <select class="search" name="por_pagina" data-envio-automatico>
         <option value="10" {% if por_pagina == "10" %}selected{% endif %}>10 por página</option>
         <option value="15" {% if por_pagina == "15" %}selected{% endif %}>15 por página</option>
         <option value="20" {% if por_pagina == "20" %}selected{% endif %}>20 por página</option>

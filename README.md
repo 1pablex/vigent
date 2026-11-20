@@ -10,7 +10,7 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 
 **Fluxo de treinamento**, completo de ponta a ponta:
 - Login com autenticação em duas etapas (segundo fator por e-mail); no primeiro acesso com senha provisória, o 2FA é dispensado (o código chegaria pelo mesmo e-mail que já entregou a credencial) e o colaborador vai direto para a troca obrigatória de senha
-- Aceite obrigatório do termo de uso após a primeira troca de senha, com política de privacidade acessível a partir da tela de login
+- Aceite obrigatório do termo de uso após a primeira troca de senha, com política de privacidade acessível a partir da tela de login. O termo é versionado (RN-33): cada versão fica registrada com o texto completo, e cada aceite guarda a versão, a data e o IP. Quando o RH publica uma versão nova, todos veem o aviso de atualização com o resumo das mudanças no próximo acesso e só voltam a usar o sistema depois de aceitar. Versão publicada não é editada nem apagada; "Meus dados" mostra a versão aceita. A versão 1.0 é o texto que estava no sistema; a 1.1 corrige o parágrafo final, que prometia aviso por e-mail antes de uma nova versão entrar em vigor (o aviso é feito no próximo acesso). O texto pode ser digitado em texto puro: linha em branco separa parágrafos, "1. Título" vira título de seção, "- " vira lista e linhas com "|" viram tabela (`contas/termos.py`); HTML simples também é aceito
 - Cursos vinculados ao colaborador pelo departamento: ao mudar de setor, ele passa a ver automaticamente os cursos do novo departamento, sem ação manual do RH
 - Conteúdo do curso, com trava de avanço sequencial pelos slides
 - Avaliação de reação, obrigatória antes da prova
@@ -25,12 +25,14 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 - Gestão de cursos: dados do curso, departamentos atendidos, aulas, slides e questões da prova. Slides e questões são cadastrados um por vez, cada um na sua tela, a partir de uma lista compacta
 - Remoção de colaborador: desliga a conta e pseudonimiza nome e e-mail (`colab<matrícula>`); os dados originais ficam num cofre de reidentificação por 90 dias e depois são excluídos. Certificados e histórico de treinamento são mantidos
 - Registros e auditoria: logs do sistema, execuções de rotina, e-mails enviados e histórico de acesso, todos com paginação e filtro
+- Termo de uso (RN-33): histórico de versões com quem publicou e quantos aceitaram, adesão à versão vigente ("52 de 74 contas ativas já aceitaram") e lançamento de nova versão a partir do texto vigente. O RH pré-visualiza o texto exatamente como o colaborador vai ver e só então publica, com confirmação. O número precisa ser maior que o da vigente, o texto não pode ser igual, quem publica já fica com o aceite registrado e a publicação vai para a auditoria. O Django Admin mostra as versões e os aceites só para consulta
 - Painel de conformidade: matriz colaborador × treinamento com busca e filtro por situação, indicadores agregados (em dia, vencendo, vencido, pendente), conformidade por departamento, qualidade percebida, rotinas de notificação de vencimento e de expurgo do cofre disparáveis manualmente e solicitação de reciclagem para treinamentos vencidos
 - **Dashboard de indicadores** (aba que substituiu "Atribuições"): índice de conformidade geral comparado com a meta de 90%, conformidade por departamento e por curso, vencimentos previstos em faixas de 0 a 30, 31 a 60 e 61 a 90 dias, qualidade percebida e avaliação de reação por curso (didática e entendimento, com todo o histórico). Os números vêm da API REST descrita abaixo
 
 **Segurança:**
 - Hash de senha com Argon2 (migração progressiva: contas antigas em PBKDF2 são atualizadas sozinhas no próximo login bem-sucedido)
-- Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail) em todo login com senha já definida. Um novo código, de login ou de "Esqueci minha senha", só pode ser pedido 5 minutos depois do anterior, o que evita inundar o e-mail do colaborador e gastar a cota do Brevo. Na redefinição, a resposta é a mesma para qualquer e-mail, sem revelar quem é cadastrado
+- Autenticação em duas etapas (código de 6 dígitos, válido por 5 minutos, enviado por e-mail) em todo login com senha já definida. Um novo código, de login ou de "Esqueci minha senha", só pode ser pedido 5 minutos depois do anterior, o que evita inundar o e-mail do colaborador e gastar a cota do Brevo. Na redefinição, a resposta é a mesma para qualquer e-mail, sem revelar quem é cadastrado. O Django Admin também exige o código: `/admin/login/` leva ao login do Vigent e, depois do código, volta para a página do Admin pedida (só destinos internos são aceitos)
+- Código de verificação guardado só como HMAC-SHA256 (chave derivada da `SECRET_KEY`), nunca em texto. Como são só 1 milhão de códigos possíveis, um hash comum seria revertido por tentativa e erro; com HMAC, quem lê o banco sem a `SECRET_KEY` não consegue testar nenhum código. A auditoria de e-mails registra o código e a senha provisória mascarados (`******`), e os registros antigos foram mascarados pela migração `auditoria/0002`
 - Senha provisória de uso único: deixa de valer assim que o colaborador define a senha definitiva
 - Senha definida pelo colaborador com no mínimo 8 caracteres (RN-28), valor configurável em `VIGENT["SENHA_MINIMA"]`
 - Bloqueio temporário após tentativas de login malsucedidas repetidas, por e-mail e por IP. O IP vem da conexão; o cabeçalho `X-Forwarded-For` só é lido quando há proxy confiável na frente da aplicação (`PROXIES_CONFIAVEIS`), e mesmo assim só o trecho escrito pelo proxy. Assim o cliente não consegue trocar de IP a cada tentativa para escapar do bloqueio
@@ -40,8 +42,11 @@ O Vigent gerencia o ciclo de vida de treinamentos obrigatórios: vinculação au
 - Entradas validadas no back-end: departamento e grupo do cadastro são conferidos antes de criar a conta (nenhum e-mail sai com dado inválido), e parâmetros inválidos na URL das listagens não geram erro 500
 - Upload de imagens dos cursos (capa e slides, RN-41): só JPG, PNG ou WEBP, identificados pelo conteúdo e não pela extensão, com no máximo 5 MB e 25 megapixels. A imagem aceita é regravada a partir dos pixels, com nome aleatório: conteúdo escondido no arquivo (script anexado) e metadados EXIF/GPS são descartados. Vale para o painel do RH e para o admin
 - Texto dos slides sanitizado com `nh3` ao salvar e de novo na exibição: só parágrafo, lista, negrito, itálico e quebra de linha; scripts e atributos como `onerror` são removidos
+- Content-Security-Policy em todas as respostas (`core/middleware.py`): o navegador só executa scripts servidos pelo próprio Vigent (`script-src 'self'`), então mesmo um XSS que passasse pelas outras proteções não seria executado. Nenhum template tem script inline nem atributo `on...=`: os eventos ficam em `static/js/vigent.js` (atributos `data-envio-automatico`, `data-confirmar` e `data-imprimir`) e o dashboard em `static/js/dashboard.js`. O Swagger usa arquivos locais (`drf-spectacular-sidecar`), sem CDN. A política também impede exibir o Vigent em iframe e enviar formulários para outros sites
+- Permissions-Policy desliga câmera, microfone, geolocalização, pagamento e USB, que o Vigent não usa
+- Em produção (`HTTPS=True`): redirecionamento para HTTPS, cookies seguros e HSTS de 1 ano com `includeSubDomains` e `preload` (o preload só tem efeito com domínio próprio, porque a lista dos navegadores não aceita subdomínios de `onrender.com`)
 - `DEBUG` e `ALLOWED_HOSTS` controlados por variável de ambiente, nunca fixos no código
-- LGPD: pseudonimização no desligamento, expurgo dos dados originais após 90 dias (comando `expurgar_reidentificacoes`) e registros de remoção e expurgo na auditoria sem o nome real do colaborador
+- LGPD: pseudonimização no desligamento, expurgo dos dados originais após 90 dias (comando `expurgar_reidentificacoes`) e registros de remoção e expurgo na auditoria sem o nome real do colaborador. A execução diária do expurgo é monitorada pelo Healthchecks.io e por um alerta no painel do RH (ver [Implantação (Render)](#implantação-render))
 
 **Em produção:** https://vigent.onrender.com (Render, com banco no Supabase e imagens no Cloudinary). As rotinas `verificar_vencimentos` e `expurgar_reidentificacoes` rodam todo dia às 06:00 pelo Cron Job do Render e também pelo botão do painel de conformidade. Detalhes em [Implantação (Render)](#implantação-render).
 
@@ -126,7 +131,7 @@ Exemplo de resposta de `/api/v1/indicadores/conformidade/`:
    ```
    pip install -r requirements.txt
    ```
-4. Copie `.env.example` para `.env` e preencha as variáveis da seção [Variáveis de ambiente](#variáveis-de-ambiente). Para rodar localmente bastam `SECRET_KEY`, `DATABASE_URL` e `DEBUG=True`; sem a chave do Brevo, os e-mails ficam registrados na auditoria em vez de enviados
+4. Copie `.env.example` para `.env` e preencha as variáveis da seção [Variáveis de ambiente](#variáveis-de-ambiente). Para rodar localmente bastam `SECRET_KEY`, `DATABASE_URL` e `DEBUG=True`; sem a chave do Brevo, os e-mails ficam registrados na auditoria em vez de enviados. Com `DEBUG=True`, o código de verificação e a senha provisória aparecem também no terminal do `runserver`, para entrar sem receber o e-mail (na auditoria eles ficam mascarados)
 5. Rode as migrações:
    ```
    python manage.py migrate
@@ -163,20 +168,23 @@ Nenhum valor real vai para o repositório: localmente eles ficam no `.env` (fora
 | `CSRF_TRUSTED_ORIGINS` | Opcional | Opcional | Domínios extras aceitos em formulários | - |
 | `PROXIES_CONFIAVEIS` | `0` | `1` | Quantos proxies confiáveis ficam na frente da aplicação (IP de origem, RNF-14) | - |
 | `SITE_URL` | Opcional | Opcional | Endereço usado no link do e-mail de primeiro acesso; padrão `https://vigent.onrender.com` | - |
+| `MONITOR_ROTINAS_URL` | Vazia | Obrigatória no Cron Job | Aviso das rotinas diárias ao monitor externo; vazia, nenhum aviso é enviado | Healthchecks.io > check das rotinas > Ping URL (`https://hc-ping.com/...`) |
 
 `BREVO_SMTP_USER` e `BREVO_SMTP_PASSWORD` aparecem no `.env.example`, mas não são necessárias: o envio usa a API do Brevo, e não SMTP.
 
 ## Testes
 
-São 251 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
+São 353 testes automatizados (Django `TestCase` e `SimpleTestCase`). Para rodar todos:
 ```
 python manage.py test
 ```
 Separados, como no CI:
 ```
-python manage.py test --tag unitario          # 38 unitários: SimpleTestCase, sem banco
-python manage.py test --exclude-tag unitario  # 184 de integração: views, API e banco de teste
+python manage.py test --tag unitario          # 56 unitários: SimpleTestCase, sem banco
+python manage.py test --exclude-tag unitario  # 297 de integração: views, API e banco de teste
 ```
+
+**Integração contínua:** o GitHub Actions (`.github/workflows/ci.yml`) roda três checagens em paralelo, em ambiente limpo, a cada Pull Request para a `main` e a cada push na `main`: **Testes unitários**, **Testes de integração** e **Linter** (`ruff check .`, regras em `pyproject.toml`). Não usa nenhum segredo real: a `SECRET_KEY` é gerada na hora e descartada, e o envio de e-mail é simulado nos próprios testes.
 Com cobertura:
 ```
 coverage run manage.py test
@@ -189,13 +197,20 @@ coverage report
 | `core/test_services_unitarios.py` | 12 | Unitários sem banco: emissão de certificado, índice de conformidade (RN-38), faixas de vencimento (RN-39) |
 | `core/test_api_indicadores.py` | 19 | API de indicadores: acesso, contrato JSON, reação histórica (RN-30), reciclagem atômica, número de consultas, tela do dashboard |
 | `core/test_seguranca_endpoints.py` | 29 | Autenticação, perfil, IDOR, CSRF, XSS, upload, redirecionamento aberto, cabeçalhos, parâmetros inválidos na URL. Toda rota nova precisa ser classificada aqui |
+| `core/test_monitor_rotinas.py` | 13 | Monitoramento das rotinas (RN-35): aviso ao Healthchecks.io (início, sucesso e falha), sem envio quando não configurado, monitor fora do ar sem derrubar a rotina, `rodar_rotinas` com falha numa rotina sem impedir a outra, alerta de rotina atrasada no painel do RH |
+| `core/test_cabecalhos_seguranca.py` | 17 | CSP e Permissions-Policy em telas, API, erro e redirecionamento; nenhum template com script inline ou `on...=`; HSTS de produção; Swagger sem CDN e sem script inline |
 | `core/test_seed_cursos.py` | 4 | Carga de cursos: mesmo conteúdo e departamentos do arquivo versionado, uma alternativa correta por questão, imagens regravadas (RN-41) e repetição sem duplicar |
 | `core/test_seed_demonstracao.py` | 8 | Seed de demonstração: volume e mistura de situações, perfis por departamento, repetição sem duplicar, limpeza, bloqueio sem `DEBUG` (liberado só com `--permitir-producao`) e e-mail `.invalid` que não sai pelo Brevo |
 | `core/test_integracao_rh.py` | 13 | Painel do RH: conformidade, rotinas, reciclagem, paginação de colaboradores e do painel de conformidade |
 | `contas/tests.py` | 11 | Usuário, matrícula, normalização de e-mail, código de verificação |
 | `contas/test_integracao_cadastro.py` | 8 | Cadastro de colaborador, com departamento e grupo validados |
+| `contas/test_login_admin.py` | 7 | Login do Django Admin com 2FA: redireciona ao login do Vigent, POST direto não autentica, senha sem código não entra, volta ao Admin depois do código, destino externo ignorado |
+| `contas/test_termo_texto_puro.py` | 12 | Termo em texto puro: títulos, parágrafos, listas e tabela com "\|", texto digitado escapado (nunca vira código), conteúdo em HTML inalterado, versões 1.0 e 1.1 iguais na tela, pré-visualização no Admin e ajuda do formato na tela do RH |
+| `contas/test_termo_rh.py` | 21 | Aba "Termo de uso" do RH: numeração (comparação e sugestão), histórico e adesão, formulário com o texto vigente, pré-visualizar sem salvar, publicar com auditoria e aceite do autor, outros obrigados a aceitar, versão anterior intacta, versão repetida, menor ou inválida recusada, texto igual recusado, colaborador sem acesso |
+| `contas/test_termo_versionado.py` | 23 | Termo versionado (RN-33): versão 1.0 vinda do texto anterior, versão 1.1 sem a promessa de e-mail, nova versão bloqueia até aceitar (telas, API e RH), aviso com o resumo das mudanças, aceite com versão, data e IP, aceite de texto desatualizado recusado, versão publicada imutável, publicação pelo Admin, HTML limpo na exibição e migração dos aceites antigos |
 | `contas/test_integracao_edicao.py` | 16 | Edição de colaborador pelo RH: dados e e-mail, troca de departamento (RN-02), perfil em destaque na auditoria, RH não muda o próprio perfil, conta desligada bloqueada e avisos de vencimento só do departamento atual e de contas ativas |
 | `contas/test_integracao_codigo.py` | 12 | Segundo fator e redefinição de senha: limite de tentativas (RN-25) e intervalo de 5 minutos entre códigos |
+| `contas/test_codigo_hmac.py` | 9 | Código de verificação só como HMAC (sem texto no banco, hash por usuário e dependente da `SECRET_KEY`), login completo com o código enviado, código e senha provisória mascarados na auditoria e migração que mascara os registros antigos |
 | `contas/test_senha_e_links.py` | 8 | Senha mínima de 8 caracteres no primeiro acesso e na redefinição (RN-28), link clicável do site no e-mail de primeiro acesso e texto do e-mail escapado |
 | `contas/test_sessao_unica.py` | 10 | Sessão única por conta (novo login em outro computador encerra a sessão anterior) e expiração após 30 minutos sem uso ou ao fechar o navegador |
 | `contas/test_rede.py` | 11 | IP de origem: `X-Forwarded-For` ignorado sem proxy confiável, leitura do trecho escrito pelo proxy, IP inválido descartado |
@@ -253,7 +268,9 @@ O arquivo `render.yaml` descreve os dois serviços, criados juntos pelo Blueprin
 | Serviço | Tipo | O que faz |
 |---|---|---|
 | `vigent` | Web (plano gratuito) | Instala as dependências e roda o `collectstatic` no build; aplica as migrações e sobe o Gunicorn a cada início |
-| `vigent-rotinas` | Cron Job, diário às 06:00 de Brasília | Roda `verificar_vencimentos` e `expurgar_reidentificacoes` |
+| `vigent-rotinas` | Cron Job, diário às 06:00 de Brasília | Roda `rodar_rotinas`: `verificar_vencimentos` e `expurgar_reidentificacoes`, com aviso ao monitor |
+
+**Monitoramento das rotinas (RN-35):** o comando `rodar_rotinas` avisa o [Healthchecks.io](https://healthchecks.io) no início, no sucesso ou na falha (`core/monitor.py`). O check é configurado com o mesmo horário do Cron Job (`0 6 * * *`, America/Sao_Paulo) e 1 hora de tolerância: se o aviso de sucesso não chegar, ou se chegar um aviso de falha, o Healthchecks.io alerta por e-mail. Assim, uma falha do agendamento não deixa os dados do cofre de reidentificação guardados além dos 90 dias sem ninguém saber. O endereço de aviso fica na variável secreta `MONITOR_ROTINAS_URL`, só no Cron Job. Como segunda camada, independente do serviço externo, o painel de conformidade mostra um alerta ao RH quando uma rotina fica mais de 26 horas sem execução bem-sucedida (`VIGENT["HORAS_ALERTA_ROTINAS"]`).
 
 Infraestrutura usada:
 

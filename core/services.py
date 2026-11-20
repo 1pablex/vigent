@@ -11,7 +11,7 @@ from django.db import transaction
 from django.db.models import Avg, Count
 from django.utils import timezone
 
-from auditoria.models import LogSistema
+from auditoria.models import ExecucaoRotina, LogSistema
 from avaliacoes.models import AvaliacaoReacao, RespostaProva
 from certificacao.models import Certificado
 from contas.models import CodigoVerificacao, Reidentificacao, Usuario
@@ -24,13 +24,18 @@ def registrar(nivel, evento, detalhe="", usuario=None, ip=None):
     )
 
 def gerar_codigo_verificacao(usuario):
-    """RN-25 - código de 6 dígitos, válido por 5 minutos, uso único."""
+    """RN-25 - código de 6 dígitos, válido por 5 minutos, uso único.
+
+    Devolve (registro, codigo). O banco guarda só o HMAC; o código em texto existe apenas
+    na memória, para ser enviado por e-mail ao titular.
+    """
     codigo = f"{secrets.randbelow(1_000_000):06d}"
     minutos = settings.VIGENT["VALIDADE_CODIGO_2FA_MIN"]
-    return CodigoVerificacao.objects.create(
-        usuario=usuario, codigo=codigo,
+    registro = CodigoVerificacao.objects.create(
+        usuario=usuario, codigo_hash=CodigoVerificacao.calcular_hash(usuario.pk, codigo),
         data_expiracao=timezone.now() + timedelta(minutes=minutos),
     )
+    return registro, codigo
 
 #RN-02/RN-04 visibilidade de cursos
 def cursos_do_usuario(usuario):
@@ -422,3 +427,24 @@ def expurgar_reidentificacoes(hoje=None):
         registrar(LogSistema.Nivel.OK, "Dados de reidentificação expurgados",
                   f"{len(pseudonimos)} registro(s): {', '.join(pseudonimos)}"[:500])
     return avaliados, len(pseudonimos)
+
+
+ROTINAS_DIARIAS = ("verificar_vencimentos", "expurgar_reidentificacoes")
+
+
+def rotinas_atrasadas(agora=None):
+    """RN-35 - rotinas diárias sem execução bem-sucedida dentro do prazo
+    (VIGENT["HORAS_ALERTA_ROTINAS"]).
+
+    Segunda camada do monitoramento, independente do serviço externo: se o Cron Job parar,
+    o painel do RH mostra o alerta. Devolve [(rotina, última execução ok ou None)].
+    """
+    agora = agora or timezone.now()
+    limite = agora - timedelta(hours=settings.VIGENT["HORAS_ALERTA_ROTINAS"])
+    atrasadas = []
+    for rotina in ROTINAS_DIARIAS:
+        ultima = (ExecucaoRotina.objects.filter(rotina=rotina, sucesso=True)
+                  .order_by("-data_hora").values_list("data_hora", flat=True).first())
+        if ultima is None or ultima < limite:
+            atrasadas.append((rotina, ultima))
+    return atrasadas

@@ -65,7 +65,7 @@
           <div class="acoes" style="justify-content:center">
             <a class="btn btn-ghost btn-sm" href="{% url 'cursos_rh:aula_editar' curso.id a.id %}">Editar</a>
             <form class="inline" method="post" action="{% url 'cursos_rh:aula_excluir' curso.id a.id %}"
-                  onsubmit="return confirm('Excluir a aula {{ a.ordem }} e todos os slides dela? O progresso dos colaboradores nessa aula também é apagado.')">
+                  data-confirmar="Excluir a aula {{ a.ordem }} e todos os slides dela? O progresso dos colaboradores nessa aula também é apagado.">
               {% csrf_token %}<button class="btn btn-danger btn-sm">Excluir</button>
             </form>
           </div>
@@ -91,7 +91,7 @@
       <div class="acoes">
         <a class="btn btn-ghost btn-sm" href="{% url 'cursos_rh:questao_editar' curso.id q.id %}">Editar</a>
         <form class="inline" method="post" action="{% url 'cursos_rh:questao_excluir' curso.id q.id %}"
-              onsubmit="return confirm('Excluir a questão {{ q.ordem }}?')">
+              data-confirmar="Excluir a questão {{ q.ordem }}?">
           {% csrf_token %}<button class="btn btn-danger btn-sm">Excluir</button>
         </form>
       </div>

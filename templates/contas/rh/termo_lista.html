@@ -1,0 +1,57 @@
+{% extends "core/rh_base.html" %}
+{% load static %}
+{% block titulo %}Termo de uso{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="{% static 'css/termo_rh.css' %}">{% endblock %}
+{% block conteudo %}
+
+<div class="head">
+  <div><h1>Termo de uso</h1>
+    <div class="sub">Política de privacidade que todos aceitam ao entrar. Uma versão publicada não é
+      alterada: para mudar o texto, lance uma nova versão, que todos precisarão aceitar no próximo acesso.</div></div>
+  <a class="btn btn-primary" href="{% url 'termo_rh:nova' %}">Editar o termo (nova versão)</a>
+</div>
+
+{% if vigente %}
+<div class="g2">
+  <div class="card">
+    <div class="sec-k">Versão vigente</div>
+    <h2 class="termo-num">{{ vigente.versao }}</h2>
+    <div class="sub">Publicada em {{ vigente.publicado_em|date:"d/m/Y H:i" }}{% if vigente.publicado_por %} por {{ vigente.publicado_por.nome }}{% endif %}</div>
+    <a class="btn btn-ghost btn-sm" style="margin-top:12px" href="{% url 'termo_rh:ver' vigente.id %}">Ler o texto</a>
+  </div>
+  <div class="card">
+    <div class="sec-k">Adesão à versão vigente</div>
+    <h2 class="termo-num">{{ percentual }}%</h2>
+    <div class="sub">{{ aceitaram }} de {{ total_contas }} conta{{ total_contas|pluralize }} ativa{{ total_contas|pluralize }} já aceitaram{% if pendentes %}; {{ pendentes }} ainda vão ver o termo no próximo acesso{% endif %}.</div>
+    <div class="termo-trilho"><i style="width:{{ percentual }}%"></i></div>
+  </div>
+</div>
+{% else %}
+<div class="aviso aviso-warning">Nenhuma versão publicada ainda. Enquanto não houver termo, ninguém precisa aceitar.</div>
+{% endif %}
+
+<div class="card">
+  <div class="sec-k" style="margin-bottom:12px">Histórico de versões</div>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Versão</th><th>Publicada em</th><th>Publicada por</th><th>Aceites</th>
+      <th>O que mudou</th><th class="col-acao">Texto</th></tr></thead>
+    <tbody>
+      {% for t in versoes %}
+      <tr>
+        <td class="mono"><b>{{ t.versao }}</b>{% if t.pk == vigente.pk %} <span class="badge badge-ok">Vigente</span>{% endif %}</td>
+        <td>{{ t.publicado_em|date:"d/m/Y H:i" }}</td>
+        <td>{{ t.publicado_por.nome|default:"Sistema" }}</td>
+        <td class="mono">{{ t.total_aceites }}</td>
+        <td class="sub">{{ t.resumo_alteracoes|default:"-"|truncatechars:110 }}</td>
+        <td class="col-acao"><a class="btn btn-ghost btn-sm" href="{% url 'termo_rh:ver' t.id %}">Ver</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="sub" style="text-align:center;padding:30px 0">Nenhuma versão publicada.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+{% endblock %}

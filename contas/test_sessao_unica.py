@@ -25,7 +25,7 @@ class SessaoUnicaTest(TestCase):
     def setUp(self):
         self.usuario = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-123",
-            senha_provisoria=False, aceitou_termos=True,
+            senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.pc_fabrica = Client()
         self.notebook = Client()
@@ -88,10 +88,10 @@ class SessaoUnicaTest(TestCase):
         self.pc_fabrica.force_login(self.usuario)
 
         # Act: login real no notebook, com senha e código
-        with patch("contas.views.enviar_codigo_verificacao"):
+        with patch("contas.views.enviar_codigo_verificacao") as enviar:
             self.notebook.post(reverse("contas:login"),
                                {"email": "ana@nortex.com.br", "senha": "senha-123"})
-        codigo = self.usuario.codigos.latest("data_geracao").codigo
+        codigo = enviar.call_args.args[1]
         self.notebook.post(reverse("contas:verificar_codigo"), {"codigo": codigo})
 
         # Assert
@@ -121,7 +121,7 @@ class ExpiracaoDaSessaoTest(TestCase):
     def setUp(self):
         self.usuario = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-123",
-            senha_provisoria=False, aceitou_termos=True,
+            senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.client.force_login(self.usuario)
         self.inicio = reverse("treinamentos:inicio")

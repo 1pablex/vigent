@@ -45,11 +45,11 @@ class GestaoCursosBase(TestCase):
         self.financeiro = Departamento.objects.create(nome="Financeiro")
         self.rh = Usuario.objects.create_user(
             email="rh@nortex.com.br", nome="Rita RH", password="senha-123",
-            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceitou_termos=True,
+            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.colaborador = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-123",
-            departamento=self.vendas, senha_provisoria=False, aceitou_termos=True,
+            departamento=self.vendas, senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.client.force_login(self.rh)
 

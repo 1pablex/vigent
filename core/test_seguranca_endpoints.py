@@ -18,7 +18,7 @@ from django.urls import URLPattern, URLResolver, get_resolver, reverse
 from auditoria.models import LogSistema, RegistroAcesso
 from avaliacoes.models import Alternativa, AvaliacaoReacao, Prova, Questao
 from certificacao.models import Certificado
-from contas.models import CodigoVerificacao, Departamento
+from contas.models import CodigoVerificacao, Departamento, TermoUso
 from treinamentos.models import Aula, Curso, CursoDepartamento, Presenca, ProgressoAula, SlideAula
 
 Usuario = get_user_model()
@@ -26,6 +26,7 @@ Usuario = get_user_model()
 PUBLICAS = {
     "contas:login", "contas:logout", "contas:esqueci_senha", "contas:redefinir_senha",
     "contas:verificar_codigo", "contas:politica_privacidade",
+    "admin_login",   # só redireciona para o login do Vigent (com 2FA)
 }
 
 # rota -> quantidade de argumentos inteiros
@@ -43,6 +44,7 @@ PROTEGIDAS = {
     "cursos_rh:slide_novo": 2, "cursos_rh:slide_editar": 3, "cursos_rh:slide_excluir": 3,
     "cursos_rh:questao_nova": 1, "cursos_rh:questao_editar": 2,
     "cursos_rh:questao_excluir": 2,
+    "termo_rh:lista": 0, "termo_rh:nova": 0, "termo_rh:ver": 1,
 }
 
 SOMENTE_RH = [
@@ -52,6 +54,7 @@ SOMENTE_RH = [
     "cursos_rh:aula_editar", "cursos_rh:aula_excluir", "cursos_rh:slide_novo",
     "cursos_rh:slide_editar", "cursos_rh:slide_excluir", "cursos_rh:questao_nova",
     "cursos_rh:questao_editar", "cursos_rh:questao_excluir",
+    "termo_rh:lista", "termo_rh:nova", "termo_rh:ver",
 ]
 
 # API REST (/api/v1/): não redireciona, responde 403 em JSON para anônimo e não RH.
@@ -85,13 +88,13 @@ class CenarioSeguranca(TestCase):
         self.vendas = Departamento.objects.create(nome="Vendas")
         self.rh = Usuario.objects.create_user(
             email="rh@nortex.com.br", nome="Rita RH", password="senha-123",
-            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceitou_termos=True)
+            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceite_termo_vigente=True)
         self.colaborador = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-123",
-            departamento=self.vendas, senha_provisoria=False, aceitou_termos=True)
+            departamento=self.vendas, senha_provisoria=False, aceite_termo_vigente=True)
         self.outro = Usuario.objects.create_user(
             email="bruno@nortex.com.br", nome="Bruno Colaborador", password="senha-123",
-            departamento=self.vendas, senha_provisoria=False, aceitou_termos=True)
+            departamento=self.vendas, senha_provisoria=False, aceite_termo_vigente=True)
 
         self.curso = Curso.objects.create(nome="LGPD na Prática", categoria="Compliance")
         CursoDepartamento.objects.create(curso=self.curso, departamento=self.vendas)
@@ -123,6 +126,7 @@ class CenarioSeguranca(TestCase):
             "cursos_rh:questao_nova": [self.curso.id],
             "cursos_rh:questao_editar": [self.curso.id, self.questao.id],
             "cursos_rh:questao_excluir": [self.curso.id, self.questao.id],
+            "termo_rh:ver": [TermoUso.vigente().id],
         }.get(rota, [])
 
     def url(self, rota):
@@ -142,6 +146,7 @@ class CenarioSeguranca(TestCase):
             "questoes": Questao.objects.count(),
             "progressos": ProgressoAula.objects.count(),
             "nome_curso": Curso.objects.get(pk=self.curso.pk).nome,
+            "versoes_termo": TermoUso.objects.count(),
         }
 
 
@@ -183,7 +188,11 @@ class AutenticacaoObrigatoriaTest(CenarioSeguranca):
     def test_admin_recusa_colaborador(self):
         self.client.force_login(self.colaborador)
         resposta = self.client.get("/admin/")
-        self.assertRedirects(resposta, "/admin/login/?next=/admin/")
+        self.assertRedirects(resposta, "/admin/login/?next=/admin/", fetch_redirect_response=False)
+        # o login do Admin leva ao login do Vigent; quem já está logado e não é staff
+        # vai para a própria área, nunca para o Admin
+        final = self.client.get("/admin/", follow=True)
+        self.assertNotIn("/admin/", final.request["PATH_INFO"])
 
 
 class ControleDeAcessoPorPerfilTest(CenarioSeguranca):
@@ -219,8 +228,7 @@ class ControleDeAcessoPorPerfilTest(CenarioSeguranca):
                                      reverse("contas:definir_senha"))
 
     def test_termo_nao_aceito_bloqueia_rotas_do_rh(self):
-        self.rh.aceitou_termos = False
-        self.rh.save()
+        self.rh.aceites_termo.all().delete()
         self.client.force_login(self.rh)
         self.assertRedirects(self.client.get(self.url("cursos_rh:lista")),
                              reverse("contas:aceitar_termo"))

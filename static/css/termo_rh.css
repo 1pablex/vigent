@@ -1,0 +1,16 @@
+/* Aba "Termo de uso" do painel do RH (RN-33) */
+.termo-num { font-size: 30px; margin: 6px 0 4px; }
+
+.termo-trilho { height: 8px; border-radius: 6px; background: var(--line); margin-top: 12px; overflow: hidden; }
+.termo-trilho i { display: block; height: 100%; background: var(--teal); }
+
+.termo-acoes { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 8px; }
+
+textarea.termo-editor { min-height: 420px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; line-height: 1.55; }
+
+/* Mesmo visual do termo na tela de aceite (politica.css), sem limite de altura */
+.termo-previa { font-size: 13.5px; line-height: 1.6; color: #374151; max-width: 820px; }
+.termo-previa h3 { font-size: 14px; margin: 14px 0 6px; color: #14213d; }
+.termo-previa table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; font-size: 12.5px; }
+.termo-previa th, .termo-previa td { border: 1px solid #e2e5ec; padding: 8px 10px; text-align: left; }
+.termo-previa th { background: #f7f8fa; font-weight: 700; color: #14213d; }

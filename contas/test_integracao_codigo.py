@@ -25,20 +25,24 @@ def codigo_errado(certo):
 class LimiteTentativasDoisFatoresTest(TestCase):
 
     def setUp(self):
-        patch("contas.views.enviar_codigo_verificacao").start()
+        self.enviar_codigo = patch("contas.views.enviar_codigo_verificacao").start()
         self.addCleanup(patch.stopall)
         self.usuario = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-correta-123",
-            senha_provisoria=False, aceitou_termos=True,
+            senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.client.post(reverse("contas:login"), {
             "email": "ana@nortex.com.br", "senha": "senha-correta-123"})
         self.codigo = CodigoVerificacao.objects.get(usuario=self.usuario)
+        self.valor = self.ultimo_codigo_enviado()
+
+    def ultimo_codigo_enviado(self):
+        return self.enviar_codigo.call_args.args[1]
 
     def errar(self, vezes):
         for _ in range(vezes):
             resposta = self.client.post(reverse("contas:verificar_codigo"),
-                                        {"codigo": codigo_errado(self.codigo.codigo)})
+                                        {"codigo": codigo_errado(self.valor)})
         return resposta
 
     def test_deve_informar_tentativas_restantes(self):
@@ -56,7 +60,7 @@ class LimiteTentativasDoisFatoresTest(TestCase):
 
         # Act
         resposta = self.client.post(reverse("contas:verificar_codigo"),
-                                    {"codigo": self.codigo.codigo})
+                                    {"codigo": self.valor})
 
         # Assert
         self.assertContains(resposta, "Código bloqueado após 5 tentativas incorretas.")
@@ -77,9 +81,10 @@ class LimiteTentativasDoisFatoresTest(TestCase):
         self.passar_intervalo_de_reenvio()
         self.client.post(reverse("contas:verificar_codigo"), {"reenviar": "1"})
         novo = CodigoVerificacao.objects.filter(usuario=self.usuario).latest("data_geracao")
+        valor_novo = self.ultimo_codigo_enviado()
 
         # Act
-        resposta = self.client.post(reverse("contas:verificar_codigo"), {"codigo": novo.codigo})
+        resposta = self.client.post(reverse("contas:verificar_codigo"), {"codigo": valor_novo})
 
         # Assert
         self.assertNotEqual(novo.pk, self.codigo.pk)
@@ -125,10 +130,14 @@ class LimiteTentativasRedefinicaoSenhaTest(TestCase):
         self.addCleanup(patch.stopall)
         self.usuario = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-antiga-123",
-            senha_provisoria=False, aceitou_termos=True,
+            senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.client.post(reverse("contas:esqueci_senha"), {"email": "ana@nortex.com.br"})
         self.codigo = CodigoVerificacao.objects.get(usuario=self.usuario)
+        self.valor = self.ultimo_codigo_enviado()
+
+    def ultimo_codigo_enviado(self):
+        return self.enviar_codigo_redefinicao.call_args.args[1]
 
     def redefinir(self, codigo):
         return self.client.post(reverse("contas:redefinir_senha"), {
@@ -137,10 +146,10 @@ class LimiteTentativasRedefinicaoSenhaTest(TestCase):
     def test_deve_bloquear_redefinicao_apos_cinco_erros_mesmo_com_valor_certo(self):
         # Arrange
         for _ in range(5):
-            self.redefinir(codigo_errado(self.codigo.codigo))
+            self.redefinir(codigo_errado(self.valor))
 
         # Act
-        resposta = self.redefinir(self.codigo.codigo)
+        resposta = self.redefinir(self.valor)
 
         # Assert
         self.assertContains(resposta, "Código bloqueado após 5 tentativas incorretas.")
@@ -151,13 +160,13 @@ class LimiteTentativasRedefinicaoSenhaTest(TestCase):
     def test_novo_codigo_solicitado_permite_redefinir(self):
         # Arrange
         for _ in range(5):
-            self.redefinir(codigo_errado(self.codigo.codigo))
+            self.redefinir(codigo_errado(self.valor))
         self.passar_intervalo_de_reenvio()
         self.client.post(reverse("contas:esqueci_senha"), {"email": "ana@nortex.com.br"})
-        novo = CodigoVerificacao.objects.filter(usuario=self.usuario).latest("data_geracao")
+        valor_novo = self.ultimo_codigo_enviado()
 
         # Act
-        resposta = self.redefinir(novo.codigo)
+        resposta = self.redefinir(valor_novo)
 
         # Assert
         self.assertRedirects(resposta, reverse("contas:login"))
@@ -213,7 +222,7 @@ class LimiteTentativasRedefinicaoSenhaTest(TestCase):
     def test_senha_invalida_nao_consome_tentativa(self):
         # Act: senhas diferentes são recusadas antes de conferir o código
         self.client.post(reverse("contas:redefinir_senha"), {
-            "codigo": codigo_errado(self.codigo.codigo), "nova1": "senha-nova-456",
+            "codigo": codigo_errado(self.valor), "nova1": "senha-nova-456",
             "nova2": "outra-senha-789"})
 
         # Assert

@@ -18,6 +18,18 @@
 
 <div class="g2">
 
+  {% if rotinas_atrasadas %}
+    {# RN-35 - se o Cron Job parar, o RH vê aqui, sem depender do monitor externo #}
+    <div class="aviso aviso-error" role="alert">
+      <strong>Rotinas diárias atrasadas.</strong>
+      {% for rotina, ultima in rotinas_atrasadas %}
+        {% if rotina == "expurgar_reidentificacoes" %}Expurgo do cofre de reidentificação{% else %}Notificação de vencimento{% endif %}:
+        {% if ultima %}última execução bem-sucedida em {{ ultima|date:"d/m/Y H:i" }}{% else %}nenhuma execução bem-sucedida{% endif %}{% if not forloop.last %};{% else %}.{% endif %}
+      {% endfor %}
+      O agendamento diário pode ter falhado: use "Rodar rotina agora" e verifique o Cron Job.
+    </div>
+  {% endif %}
+
   <div class="insight">
     <div class="k">Notificação de vencimento</div>
     {% if ultima_execucao %}
@@ -66,7 +78,7 @@
       <div class="sub">{{ total_linhas }} registro{{ total_linhas|pluralize }}</div></div>
     <form method="get" style="display:flex;gap:9px;flex-wrap:wrap">
       <input class="search" name="busca" value="{{ busca }}" placeholder="Buscar matrícula, colaborador ou treinamento">
-      <select class="search" name="situacao" onchange="this.form.submit()">
+      <select class="search" name="situacao" data-envio-automatico>
         <option value="TODOS" {% if situacao_selecionada == "TODOS" %}selected{% endif %}>Todos os status</option>
         <option value="EM DIA" {% if situacao_selecionada == "EM DIA" %}selected{% endif %}>Em dia</option>
         <option value="VENCENDO" {% if situacao_selecionada == "VENCENDO" %}selected{% endif %}>Vencendo</option>

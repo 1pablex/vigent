@@ -10,7 +10,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from auditoria.models import LogSistema
-from contas.models import Departamento
+from contas.models import Departamento, TermoUso
 
 Usuario = get_user_model()
 
@@ -23,7 +23,7 @@ class CadastroColaboradorIntegracaoTest(TestCase):
         self.departamento = Departamento.objects.create(nome="Vendas")
         self.rh = Usuario.objects.create_user(
             email="rh@nortex.com.br", nome="Rita RH", password="senha-123",
-            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceitou_termos=True,
+            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.dados = {"nome": "Carlos Pereira", "email": "  Carlos@Nortex.com.br ",
                       "cargo": "Vendedor", "departamento": self.departamento.id}
@@ -63,7 +63,7 @@ class CadastroColaboradorIntegracaoTest(TestCase):
         # Arrange
         colaborador = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-123",
-            senha_provisoria=False, aceitou_termos=True,
+            senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.client.force_login(colaborador)
 
@@ -108,7 +108,7 @@ class AceiteTermoIntegracaoTest(TestCase):
     def setUp(self):
         self.colaborador = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-123",
-            senha_provisoria=False, aceitou_termos=False,
+            senha_provisoria=False,
         )
         self.client.force_login(self.colaborador)
 
@@ -121,20 +121,18 @@ class AceiteTermoIntegracaoTest(TestCase):
 
     def test_deve_exigir_marcacao_da_caixa_de_aceite(self):
         # Act
-        resposta = self.client.post(reverse("contas:aceitar_termo"), {})
+        resposta = self.client.post(reverse("contas:aceitar_termo"), {"versao": TermoUso.vigente().versao})
 
         # Assert
         self.assertContains(resposta, "É necessário marcar a caixa de aceite para continuar.")
-        self.colaborador.refresh_from_db()
-        self.assertFalse(self.colaborador.aceitou_termos)
+        self.assertFalse(self.colaborador.aceites_termo.exists())
 
     def test_deve_registrar_aceite_e_liberar_o_sistema(self):
         # Act
-        resposta = self.client.post(reverse("contas:aceitar_termo"), {"aceito": "on"})
+        resposta = self.client.post(reverse("contas:aceitar_termo"),
+                                    {"aceito": "on", "versao": TermoUso.vigente().versao})
 
         # Assert
         self.assertRedirects(resposta, reverse("core:inicio"), fetch_redirect_response=False)
-        self.colaborador.refresh_from_db()
-        self.assertTrue(self.colaborador.aceitou_termos)
-        self.assertIsNotNone(self.colaborador.data_aceite_termos)
+        self.assertEqual(self.colaborador.aceite_vigente.termo, TermoUso.vigente())
         self.assertTrue(LogSistema.objects.filter(evento="Termo de uso aceito").exists())

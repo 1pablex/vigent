@@ -1,0 +1,49 @@
+{% extends "core/rh_base.html" %}
+{% load static %}
+{% block titulo %}Nova versão do termo{% endblock %}
+{% block estilos %}<link rel="stylesheet" href="{% static 'css/termo_rh.css' %}">{% endblock %}
+{% block conteudo %}
+
+<div class="head">
+  <div><h1>{% if previa is not None %}Pré-visualização da versão {{ form.cleaned_data.versao }}{% else %}Nova versão do termo{% endif %}</h1>
+    <div class="sub">{% if vigente %}Partindo do texto da versão vigente ({{ vigente.versao }}).{% endif %}
+      Depois de publicada, a versão não pode ser alterada, e todos precisarão aceitá-la no próximo acesso.</div></div>
+  <a class="btn btn-ghost" href="{% url 'termo_rh:lista' %}">← Cancelar</a>
+</div>
+
+{% if previa is not None %}
+  {# RN-33 - só se publica depois de ver o texto exatamente como o colaborador vai ver #}
+  <div class="card" style="margin-bottom:18px">
+    <div class="sec-k">O que mudou</div>
+    <p style="margin:8px 0 0">{{ form.cleaned_data.resumo_alteracoes|linebreaksbr }}</p>
+  </div>
+  <div class="card" style="margin-bottom:18px">
+    <div class="sec-k" style="margin-bottom:12px">Texto, como o colaborador vai ver</div>
+    <div class="termo-previa">{{ previa }}</div>
+  </div>
+  <form method="post" class="termo-acoes">
+    {% csrf_token %}
+    <input type="hidden" name="versao" value="{{ form.cleaned_data.versao }}">
+    {# textarea oculta preserva as quebras de linha do texto #}
+    <textarea name="resumo_alteracoes" hidden>{{ form.cleaned_data.resumo_alteracoes }}</textarea>
+    <textarea name="conteudo" hidden>{{ form.cleaned_data.conteudo }}</textarea>
+    <button class="btn btn-ghost" type="submit" name="acao" value="editar" formnovalidate>← Voltar e editar</button>
+    <button class="btn btn-primary" type="submit" name="acao" value="publicar"
+            data-confirmar="Publicar a versão {{ form.cleaned_data.versao }}? Todos os colaboradores precisarão aceitá-la no próximo acesso, e ela não poderá ser alterada depois.">Publicar versão {{ form.cleaned_data.versao }}</button>
+  </form>
+{% else %}
+  <div class="card">
+    {{ form.non_field_errors }}
+    <form method="post">
+      {% csrf_token %}
+      {% include "treinamentos/rh/_campo.html" with campo=form.versao %}
+      {% include "treinamentos/rh/_campo.html" with campo=form.resumo_alteracoes %}
+      {% include "treinamentos/rh/_campo.html" with campo=form.conteudo %}
+      <div class="termo-acoes">
+        <button class="btn btn-primary" type="submit" name="acao" value="previsualizar">Pré-visualizar</button>
+      </div>
+    </form>
+  </div>
+{% endif %}
+
+{% endblock %}

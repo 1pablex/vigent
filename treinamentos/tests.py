@@ -24,7 +24,7 @@ class FluxoTreinamentoIntegracaoTest(TestCase):
         self.departamento = Departamento.objects.create(nome="Vendas")
         self.colaborador = Usuario.objects.create_user(
             email="colab@nortex.com.br", nome="Ana Colaboradora", password="senha-123",
-            departamento=self.departamento, senha_provisoria=False, aceitou_termos=True,
+            departamento=self.departamento, senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.curso = Curso.objects.create(
             nome="LGPD na Prática", categoria="Compliance",
@@ -104,7 +104,7 @@ class ReciclagemRhIntegracaoTest(TestCase):
         # Arrange
         rh = Usuario.objects.create_user(
             email="rh@nortex.com.br", nome="Rita RH", password="senha-123",
-            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceitou_termos=True,
+            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceite_termo_vigente=True,
         )
         curso = Curso.objects.create(nome="NR-10", categoria="Segurança")
         self.client.force_login(rh)

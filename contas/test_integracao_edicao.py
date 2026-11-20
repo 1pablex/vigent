@@ -29,11 +29,11 @@ class CenarioEdicao(TestCase):
         self.ti = Departamento.objects.create(nome="TI")
         self.rh = Usuario.objects.create_user(
             email="rh@nortex.com.br", nome="Rita RH", password="senha-123",
-            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceitou_termos=True)
+            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceite_termo_vigente=True)
         self.colaborador = Usuario.objects.create_user(
             email="carlos@nortex.com.br", nome="Carlos Pereira", password="senha-123",
             cargo="Analista Financeiro", departamento=self.financeiro,
-            senha_provisoria=False, aceitou_termos=True)
+            senha_provisoria=False, aceite_termo_vigente=True)
 
         self.fraude = Curso.objects.create(nome="Prevenção a fraude", categoria="Financeiro")
         self.chamados = Curso.objects.create(nome="Abertura de chamados", categoria="Tecnologia")

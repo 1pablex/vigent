@@ -22,7 +22,7 @@ class CenarioCursoMixin:
         self.departamento = Departamento.objects.create(nome="Vendas")
         self.colaborador = Usuario.objects.create_user(
             email="colab@nortex.com.br", nome="Ana Colaboradora", password="senha-123",
-            departamento=self.departamento, senha_provisoria=False, aceitou_termos=True,
+            departamento=self.departamento, senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.curso = Curso.objects.create(
             nome="LGPD na Prática", categoria="Compliance",

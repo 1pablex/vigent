@@ -23,15 +23,15 @@ class PainelRhIntegracaoTest(TestCase):
         self.departamento = Departamento.objects.create(nome="Vendas")
         self.rh = Usuario.objects.create_user(
             email="rh@nortex.com.br", nome="Rita RH", password="senha-123",
-            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceitou_termos=True,
+            grupo=Usuario.Grupo.RH, senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.colaborador = Usuario.objects.create_user(
             email="maria@nortex.com.br", nome="Maria Souza", password="senha-123",
-            departamento=self.departamento, senha_provisoria=False, aceitou_termos=True,
+            departamento=self.departamento, senha_provisoria=False, aceite_termo_vigente=True,
         )
         Usuario.objects.create_user(
             email="joao@nortex.com.br", nome="João Lima", password="senha-123",
-            departamento=self.departamento, senha_provisoria=False, aceitou_termos=True,
+            departamento=self.departamento, senha_provisoria=False, aceite_termo_vigente=True,
         )
         self.curso = Curso.objects.create(nome="LGPD na Prática", categoria="Compliance")
         CursoDepartamento.objects.create(curso=self.curso, departamento=self.departamento)
@@ -67,7 +67,7 @@ class PainelRhIntegracaoTest(TestCase):
             Usuario.objects.create_user(
                 email=f"extra{i}@nortex.com.br", nome=f"Extra {i:02d}", password="senha-123",
                 departamento=departamento or self.departamento,
-                senha_provisoria=False, aceitou_termos=True)
+                senha_provisoria=False, aceite_termo_vigente=True)
 
     def test_lista_de_colaboradores_mostra_10_por_pagina(self):
         # Arrange: 3 do setUp + 9 = 12 usuários

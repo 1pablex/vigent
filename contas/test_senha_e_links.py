@@ -9,7 +9,6 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from auditoria.models import EmailEnviado
-from contas.models import CodigoVerificacao
 from core.correio import _html, enviar_primeiro_acesso
 
 Usuario = get_user_model()
@@ -48,13 +47,13 @@ class SenhaMinimaPrimeiroAcessoTest(TestCase):
 class SenhaMinimaRedefinicaoTest(TestCase):
 
     def setUp(self):
-        patch("contas.views.enviar_codigo_redefinicao").start()
+        enviar = patch("contas.views.enviar_codigo_redefinicao").start()
         self.addCleanup(patch.stopall)
         self.usuario = Usuario.objects.create_user(
             email="ana@nortex.com.br", nome="Ana Colaboradora", password="senha-antiga-123",
-            senha_provisoria=False, aceitou_termos=True)
+            senha_provisoria=False, aceite_termo_vigente=True)
         self.client.post(reverse("contas:esqueci_senha"), {"email": "ana@nortex.com.br"})
-        self.codigo = CodigoVerificacao.objects.get(usuario=self.usuario).codigo
+        self.codigo = enviar.call_args.args[1]
 
     def redefinir(self, senha):
         return self.client.post(reverse("contas:redefinir_senha"),

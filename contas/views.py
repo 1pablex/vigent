@@ -10,18 +10,42 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme, urlencode
+from django.utils.safestring import mark_safe
 
 from auditoria.models import LogSistema, RegistroAcesso
-from contas.models import CodigoVerificacao, Departamento, Usuario
+from contas.models import CodigoVerificacao, Departamento, TermoUso, Usuario
 from contas.rede import ip_do_cliente
 from contas.sessao import marcar_sessao_ativa
+from contas.termos import formatar_termo, registrar_aceite
 from core.correio import enviar_codigo_redefinicao, enviar_codigo_verificacao, enviar_primeiro_acesso
 from core.services import gerar_codigo_verificacao, registrar
 
 
 def _ip(request):
     return ip_do_cliente(request)
+
+
+def _destino_seguro(request, destino):
+    """Endereço para onde voltar depois do login, só se for deste mesmo site (evita o
+    redirecionamento aberto: ?next=https://site-malicioso não é seguido)."""
+    if destino and destino.startswith("/") and url_has_allowed_host_and_scheme(
+            destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return destino
+    return None
+
+
+def login_admin(request):
+    """O login do Django Admin passa pelo login do Vigent, com a verificação em duas etapas.
+
+    O formulário padrão do Admin aceitaria só e-mail e senha; com isto, a única porta de
+    entrada é a do Vigent. Depois do código, a pessoa volta para a página do Admin pedida.
+    GET e POST são redirecionados: um POST direto com e-mail e senha não autentica ninguém.
+    """
+    destino = _destino_seguro(request, request.GET.get("next")) or reverse("admin:index")
+    return redirect(f"{reverse('contas:login')}?{urlencode({'next': destino})}")
 
 
 def senha_minima():
@@ -139,9 +163,15 @@ def tela_login(request):
                       f"2FA dispensado no primeiro acesso", usuario, ip)
             return redirect("contas:definir_senha")
         else:
-            codigo_obj = gerar_codigo_verificacao(usuario)
-            enviar_codigo_verificacao(usuario, codigo_obj)
+            _, codigo = gerar_codigo_verificacao(usuario)
+            enviar_codigo_verificacao(usuario, codigo)
             request.session["pre_2fa_usuario_id"] = usuario.id
+            # para onde voltar depois do código (ex.: o Django Admin); só destino interno
+            destino = _destino_seguro(request, request.GET.get("next"))
+            if destino:
+                request.session["destino_pos_login"] = destino
+            else:
+                request.session.pop("destino_pos_login", None)
             registrar(LogSistema.Nivel.INFO, "Código de verificação enviado",
                       f"Senha correta para {usuario.email}; aguardando segundo fator", ip=ip)
             return redirect("contas:verificar_codigo")
@@ -154,8 +184,12 @@ def sair(request):
 
 
 def ver_politica_privacidade(request):
-    """RF-24 - política de privacidade disponível ao colaborador."""
-    return render(request, "contas/politica_privacidade.html")
+    """RF-24 - política de privacidade disponível ao colaborador (versão vigente)."""
+    termo = TermoUso.vigente()
+    return render(request, "contas/politica_privacidade.html", {
+        "termo": termo,
+        "conteudo": mark_safe(formatar_termo(termo.conteudo)) if termo else "",
+    })
 
 #obrigatorio apos o login, para que o usuario troque a senha provisoria
 @login_required
@@ -342,12 +376,12 @@ def verificar_codigo(request):
                 Usuario.objects.select_for_update().get(pk=usuario.pk)
                 espera = _espera_para_reenviar(usuario)
                 if not espera:
-                    codigo_obj = gerar_codigo_verificacao(usuario)
+                    _, codigo = gerar_codigo_verificacao(usuario)
             if espera:
                 erro = (f"Aguarde {espera} minuto{'s' if espera > 1 else ''} "
                         f"para pedir um novo código.")
             else:
-                enviar_codigo_verificacao(usuario, codigo_obj)
+                enviar_codigo_verificacao(usuario, codigo)
                 messages.success(request, "Um novo código foi enviado.")
         else:
             digitado = (request.POST.get("codigo") or "").strip()
@@ -358,6 +392,7 @@ def verificar_codigo(request):
                 pendente.utilizado = True
                 pendente.save()
                 del request.session["pre_2fa_usuario_id"]
+                destino = request.session.pop("destino_pos_login", None)
                 login(request, usuario)
                 ip = _ip(request)
                 RegistroAcesso.objects.create(
@@ -368,7 +403,7 @@ def verificar_codigo(request):
                           usuario, ip)
                 if usuario.senha_provisoria:
                     return redirect("contas:definir_senha")
-                return redirect("core:inicio")
+                return redirect(destino or "core:inicio")
             else:
                 erro = _erro_de_codigo(pendente, usuario, _ip(request),
                                        'Clique em "Reenviar código" para receber outro.')
@@ -385,14 +420,14 @@ def esqueci_senha(request):
         else:
             usuario = Usuario.objects.filter(email=email, is_active=True).first()
             if usuario:
-                codigo_obj = None
+                codigo = None
                 with transaction.atomic():
                     # trava a linha do usuário: dois envios simultâneos não geram dois códigos
                     Usuario.objects.select_for_update().get(pk=usuario.pk)
                     if not _espera_para_reenviar(usuario):
-                        codigo_obj = gerar_codigo_verificacao(usuario)
-                if codigo_obj:
-                    enviar_codigo_redefinicao(usuario, codigo_obj)
+                        _, codigo = gerar_codigo_verificacao(usuario)
+                if codigo:
+                    enviar_codigo_redefinicao(usuario, codigo)
                     registrar(LogSistema.Nivel.INFO, "Código de redefinição enviado",
                               f"Solicitação de redefinição para {email}", ip=_ip(request))
                 else:
@@ -452,23 +487,32 @@ def redefinir_senha(request):
                   {"erro": erro, "email": email, "senha_minima": senha_minima()})
 @login_required
 def aceitar_termo(request):
-    """RF-24, RN-33 - aceite obrigatório do termo de uso."""
-    if request.user.aceitou_termos:
+    """RF-24, RN-33 - aceite obrigatório da versão vigente do termo de uso.
+
+    Quem já aceitou uma versão anterior vê o aviso de atualização e o resumo das mudanças.
+    """
+    termo = TermoUso.vigente()
+    if termo is None or not request.user.precisa_aceitar_termo:
         return redirect("core:inicio")
 
     erro = None
     if request.method == "POST":
-        if request.POST.get("aceito") == "on":
-            request.user.aceitou_termos = True
-            request.user.data_aceite_termos = timezone.now()
-            request.user.save()
-            registrar(LogSistema.Nivel.INFO, "Termo de uso aceito",
-                      "Aceite registrado no primeiro acesso pós-definição de senha",
-                      request.user)
+        # O formulário informa a versão lida: se outra foi publicada nesse meio tempo,
+        # o aceite não vale para ela e a tela é mostrada de novo com o texto novo.
+        if request.POST.get("versao") != termo.versao:
+            erro = "O termo foi atualizado enquanto você lia. Leia a versão atual para continuar."
+        elif request.POST.get("aceito") == "on":
+            registrar_aceite(request.user, _ip(request))
             return redirect("core:inicio")
-        erro = "É necessário marcar a caixa de aceite para continuar."
+        else:
+            erro = "É necessário marcar a caixa de aceite para continuar."
 
-    return render(request, "contas/aceitar_termo.html", {"erro": erro})
+    return render(request, "contas/aceitar_termo.html", {
+        "erro": erro,
+        "termo": termo,
+        "conteudo": mark_safe(formatar_termo(termo.conteudo)),
+        "aceite_anterior": request.user.ultimo_aceite,
+    })
 
 @login_required
 def meus_dados(request):
@@ -477,4 +521,5 @@ def meus_dados(request):
                .select_related("departamento")
                .only("nome", "matricula", "cargo", "data_cadastro", "departamento__nome")
                .get(pk=request.user.pk))
-    return render(request, "contas/meus_dados.html", {"usuario": usuario})
+    return render(request, "contas/meus_dados.html",
+                  {"usuario": usuario, "aceite": request.user.ultimo_aceite})

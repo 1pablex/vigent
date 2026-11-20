@@ -46,7 +46,7 @@ class CenarioIndicadores(TestCase):
         self.operacoes = Departamento.objects.create(nome="Operações")
 
         def usuario(email, dep=None, **extra):
-            dados = {"senha_provisoria": False, "aceitou_termos": True, **extra}
+            dados = {"senha_provisoria": False, "aceite_termo_vigente": True, **extra}
             return Usuario.objects.create_user(email=email, nome=email.split("@")[0],
                                                password="senha-123", departamento=dep, **dados)
 
@@ -108,8 +108,7 @@ class ControleDeAcessoApiTest(CenarioIndicadores):
         self.assertIn("senha", resposta.json()["detail"])
 
     def test_rh_sem_aceite_do_termo_recebe_403_em_json(self):
-        self.rh.aceitou_termos = False
-        self.rh.save()
+        self.rh.aceites_termo.all().delete()
         self.client.force_login(self.rh)
         resposta = self.get("api:conformidade")
         self.assertEqual(resposta.status_code, 403)

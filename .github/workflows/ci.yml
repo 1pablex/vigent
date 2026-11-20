@@ -1,9 +1,12 @@
-# Integração contínua do Vigent: a cada Pull Request para a main, três checagens
-# independentes rodam em paralelo, em ambiente limpo. Não há deploy (CD) aqui.
+# Integração contínua do Vigent: a cada Pull Request para a main e a cada push na main
+# (inclusive o merge de um PR), três checagens independentes rodam em paralelo, em
+# ambiente limpo. Não há deploy (CD) aqui.
 name: CI
 
 on:
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
 
 # Somente leitura do repositório: a pipeline não escreve nada no GitHub.
@@ -11,9 +14,10 @@ permissions:
   contents: read
 
 # Um push novo no mesmo PR cancela a execução anterior, que ficou desatualizada.
+# Na main nada é cancelado: cada commit que entra fica com o seu resultado.
 concurrency:
-  group: ci-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   PYTHON_VERSION: "3.11"

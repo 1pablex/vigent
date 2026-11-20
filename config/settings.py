@@ -32,6 +32,10 @@ if RENDER_EXTERNAL_HOSTNAME:
 # quando o e-mail sai de outro ambiente. SITE_URL permite trocar (ex.: domínio próprio).
 SITE_URL = os.getenv("SITE_URL", "https://vigent.onrender.com")
 
+# Monitor externo das rotinas diárias (Healthchecks.io, ver core/monitor.py). Secreto:
+# fica só no painel do Render. Vazio = nenhum aviso é enviado.
+MONITOR_ROTINAS_URL = os.getenv("MONITOR_ROTINAS_URL", "")
+
 # Produção atrás do HTTPS da hospedagem (RNF-03). Fica numa variável própria, e não no
 # DEBUG, porque o Django roda os testes com DEBUG=False e eles não usam HTTPS.
 HTTPS = os.getenv("HTTPS", "False").strip().lower() in ("1", "true", "yes")
@@ -40,7 +44,12 @@ if HTTPS:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 3600
+    # HSTS: o navegador passa a recusar HTTP para o Vigent por 1 ano, inclusive nos
+    # subdomínios. O preload só tem efeito com domínio próprio (a lista dos navegadores
+    # não aceita subdomínios de onrender.com), mas o cabeçalho já sai pronto para isso.
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 
 # Application definition
@@ -60,10 +69,12 @@ INSTALLED_APPS = [
     'certificacao',
     'rest_framework',
     'drf_spectacular',
+    'drf_spectacular_sidecar',   # arquivos do Swagger servidos pelo Vigent, sem CDN (CSP)
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'core.middleware.CabecalhosSegurancaMiddleware',   # CSP e Permissions-Policy em toda resposta
     'whitenoise.middleware.WhiteNoiseMiddleware',   # serve o CSS/JS em produção
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -200,6 +211,9 @@ VIGENT = {
     "MAX_TENTATIVAS_CODIGO": 5,
     "INTERVALO_REENVIO_CODIGO_MIN": 5,   # tempo mínimo entre dois códigos de 2FA
     "META_CONFORMIDADE": 90,   # RN-38 - meta interna do índice de conformidade (%)
+    # Rotina diária sem execução bem-sucedida há mais que isso: alerta no painel do RH.
+    # 24 h do ciclo + 2 h de folga para atrasos do agendador.
+    "HORAS_ALERTA_ROTINAS": 26,
     # Quantos proxies confiáveis ficam na frente da aplicação (ex.: 1 atrás do proxy da
     # hospedagem). Com 0, o X-Forwarded-For é ignorado e vale o IP da conexão.
     "PROXIES_CONFIAVEIS": int(os.getenv("PROXIES_CONFIAVEIS", "0")),
@@ -251,4 +265,8 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PERMISSIONS": ["core.api.permissions.SomenteRH"],
+    # Swagger com arquivos locais (pacote sidecar) em vez do CDN, compatível com a CSP
+    "SWAGGER_UI_DIST": "SIDECAR",
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
 }
